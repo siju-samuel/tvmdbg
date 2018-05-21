@@ -57,7 +57,7 @@ class GraphRuntime : public ModuleNode {
     }
   }
 
-  void DebugRun() {
+  void DebugRun(DLTensor* data_out) {
     // setup the array and requirements.
     size_t from_size = 0;
 
@@ -71,8 +71,12 @@ class GraphRuntime : public ModuleNode {
       //printf("\nbefore editing val0= %f", ((float *)data_entry_[i].data)[0]);
       //((float *)data_entry_[i].data)[0] = 0.1111;
       //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
+      if (i == 1) {
+        //TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], data_out, nullptr));
+        //PrintDlTensor(data_out);
+        //printf("\nCopied first data");
+      }
       PrintDlTensor(&data_entry_[i]);
-      //TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], data_out, nullptr));
     }
   }
   /*!
@@ -709,7 +713,7 @@ PackedFunc GraphRuntime::GetFunction(
   } else if (name == "run") {
     if (this->debug_ == true) {
         return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-            this->DebugRun();
+            this->DebugRun(args[0]);
           });
     }
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {

@@ -30,6 +30,7 @@ def create(graph_json_str, libmod, ctx, debug=False):
         Runtime graph module that can be used to execute the graph.
     """
     print("graph_runtime.py create debug_flag =", debug)
+    print(graph_json_str.json())
     if not isinstance(graph_json_str, string_types):
         try:
             graph_json_str = graph_json_str._tvm_graph_json()
@@ -37,15 +38,18 @@ def create(graph_json_str, libmod, ctx, debug=False):
             raise ValueError("Type %s is not supported" % type(graph_json_str))
     device_type = ctx.device_type
     device_id = ctx.device_id
+    if debug:
+        shapes = graph_json_str.json()["shapes"]
+
     if device_type >= rpc_base.RPC_SESS_MASK:
         assert libmod.type_key == "rpc"
         assert rpc_base._SessTableIndex(libmod) == ctx._rpc_sess._tbl_index
         hmod = rpc_base._ModuleHandle(libmod)
         fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime.remote_create")
         device_type = device_type % rpc_base.RPC_SESS_MASK
-        return GraphModule(fcreate(graph_json_str, hmod, device_type, device_id, debug), ctx)
+        return GraphModule(fcreate(graph_json_str, hmod, device_type, device_id, debug), ctx, debug)
     fcreate = get_global_func("tvm.graph_runtime.create")
-    return GraphModule(fcreate(graph_json_str, libmod, device_type, device_id, debug), ctx)
+    return GraphModule(fcreate(graph_json_str, libmod, device_type, device_id, debug), ctx, debug)
 
 
 class GraphModule(object):
@@ -71,7 +75,7 @@ class GraphModule(object):
     ctx : TVMContext
         The context this module is under
     """
-    def __init__(self, module, ctx):
+    def __init__(self, module, ctx, debug):
         self.module = module
         self._set_input = module["set_input"]
         self._run = module["run"]
@@ -83,6 +87,7 @@ class GraphModule(object):
             pass
         self._load_params = module["load_params"]
         self.ctx = ctx
+        self.debug = debug
 
     def set_input(self, key=None, value=None, **params):
         """Set inputs to the module via kwargs
@@ -114,7 +119,15 @@ class GraphModule(object):
         """
         if input_dict:
             self.set_input(**input_dict)
-        self._run()
+
+        if self.debug:
+            dtype = 'float32'
+            #get first layer output for testing
+            #in future can pass the array of empty tensors to get the full layers output
+            self._run(nd.empty((32, 3, 3, 3), dtype))
+        else :
+            self._run(None)
+
 
     def get_input(self, index, out):
         """Get index-th input to out
