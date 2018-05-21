@@ -155,14 +155,11 @@ class GraphRuntime : public ModuleNode {
         printf("%ld, ", data->shape[i]);
        size *= data->shape[i];
     }
-    printf("]");
-    /*
     printf("] Dtype=%d, Bits=%d Lanes=%d Data=", data->dtype.code, data->dtype.bits, data->dtype.lanes);
     size *= (data->dtype.bits * data->dtype.lanes + 7) / 8;
     for (size_t i=0; (i < 10 && i < size); ++i) {
         printf("%f, ", ((float *)data->data)[i]);
     }
-    */
   }
 
   void DumpGraphRuntime() {
