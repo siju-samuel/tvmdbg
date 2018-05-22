@@ -57,7 +57,7 @@ class GraphRuntime : public ModuleNode {
     }
   }
 
-  void DebugRun(DLTensor* data_out) {
+  void DebugRun() {
     // setup the array and requirements.
     size_t from_size = 0;
 
@@ -67,16 +67,12 @@ class GraphRuntime : public ModuleNode {
       //from_size = GetDataSize(&data_entry_[i]);
       //printf("\nRunning nodes %ld output_size=%ld", i, from_size);
 
-      //PrintNode(&nodes_[i]);
+      PrintNode(&nodes_[i]);
       //printf("\nbefore editing val0= %f", ((float *)data_entry_[i].data)[0]);
       //((float *)data_entry_[i].data)[0] = 0.1111;
       //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
-      if (i == 1) {
-        //TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], data_out, nullptr));
-        //PrintDlTensor(data_out);
-        //printf("\nCopied first data");
-      }
-      PrintDlTensor(&data_entry_[i]);
+      TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
+      PrintDlTensor(debug_buffers_[i]);
     }
   }
   /*!
@@ -164,6 +160,9 @@ class GraphRuntime : public ModuleNode {
     for (size_t i=0; (i < 10 && i < size); ++i) {
         printf("%f, ", ((float *)data->data)[i]);
     }
+  }
+  void SetDebugBuffer(DLTensor* data){
+      debug_buffers_.push_back(data);
   }
 
   void DumpGraphRuntime() {
@@ -483,6 +482,8 @@ class GraphRuntime : public ModuleNode {
   std::vector<std::function<void()> > op_execs_;
   /*! \brief debugging functionality is enabled */
   bool debug_;
+  /*! \brief common storage pool */
+  std::vector<DLTensor*> debug_buffers_;
 };
 
 
@@ -700,6 +701,10 @@ PackedFunc GraphRuntime::GetFunction(
           this->GetInput(args[0], args[1]);
         }
       });
+    } else if (name == "set_debug_buffer") {
+      return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+            this->SetDebugBuffer(args[0]);
+        });
 #ifdef TVM_GRAPH_RUNTIME_DEBUG
   } else if (name == "debug_get_output") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
@@ -713,7 +718,7 @@ PackedFunc GraphRuntime::GetFunction(
   } else if (name == "run") {
     if (this->debug_ == true) {
         return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-            this->DebugRun(args[0]);
+            this->DebugRun();
           });
     }
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {

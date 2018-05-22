@@ -186,11 +186,6 @@ from tvm.contrib import graph_runtime
 print("Running the test image...")
 
 #Create the graph run time
-debug=True
-if debug:
-    shapes = graph.json()["shapes"]
-
-
 m = graph_runtime.create(graph, lib, ctx, debug=True)
 
 # set inputs

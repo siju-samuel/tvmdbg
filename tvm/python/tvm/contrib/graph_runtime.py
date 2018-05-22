@@ -1,4 +1,5 @@
 """Minimum graph runtime that executes graph containing TVM PackedFunc."""
+from __future__ import print_function
 from .._ffi.base import string_types
 from .._ffi.function import get_global_func
 from .rpc import base as rpc_base
@@ -30,7 +31,6 @@ def create(graph_json_str, libmod, ctx, debug=False):
         Runtime graph module that can be used to execute the graph.
     """
     print("graph_runtime.py create debug_flag =", debug)
-    print(graph_json_str.json())
     if not isinstance(graph_json_str, string_types):
         try:
             graph_json_str = graph_json_str._tvm_graph_json()
@@ -38,18 +38,17 @@ def create(graph_json_str, libmod, ctx, debug=False):
             raise ValueError("Type %s is not supported" % type(graph_json_str))
     device_type = ctx.device_type
     device_id = ctx.device_id
-    if debug:
-        shapes = graph_json_str.json()["shapes"]
-
     if device_type >= rpc_base.RPC_SESS_MASK:
         assert libmod.type_key == "rpc"
         assert rpc_base._SessTableIndex(libmod) == ctx._rpc_sess._tbl_index
         hmod = rpc_base._ModuleHandle(libmod)
         fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime.remote_create")
         device_type = device_type % rpc_base.RPC_SESS_MASK
-        return GraphModule(fcreate(graph_json_str, hmod, device_type, device_id, debug), ctx, debug)
+        func_obj = fcreate(graph_json_str, hmod, device_type, device_id, debug)
+        return GraphModule(func_obj, ctx, graph_json_str, debug)
     fcreate = get_global_func("tvm.graph_runtime.create")
-    return GraphModule(fcreate(graph_json_str, libmod, device_type, device_id, debug), ctx, debug)
+    func_obj = fcreate(graph_json_str, libmod, device_type, device_id, debug)
+    return GraphModule(func_obj, ctx, graph_json_str, debug)
 
 
 class GraphModule(object):
@@ -75,12 +74,13 @@ class GraphModule(object):
     ctx : TVMContext
         The context this module is under
     """
-    def __init__(self, module, ctx, debug):
+    def __init__(self, module, ctx, graph_json_str, debug):
         self.module = module
         self._set_input = module["set_input"]
         self._run = module["run"]
         self._get_output = module["get_output"]
         self._get_input = module["get_input"]
+        self._set_debug_buffer = module["set_debug_buffer"]
         try:
             self._debug_get_output = module["debug_get_output"]
         except AttributeError:
@@ -88,6 +88,22 @@ class GraphModule(object):
         self._load_params = module["load_params"]
         self.ctx = ctx
         self.debug = debug
+        if self.debug:
+            self.graph_json_str = graph_json_str #For CLI Debug
+            graph_json = graph_json_str
+            alpha = 'list_shape'
+            startpos = graph_json.find(alpha) + len(alpha) + 4
+            endpos = graph_json.find(']]', startpos)
+            shapes_str = graph_json[startpos:(endpos + 1)]
+            shape_startpos = shape_endpos = 0
+            self.ndarraylist = []
+            dtype = 'float32' #TODO: dtype parse from json
+            while shape_endpos < endpos - startpos:
+                shape_startpos = shapes_str.find('[', shape_startpos) + 1
+                shape_endpos = shapes_str.find(']', shape_startpos)
+                shape_str = shapes_str[shape_startpos:shape_endpos]
+                shape_list = [int(x) for x in shape_str.split(',')]
+                self.ndarraylist.append(nd.empty(shape_list, dtype))
 
     def set_input(self, key=None, value=None, **params):
         """Set inputs to the module via kwargs
@@ -109,6 +125,28 @@ class GraphModule(object):
             self._set_input(k, nd.array(v, ctx=self.ctx))
         return self
 
+    def set_debug_buffer(self):
+        """Set the debug out buffers for each tvm nodes
+
+        Parameters
+        ----------
+        None
+        """
+
+        if not hasattr(self, '_set_debug_buffer'):#TODO Remove later
+            raise RuntimeError("Please compile runtime with USE_GRAPH_RUNTIME_DEBUG = 0")
+
+        for ndbuffer in self.ndarraylist:
+            self._set_debug_buffer(ndbuffer)
+    def print_array(self, ndbuffer):
+        np_array = ndbuffer.asnumpy()
+        print(" ")
+        print(np_array.shape, end=' ')
+        np_array = np_array.flatten()
+        size = np_array.size
+        for i in range (min(10, size)):
+            print(np_array[i], end=', ')
+
     def run(self, **input_dict):
         """Run forward execution of the graph
 
@@ -121,13 +159,10 @@ class GraphModule(object):
             self.set_input(**input_dict)
 
         if self.debug:
-            dtype = 'float32'
-            #get first layer output for testing
-            #in future can pass the array of empty tensors to get the full layers output
-            self._run(nd.empty((32, 3, 3, 3), dtype))
-        else :
-            self._run(None)
-
+            self.set_debug_buffer()
+        self._run()
+        for ndbuffer in self.ndarraylist:
+            self.print_array(ndbuffer)
 
     def get_input(self, index, out):
         """Get index-th input to out
