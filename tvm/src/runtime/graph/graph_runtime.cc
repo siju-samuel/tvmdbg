@@ -8,6 +8,7 @@
 #include <dmlc/json.h>
 #include <numeric>
 #include "./graph_runtime.h"
+#include <cmath>
 
 namespace tvm {
 namespace runtime {
@@ -19,6 +20,10 @@ namespace runtime {
     CHECK_EQ(ret, 0)                                               \
         << TVMGetLastError();                                      \
   }
+
+#define CHECK_NONE 0x0
+#define CHECK_NAN 0x1
+#define CHECK_INF 0x2
 
 /*!
  * \brief Tiny graph runtime.
@@ -73,6 +78,7 @@ class GraphRuntime : public ModuleNode {
       //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
       TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
       PrintDlTensor(debug_buffers_[i]);
+      CheckNanOrInf(debug_buffers_[i], (CHECK_NONE));
     }
   }
   /*!
@@ -159,6 +165,28 @@ class GraphRuntime : public ModuleNode {
     size *= (data->dtype.bits * data->dtype.lanes + 7) / 8;
     for (size_t i=0; (i < 10 && i < size); ++i) {
         printf("%f, ", ((float *)data->data)[i]);
+    }
+  }
+
+  void CheckNanOrInf(DLTensor* data, int check_flag) {
+    if (check_flag == CHECK_NONE) {
+        return;
+    }
+
+    size_t size = 1;
+    for (tvm_index_t i = 0; i < data->ndim; ++i) {
+       size *= data->shape[i];
+    }
+    size *= (data->dtype.bits * data->dtype.lanes + 7) / 8;
+    for (size_t i=0; (i < size); ++i) {
+        if ((check_flag && CHECK_NAN) && std::isnan(((float *)data->data)[i])) {
+            printf("\nERROR: NAN FOUND at index=%d, val=%f", i, ((float *)data->data)[i]);
+            break;
+        }
+        if ((check_flag && CHECK_INF) && std::isinf(((float *)data->data)[i])) {
+            printf("\nERROR: INF FOUND at index=%d, val=%f", i, ((float *)data->data)[i]);
+            break;
+        }
     }
   }
   void SetDebugBuffer(DLTensor* data){
