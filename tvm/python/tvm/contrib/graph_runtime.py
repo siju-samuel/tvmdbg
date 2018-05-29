@@ -86,6 +86,8 @@ class GraphModule(object):
         except AttributeError:
             pass
         self._load_params = module["load_params"]
+        self._get_input_names = module["get_input_names"]
+        self._get_output_names = module["get_output_names"]
         self.ctx = ctx
         self.debug = debug
         if self.debug:
@@ -161,8 +163,9 @@ class GraphModule(object):
         if self.debug:
             self.set_debug_buffer()
         self._run()
-        for ndbuffer in self.ndarraylist:
-            self.print_array(ndbuffer)
+        if self.debug:
+            for ndbuffer in self.ndarraylist:
+                self.print_array(ndbuffer)
 
     def get_input(self, index, out):
         """Get index-th input to out
@@ -228,3 +231,9 @@ class GraphModule(object):
             The key to the module.
         """
         return self.module[key]
+
+    def get_input_names(self):
+        return self._get_input_names()
+
+    def get_output_names(self):
+        return self._get_output_names()
