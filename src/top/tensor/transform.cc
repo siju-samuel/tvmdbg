@@ -90,23 +90,28 @@ inline bool ConcatenateInferShape(const NodeAttrs& attrs,
   TShape dshape;
   dim_t size = 0;
   bool has_zero = false;
+  int axis = param.axis;
+  if (axis < 0) {
+    axis += static_cast<int>((*in_shape)[0].ndim());
+  }
+
   for (size_t i = 0; i < in_shape->size(); ++i) {
     TShape tmp = (*in_shape)[i];
     if (tmp.ndim()) {
-      CHECK_LT(static_cast<dim_t>(param.axis), tmp.ndim())
-          << "concat dim " << param.axis << " out of range of input shape " << tmp;
-      has_zero = tmp[param.axis] == 0 || has_zero;
-      size += tmp[param.axis];
-      tmp[param.axis] = 0;
+      CHECK_LT(static_cast<dim_t>(axis), tmp.ndim())
+          << "concat dim " << axis << " out of range of input shape " << tmp;
+      has_zero = tmp[axis] == 0 || has_zero;
+      size += tmp[axis];
+      tmp[axis] = 0;
       shape_assign(&dshape, tmp);
     }
   }
 
   TShape tmp = (*out_shape)[0];
   if (tmp.ndim()) {
-    CHECK_LT(static_cast<dim_t>(param.axis), tmp.ndim())
-        << "concat dim " << param.axis << " out of range of input shape " << tmp;
-    tmp[param.axis] = 0;
+    CHECK_LT(static_cast<dim_t>(axis), tmp.ndim())
+        << "concat dim " << axis << " out of range of input shape " << tmp;
+    tmp[axis] = 0;
     shape_assign(&dshape, tmp);
   }
 
@@ -116,7 +121,7 @@ inline bool ConcatenateInferShape(const NodeAttrs& attrs,
     NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, i, dshape);
   }
 
-  if (!has_zero) dshape[param.axis] = size;
+  if (!has_zero) dshape[axis] = size;
   NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, dshape);
   return dshape.Size() != 0;
 }
@@ -760,7 +765,7 @@ inline bool TransposeCorrectLayout(const NodeAttrs& attrs,
     } else {
       CHECK_EQ(input.ndim(), param.axes.ndim());
       for (size_t i = 0; i < input.ndim(); ++i) {
-        CHECK(param.axes[i] < input.ndim());
+        CHECK(param.axes[i] < static_cast<int>(input.ndim()));
         new_layout << input.at(param.axes[i]);
       }
     }
@@ -826,6 +831,109 @@ Examples::
       MakeNode("transpose", n->attrs.name + "_t", {ograds[0]}, {{"axes", oss.str()}})
     };
 });
+
+
+// take
+DMLC_REGISTER_PARAMETER(TakeParam);
+
+inline bool TakeInferShape(const NodeAttrs& attrs,
+                           std::vector<TShape>* in_shape,
+                           std::vector<TShape>* out_shape) {
+  const TShape& dshape = (*in_shape)[0];
+  const TShape& indicesshape = (*in_shape)[1];
+  if (dshape.ndim() == 0) return false;
+  if (indicesshape.ndim() == 0) return false;
+
+  const TakeParam& param = nnvm::get<TakeParam>(attrs.parsed);
+  TShape oshape((!param.axis ? 0: dshape.ndim() - 1) + indicesshape.ndim());
+  if (!param.axis) {
+    for (size_t j = 0; j < indicesshape.ndim(); ++j) {
+      oshape[j] = indicesshape[j];
+    }
+  } else {
+    int axis = param.axis.value();
+    if (axis < 0) {
+      axis += dshape.ndim();
+    }
+    CHECK_LT(axis, dshape.ndim());
+
+    size_t posi = 0;
+    for (size_t i = 0; i < dshape.ndim(); ++i) {
+      if (static_cast<int>(i) == axis) {
+        for (size_t j = 0; j < indicesshape.ndim(); ++j) {
+          oshape[posi++] = indicesshape[j];
+        }
+      } else {
+        oshape[posi++] = dshape[i];
+      }
+    }
+  }
+  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 0, dshape);
+  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, indicesshape);
+  NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
+  return dshape.Size() != 0;
+}
+
+inline bool TakeInferType(const NodeAttrs& attrs,
+                          std::vector<int>* in_attrs,
+                          std::vector<int>* out_attrs) {
+  CHECK_EQ(in_attrs->size(), 2U);
+  CHECK_EQ(out_attrs->size(), 1U);
+  CHECK_EQ((*in_attrs)[1], kInt32);
+  NNVM_ASSIGN_INPUT_TYPE(attrs, *in_attrs, 0, (*in_attrs)[0]);
+  NNVM_ASSIGN_INPUT_TYPE(attrs, *in_attrs, 1, static_cast<int>(kInt32));
+  NNVM_ASSIGN_OUTPUT_TYPE(attrs, *out_attrs, 0, (*in_attrs)[0]);
+  return true;
+}
+
+inline bool TakeCorrectLayout(const NodeAttrs& attrs,
+                              std::vector<Layout> *ilayouts,
+                              const std::vector<Layout> *last_ilayouts,
+                              std::vector<Layout> *olayouts) {
+  CHECK_EQ(ilayouts->size(), last_ilayouts->size());
+  CHECK_EQ(olayouts->size(), 1U);
+
+  for (size_t i = 0; i < ilayouts->size(); ++i) {
+    const Layout& input = last_ilayouts->at(i).defined() ?
+                          last_ilayouts->at(i) : ilayouts->at(i);
+    NNVM_ASSIGN_LAYOUT(*ilayouts, i, input);
+  }
+
+  return true;
+}
+
+NNVM_REGISTER_OP(take)
+.describe(R"code(Take elements from an array along an axis.
+
+  When axis is not None, this function does the same thing as 'fancy' indexing
+  (indexing arrays using arrays); however, it can be easier to use if you need
+  elements along a given axis.
+
+  **Note** that when axis is none the flattened input array is used.
+
+  )code" NNVM_ADD_FILELINE)
+.add_argument("data", "Tensor", "Array to be indexed")
+.add_arguments(TakeParam::__FIELDS__())
+.set_attr_parser(ParamParser<TakeParam>)
+.set_attr<FInferShape>("FInferShape", TakeInferShape)
+.set_attr<FInferType>("FInferType", TakeInferType)
+.set_attr<FCorrectLayout>("FCorrectLayout", TakeCorrectLayout)
+.set_num_inputs(2)
+.set_num_outputs(1)
+.set_support_level(1)
+.set_attr<FTVMCompute>(
+    "FTVMCompute", [](const NodeAttrs& attrs,
+                      const Array<Tensor>& inputs,
+                      const Array<Tensor>& out_info) {
+      const TakeParam& param = nnvm::get<TakeParam>(attrs.parsed);
+      if (!param.axis) {
+        return Array<Tensor>{
+            topi::take(inputs[0], inputs[1])};
+      } else {
+        return Array<Tensor>{
+            topi::take(inputs[0], inputs[1], param.axis.value())};
+      }
+  });
 
 }  // namespace top
 }  // namespace nnvm
