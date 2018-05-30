@@ -34,9 +34,10 @@ FEED_KEYS_INFO_FILE_TAG = "feed_keys_info_"
 
 def _glob(glob_pattern):
   #if platform.system() == "Windows":
-    return glob.glob(glob_pattern)
+  #  return glob.glob(glob_pattern)
   #else:
-  #  return gfile.Glob(glob_pattern)
+  #  return glob.glob(glob_pattern)
+  return glob.glob(glob_pattern)
 
 
 class InconvertibleTensorProto(object):
@@ -65,6 +66,16 @@ class InconvertibleTensorProto(object):
     return self._initialized
 
 
+def _load_graph_def_from_event_file(event_file_path):
+  PRINT()
+  """event = event_pb2.Event()
+  with open(event_file_path, "rb") as f:
+    event.ParseFromString(f.read())
+
+  return graph_pb2.GraphDef.FromString(event.graph_def)"""
+  #with open("/home/d00248762/shared-windows7/work_nnvm/daya_nnvm_dbg_work/tvmdbg/tvm/event_grapgdef.txt", "rb") as f:
+  #  return str(f.read())
+  return ""
 
 def _is_graph_file(file_name):
   PRINT()
@@ -266,8 +277,8 @@ class DebugTensorDatum(object):
     self._node_name = "/".join(path_components[1:-1] + [node_base_name])
 
     self._file_path = os.path.join(dump_root, debug_dump_rel_path)
-    self._dump_size_bytes = (gfile.Stat(self._file_path).length if
-                             gfile.Exists(self._file_path) else None)
+    self._dump_size_bytes = (os.stat(self._file_path).st_size if
+                             os.path.exists(self._file_path) else None)
 
   def __str__(self):
     PRINT()
@@ -510,7 +521,7 @@ class DebugDumpDir(object):
     self._debug_watches[device_name] = collections.defaultdict(
         lambda: collections.defaultdict(set))
 
-    for root, _, files in gfile.Walk(device_root):
+    for root, _, files in os.walk(device_root):
       for f in files:
         if _is_graph_file(f):
           self._dump_graph_file_paths[device_name] = os.path.join(root, f)
