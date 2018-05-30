@@ -15,6 +15,8 @@
 #include "topi/detail/ravel_unravel.h"
 #include "topi/detail/constant_utils.h"
 #include "tvm/tvm.h"
+#include "topi/nn/flatten.h"
+
 
 namespace topi {
 using namespace tvm;
@@ -322,6 +324,7 @@ inline Array<Tensor> split(const Tensor& x,
   return result;
 }
 
+
 /*!
 * \brief Split a tensor into a number of sub-tensors
 *
@@ -436,6 +439,100 @@ inline Tensor take(const Tensor& a,
             real_indices.push_back(out_index[j]);
           }
           return a(real_indices);
+        }, name, tag);
+}
+
+/*!
+* \brief strided_slice of a tensor
+*
+* \param x The input tensor
+* \param begin The indices to begin with in the slicing
+* \param end Indicies indicating end of the slice
+* \param stride Specifies the stride values, it can be negative
+* in that case, the input tensor will be reversed in that particular axis
+* \param name The name of the operation
+* \param tag The tag to mark the operation
+*
+* \return A Tensor whose op member is the split operation
+*/
+inline Tensor strided_slice(const Tensor& x,
+                           Array<Expr> begin,
+                           Array<Expr> end,
+                           Array<Expr> stride,
+                           std::string name = "tensor",
+                           std::string tag = kInjective) {
+  auto src_tensor_dim = static_cast<size_t>(x->shape.size());
+
+  auto begin_val = GetConstIntValues(begin, "begin");
+  auto end_val = GetConstIntValues(end, "end");
+  auto stride_val = GetConstIntValues(stride, "stride");
+
+
+  std::vector<int> begin_ids;
+  std::copy(begin_val.begin(), begin_val.end(), std::back_inserter(begin_ids));
+
+  std::vector<int> end_ids;
+  std::copy(end_val.begin(), end_val.end(), std::back_inserter(end_ids));
+
+  std::vector<int> stride_ids;
+  std::copy(stride_val.begin(), stride_val.end(), std::back_inserter(stride_ids));
+
+
+  Array<Expr> out_shape;
+  std::vector<int> rev_input_shape;
+  int begin_i;
+  int end_i;
+
+  for (size_t i = 0; i < src_tensor_dim; ++i) {
+    if (stride_ids[i] < 0) {
+        int begin_range = -1;
+        int end_range = GetConstInt(x->shape[i]) - 1;
+        auto transformNegToPos = [x, i, begin_range, end_range](int a) {
+            int64_t x_fwd = a < 0 ? GetConstInt(x->shape[i]) + a : a;  // make negative indices positive
+            return x_fwd < begin_range ? begin_range : x_fwd > end_range ? end_range : x_fwd;
+        };
+
+        begin_i = begin_ids[i];
+        end_i = end_ids[i];
+        begin_i = transformNegToPos(begin_i);
+        end_i = transformNegToPos(end_i);
+        begin_i = GetConstInt(x->shape[i]) - begin_i - 1;
+        end_i = GetConstInt(x->shape[i]) - end_i - 1;
+
+        begin_ids[i] = begin_i;
+        end_ids[i] = std::max(end_i, begin_i);
+        stride_ids[i] = -stride_ids[i];
+        rev_input_shape.push_back(-1);
+    } else {
+        rev_input_shape.push_back(GetConstInt(x->shape[i]));
+    }
+
+    auto slice = (tvm::max(end_ids[i], x->shape[i]) - begin_ids[i]) / stride_ids[i];
+    slice = tvm::select((slice >= 1), slice, 0);
+    out_shape.push_back(slice);
+  }
+
+  // Reverse the Input Tensor in the axis where negative stride was specified
+  const Tensor input = compute(
+        x->shape, [&](const Array<Var>& indices) {
+          Array<Expr> real_indices;
+          for (size_t i = 0; i < src_tensor_dim; ++i) {
+            if (rev_input_shape[i] < 0) {
+              real_indices.push_back(x->shape[i] - indices[i] - 1);
+            } else {
+              real_indices.push_back(indices[i]);
+            }
+          }
+          return x(real_indices);
+        }, name, tag);
+
+  return compute(
+        out_shape, [&](const Array<Var>& indices) {
+          Array<Expr> real_indices;
+          for (size_t i = 0; i < src_tensor_dim; ++i) {
+            real_indices.push_back(indices[i] + begin_ids[i]);
+          }
+          return input(real_indices);
         }, name, tag);
 }
 

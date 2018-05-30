@@ -227,6 +227,30 @@ def verify_take(src_shape, indices_src, axis=None):
     for device in ["llvm", "opencl"]:
         check_device(device)
 
+def verify_strided_slice(in_shape, begin, end, stride):
+    A = tvm.placeholder(shape=in_shape, name="A")
+    B = topi.cpp.strided_slice(A, begin, end, stride)
+    def check_device(device):
+        ctx = tvm.context(device, 0)
+        if not ctx.exist:
+            print("Skip because %s is not enabled" % device)
+            return
+        print("Running on target: %s" % device)
+        with tvm.target.create(device):
+            s = topi.generic.schedule_injective(B)
+
+        foo = tvm.build(s, [A, B], device, name="stride_slice")
+        x_np = np.random.uniform(size=in_shape).astype(A.dtype)
+        out_npy = x_np[begin[0]:end[0]:stride[0],
+                    begin[1]:end[1]:stride[1], begin[2]:end[2]:stride[2]]
+        data_nd = tvm.nd.array(x_np, ctx)
+        out_nd = tvm.nd.empty(out_npy.shape, ctx=ctx, dtype=A.dtype)
+        foo(data_nd, out_nd)
+        np.testing.assert_allclose(out_nd.asnumpy(), out_npy)
+
+    for device in ["llvm"]:
+        check_device(device)
+
 
 def test_expand_dims():
     verify_expand_dims((3, 10), (3, 10, 1, 1), 2, 2)
@@ -269,6 +293,9 @@ def test_split():
     verify_split((2, 12, 3), [2, 4], 1)
     verify_split((10, 12, 24), [5, 7, 9], -1)
 
+def test_stridedslice():
+    verify_strided_slice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1])
+    verify_strided_slice((3, 4, 3), [1, -1, 0], [4, -5, 3], [2, -1, 1])
 
 def test_expand_like():
     verify_expand_like((3,), (2, 3), [0])
@@ -295,3 +322,4 @@ if __name__ == "__main__":
     test_split()
     test_expand_like()
     test_take()
+    test_stridedslice()
