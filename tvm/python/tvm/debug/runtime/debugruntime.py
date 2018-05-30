@@ -1,25 +1,14 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+"""Debug runtime functions."""
 
-import abc
-import re
-import threading
-import logging
-
-from ..wrappers import local_cli_wrapper as tvmdbg
 from tvm import ndarray as nd
+from ..wrappers import local_cli_wrapper as tvmdbg
 
 def create(obj, graph):
-    """Check if an object is of the expected type.
+    """Create a debug runtime environment and start the CLI
 
     Args:
-      obj: The object being checked.
-      expected_types: (`type` or an iterable of `type`s) The expected `type`(s)
-        of obj.
-
-    Raises:
-        TypeError: If obj is not an instance of expected_type.
+      obj: The object being used to store the graph runtime.
+      graph: nnvm graph in json format
     """
     #PRINT()
     obj.graph_json_str = graph
@@ -38,4 +27,3 @@ def create(obj, graph):
         shape_list = [int(x) for x in shape_str.split(',')]
         obj.ndarraylist.append(nd.empty(shape_list, dtype))
     return tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
-
