@@ -78,7 +78,7 @@ class GraphRuntime : public ModuleNode {
       //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
       TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
       PrintDlTensor(debug_buffers_[i]);
-      CheckNanOrInf(debug_buffers_[i], (CHECK_NONE));
+      //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
     }
   }
   /*!
