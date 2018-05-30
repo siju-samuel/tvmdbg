@@ -1,6 +1,7 @@
 """TVM: Debug."""
 
 from . import cli
+from . import runtime
 from . import util
 from . import wrappers
 

@@ -399,21 +399,18 @@ class BaseDebugWrapperSession():
       # Invoke the run() method of the wrapped Session. Catch any TVM
       # runtime errors.
       tvm_error = None
-      """try:
+      try:
         if callable_runner:
           retvals = callable_runner(*callable_runner_args,
                                     options=decorated_run_options,
                                     run_metadata=run_metadata)
         else:
-          retvals = self._sess.run(fetches,
-                                   feed_dict=feed_dict,
-                                   options=decorated_run_options,
-                                   run_metadata=run_metadata)
+          retvals = self._sess.debugRun()
       except errors.OpError as op_error:
         if self._pass_through_operrors:
           raise op_error
         tf_error = op_error
-        retvals = op_error"""
+        retvals = op_error
       PRINT("ERROR :: self._sess.run need to implement")
 
       PRINT("ERROR :: self._sess.graph.as_graph_def() need to implement")

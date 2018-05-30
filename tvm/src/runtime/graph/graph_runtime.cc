@@ -60,6 +60,7 @@ class GraphRuntime : public ModuleNode {
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
     }
+    printf("\nRun Completed");
   }
 
   void DebugRun() {
@@ -78,8 +79,9 @@ class GraphRuntime : public ModuleNode {
       //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
       TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
       PrintDlTensor(debug_buffers_[i]);
-      CheckNanOrInf(debug_buffers_[i], (CHECK_NONE));
+      //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
     }
+    printf("\nDebugRun Completed");
   }
   /*!
    * \brief Initialize the graph executor with graph and context.

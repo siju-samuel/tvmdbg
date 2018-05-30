@@ -4,7 +4,7 @@ from .._ffi.base import string_types
 from .._ffi.function import get_global_func
 from .rpc import base as rpc_base
 from .. import ndarray as nd
-
+from ..debug.runtime import debugruntime
 
 def create(graph_json_str, libmod, ctx, debug=False):
     """Create a runtime executor module given a graph and module.
@@ -91,21 +91,7 @@ class GraphModule(object):
         self.ctx = ctx
         self.debug = debug
         if self.debug:
-            self.graph_json_str = graph_json_str #For CLI Debug
-            graph_json = graph_json_str
-            alpha = 'list_shape'
-            startpos = graph_json.find(alpha) + len(alpha) + 4
-            endpos = graph_json.find(']]', startpos)
-            shapes_str = graph_json[startpos:(endpos + 1)]
-            shape_startpos = shape_endpos = 0
-            self.ndarraylist = []
-            dtype = 'float32' #TODO: dtype parse from json
-            while shape_endpos < endpos - startpos:
-                shape_startpos = shapes_str.find('[', shape_startpos) + 1
-                shape_endpos = shapes_str.find(']', shape_startpos)
-                shape_str = shapes_str[shape_startpos:shape_endpos]
-                shape_list = [int(x) for x in shape_str.split(',')]
-                self.ndarraylist.append(nd.empty(shape_list, dtype))
+            self.dbgctx = debugruntime.create(self, graph_json_str)
 
     def set_input(self, key=None, value=None, **params):
         """Set inputs to the module via kwargs
@@ -149,6 +135,14 @@ class GraphModule(object):
         for i in range (min(10, size)):
             print(np_array[i], end=', ')
 
+    def debugRun(self):
+        self.set_debug_buffer()
+        self._run()
+
+        #ndbuffer have the data, format and cli can use it
+        for ndbuffer in self.ndarraylist:
+            self.print_array(ndbuffer)
+
     def run(self, **input_dict):
         """Run forward execution of the graph
 
@@ -160,12 +154,10 @@ class GraphModule(object):
         if input_dict:
             self.set_input(**input_dict)
 
-        if self.debug:
-            self.set_debug_buffer()
-        self._run()
-        if self.debug:
-            for ndbuffer in self.ndarraylist:
-                self.print_array(ndbuffer)
+        if not self.debug:
+            self._run()
+        else:
+            self.dbgctx.run("")
 
     def get_input(self, index, out):
         """Get index-th input to out
