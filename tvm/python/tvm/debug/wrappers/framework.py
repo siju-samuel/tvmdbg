@@ -5,18 +5,18 @@ from __future__ import print_function
 import abc
 import re
 import threading
+import logging
 
 #from core.protobuf import config_pb2
 #from python.client import session
 #from python.framework import errors
 #from python.framework import ops
-#from python.platform import tf_logging
 #from python.training import monitored_session
 #from python.util import nest
 
-#from python.debug.lib import debug_utils
+from ..util import debug_utils
 #from python.debug.lib import stepper
-from ..lib import common
+from ..util import common
 from ..examples import debug_v
 def PRINT(txt=""):
     debug_v.PRINT(txt)
@@ -196,7 +196,7 @@ class OnRunEndRequest(object):
                performed_action,
                run_metadata=None,
                client_graph_def=None,
-               tf_error=None):
+               tvm_error=None):
     """Constructor for `OnRunEndRequest`.
 
     Args:
@@ -219,7 +219,7 @@ class OnRunEndRequest(object):
       PRINT("ERROR :: _check_type(run_metadata, config_pb2.RunMetadata) need to implement")
     self.run_metadata = run_metadata
     self.client_graph_def = client_graph_def
-    self.tf_error = tf_error
+    self.tvm_error = tvm_error
 
 
 class OnRunEndResponse(object):
@@ -363,26 +363,12 @@ class BaseDebugWrapperSession():
             "callable_runner and fetches/feed_dict are mutually exclusive, but "
             "are used simultaneously.")
 
-    #empty_fetches = not nest.flatten(fetches)
-    empty_fetches = False
-    PRINT("ERROR :: nest.flatten(fetches) need to implement")
-    if empty_fetches:
-      #tf_logging.info(
-      #    "Due to empty fetches, tfdbg Session wrapper is letting a "
-      #    "Session.run pass through without any debugging actions.")
-      PRINT("Info implement:: " +
-            "Due to empty fetches, tfdbg Session wrapper is letting a " +
-            "Session.run pass through without any debugging actions.")
-    if self._is_disabled_thread() or empty_fetches:
+    if self._is_disabled_thread():
       if callable_runner:
         return callable_runner(*callable_runner_args)
       else:
-        PRINT("ERROR :: self._sess.run() need to implement")
-        #return self._sess.run(fetches,
-        #                      feed_dict=feed_dict,
-        #                      options=options,
-        #                      run_metadata=run_metadata)
-        return False
+        self._sess.run(feed_dict)
+        return True
 
     # Invoke on-run-start callback and obtain response.
     run_start_resp = self.on_run_start(
@@ -392,13 +378,14 @@ class BaseDebugWrapperSession():
     _check_type(run_start_resp, OnRunStartResponse)
 
     if run_start_resp.action == OnRunStartAction.DEBUG_RUN:
+      retvals = True
       # Decorate RunOption to fill in debugger tensor watch specifications.
       PRINT("ERROR :: config_pb2.RunOptions() need to implement")
-      decorated_run_options = options# or config_pb2.RunOptions()
+      decorated_run_options = options # or config_pb2.RunOptions()
       PRINT("ERROR :: config_pb2.RunMetadata() need to implement")
       run_metadata = run_metadata# or config_pb2.RunMetadata()
 
-      self._decorate_run_options_for_debug(
+      """self._decorate_run_options_for_debug(
           decorated_run_options,
           run_start_resp.debug_urls,
           debug_ops=run_start_resp.debug_ops,
@@ -407,11 +394,11 @@ class BaseDebugWrapperSession():
           tensor_dtype_regex_whitelist=(
               run_start_resp.tensor_dtype_regex_whitelist),
           tolerate_debug_op_creation_failures=(
-              run_start_resp.tolerate_debug_op_creation_failures))
+              run_start_resp.tolerate_debug_op_creation_failures))"""
 
       # Invoke the run() method of the wrapped Session. Catch any TVM
       # runtime errors.
-      tf_error = None
+      tvm_error = None
       """try:
         if callable_runner:
           retvals = callable_runner(*callable_runner_args,
@@ -435,7 +422,7 @@ class BaseDebugWrapperSession():
           run_metadata=run_metadata,
           #client_graph_def=self._sess.graph.as_graph_def(),
           client_graph_def="",
-          tf_error=tf_error)
+          tvm_error=tvm_error)
 
     elif run_start_resp.action == OnRunStartAction.PROFILE_RUN:
       PRINT("ERROR :: config_pb2.RunOptions() need to implement")
@@ -586,8 +573,9 @@ class BaseDebugWrapperSession():
     """
     PRINT()
 
-    run_options.output_partition_graphs = True
     PRINT("ERROR :: self._sess.graph() need to implement")
+    print("debug_urls:", debug_urls)
+    run_options.output_partition_graphs = True
     #debug_utils.watch_graph(
     #    run_options,
     #    self._sess.graph,

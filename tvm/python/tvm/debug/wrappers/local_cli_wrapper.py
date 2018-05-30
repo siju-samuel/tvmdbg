@@ -16,8 +16,8 @@ from ..cli import debugger_cli_common
 from ..cli import profile_analyzer_cli
 #from ..cli import stepper_cli
 from ..cli import ui_factory
-from ..lib import common
-from ..lib import debug_data
+from ..util import common
+from ..util import debug_data
 from . import framework
 
 from ..examples import debug_v
