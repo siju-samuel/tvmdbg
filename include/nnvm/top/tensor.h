@@ -75,15 +75,6 @@ struct StridedSliceParam : public dmlc::Parameter<StridedSliceParam> {
   }
 };
 
-struct TakeParam : public dmlc::Parameter<TakeParam> {
-  int axis;
-
-  DMLC_DECLARE_PARAMETER(TakeParam) {
-    DMLC_DECLARE_FIELD(axis).set_lower_bound(0).set_default(0)
-        .describe("the axis over which to select values.");
-  }
-};
-
 enum TypeFlag {
   kFloat32 = 0,
   kFloat64 = 1,
