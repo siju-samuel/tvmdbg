@@ -4,7 +4,7 @@ import inspect
 
 def PRINT(txt="", stack_trace=2):
   if False:
-    f=open("/home/d00248762/shared-windows7/tvm_dgb_log.txt", "a+")
+    f=open("/var/log/tvm_dgb_log.txt", "a+")
     """if "" == txt:
         f.write("\n"+ str(os.path.basename(inspect.stack()[2][1])) + " : " + str(inspect.stack()[2][3]) +" : " + str(inspect.stack()[2][2]) + "\n")
     else:

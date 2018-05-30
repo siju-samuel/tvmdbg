@@ -52,7 +52,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
       ValueError: If dump_root is an existing and non-empty directory or if
         dump_root is a file.
     """
-    open("/home/d00248762/shared-windows7/tvm_dgb_log.txt", 'w').close()
+    open("/var/log/tvm_dgb_log.txt", 'w').close()
     PRINT()
 
     if log_usage:
