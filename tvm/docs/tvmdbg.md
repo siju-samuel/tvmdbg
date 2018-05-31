@@ -92,228 +92,66 @@ Two types of assertions can be made based on tvmdbg&#39;s Analyzer:
 
 **Directory Structure:**
 
-**NNVM**
-
-├── amalgamation
-
-├── cmake
-
-├── dmlc-core
-
-├── docs
-
-├── examples
-
-│   ├── benchmark
-
-│   ├── sgx
-
-│   └── tools
-
-├── include
-
-├── lib
-
-├── make
-
-├── python
-
-│   ├── conda
-
-│   ├── dist
-
-│   └── nnvm
-
-│      ├── compiler
-
-│      ├── \_ctypes
-
-│      ├── \_cy2
-
-│      ├── \_cy3
-
-│      ├── cython
-
-│      ├── frontend
-
-│      ├── testing
-
-│      ├── top
-
-│      └── tools
-
-├── src
-
-│   ├── c\_api
-
-│   ├── compiler
-
-│   ├── core
-
-│   ├── pass
-
-│   ├── tools
-
-│   │   └── debug
-
-│   └── top
-
-│       ├── nn
-
-│       ├── tensor
-
-│       └── vision
-
-│           └── yolo2
-
-├── tests
-
-│   ├── ci\_build
-
-│   │   └── install
-
-│   ├── cpp
-
-│   ├── lint
-
-│   ├── python
-
-│   │   ├── compiler
-
-│   │   ├── frontend
-
-│   │   ├── unittest
-
-│   │   └── tools
-
-│   ├── scripts
-
-│   └── travis
-
-├── tutorials
-
-    └── web
-
-
 
 **TVM**
 
 ├── apps
-
 │   ├── android\_rpc
-
 │   │   ├── app
-
 │   │   │   └── src
-
 │   │   │       └── main
-
 │   │   │           └── java
-
 │   │   │               └── ml
-
 │   │   │                   └── dmlc
-
 │   │   │                       └── tvm
-
 │   │   │                           └── tvmrpc
-
 │   │   │                               └── tools
-
 │   │   ├── dev\_tools
-
 │   │   └── tests
-
 │   ├── extension
-
 │   ├── howto\_deploy
-
 │   ├── ios\_rpc
-
 │   └── sgx
-
 ├── docs
-
 ├── include
-
 ├── jvm
-
 ├── make
-
 ├── python
-
 │   ├── conda
-
 │   └── tvm
-
 │       ├── contrib
-
 │       ├── exec
-
 │       ├── \_ffi
-
 │       └── tools
-
 │           ├── debug
-
 │           └── profiler
-
 ├── sgx
-
 ├── src
-
 │   ├── api
-
 │   ├── arithmetic
-
 │   ├── codegen
-
 │   ├── common
-
 │   ├── contrib
-
 │   ├── lang
-
 │   ├── op
-
 │   ├── pass
-
 │   ├── runtime
-
 │   ├── tools
-
 │   │   ├── debug
-
 │   │   └── profiler
-
 │   └── schedule
-
 ├── tests
-
 │   ├── ci\_build
-
 │   ├── cpp
-
 │   ├── lint
-
 │   ├── python
-
 │   ├── scripts
-
 │   ├── travis
-
 │   ├── verilog
-
 │   ├── web
-
 │   └── webgl
-
 └── topi
-
     ├── include
-
     └── python
-
         ├── tutorials
-
         └── verilog
