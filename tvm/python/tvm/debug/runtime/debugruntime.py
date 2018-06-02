@@ -1,7 +1,37 @@
 """Debug runtime functions."""
-
+import json
 from tvm import ndarray as nd
 from ..wrappers import local_cli_wrapper as tvmdbg
+
+def _dump_json(nodes_list, dltype_list, shapes_list):
+    """Create a debug runtime environment and start the CLI
+
+    Args:
+      nodes_list: List of the nodes in the graph and their details
+      dltype_list: List of datatypes of each node
+      shapes_list: List of shape of each node
+    """
+    new_graph = {}
+    new_graph['nodes'] = []
+    for  i in range (len(nodes_list)):
+        node = nodes_list[i]
+        input_list = []
+        for input in (node['inputs']):
+            input_list.append(nodes_list[input[0]]['name'])
+        node['inputs'] = input_list
+        if not len(node['inputs']):
+            del node['inputs']
+        dltype = str("type: " +  dltype_list[1][i])
+        if 'attrs' not in node:
+            node['attrs'] = {}
+        node['attrs'].update({"T":dltype})
+        node['shape'] = shapes_list[1][i]
+        new_graph['nodes'].append(node)
+    #save to file
+    graph_dump_file_path = 'graph_dump.json'
+
+    with open(graph_dump_file_path, 'w') as outfile:
+        json.dump(new_graph, outfile, indent=2, sort_keys=False)
 
 def create(obj, graph):
     """Create a debug runtime environment and start the CLI
@@ -10,20 +40,17 @@ def create(obj, graph):
       obj: The object being used to store the graph runtime.
       graph: nnvm graph in json format
     """
-    #PRINT()
-    obj.graph_json_str = graph
-    graph_json = graph
-    alpha = 'list_shape'
-    startpos = graph_json.find(alpha) + len(alpha) + 4
-    endpos = graph_json.find(']]', startpos)
-    shapes_str = graph_json[startpos:(endpos + 1)]
-    shape_startpos = shape_endpos = 0
+
+    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
+    json_obj=json.loads(graph)
+    nodes_list =json_obj['nodes']
+    dltype_list = json_obj['attrs']['dltype']
+    shapes_list = json_obj['attrs']['shape']
+    #dump the json information
+    _dump_json(nodes_list, dltype_list, shapes_list)
+    #prepare the out shape
     obj.ndarraylist = []
-    dtype = 'float32' #TODO: dtype parse from json
-    while shape_endpos < endpos - startpos:
-        shape_startpos = shapes_str.find('[', shape_startpos) + 1
-        shape_endpos = shapes_str.find(']', shape_startpos)
-        shape_str = shapes_str[shape_startpos:shape_endpos]
-        shape_list = [int(x) for x in shape_str.split(',')]
-        obj.ndarraylist.append(nd.empty(shape_list, dtype))
-    return tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
+    for i in range (len(shapes_list[1])):
+        shape = shapes_list[1][i]
+        obj.ndarraylist.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
+    return cli_obj
