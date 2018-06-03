@@ -91,7 +91,8 @@ class GraphModule(object):
         self.ctx = ctx
         self.debug = debug
         if self.debug:
-            self.dbgctx = debugruntime.create(self, graph_json_str)
+            print(graph_json_str)
+            self.dbgobj = debugruntime.create(self, graph_json_str)
 
     def set_input(self, key=None, value=None, **params):
         """Set inputs to the module via kwargs
@@ -111,6 +112,8 @@ class GraphModule(object):
             self._set_input(key, nd.array(value, ctx=self.ctx))
         for k, v in params.items():
             self._set_input(k, nd.array(v, ctx=self.ctx))
+        if self.debug:
+            debugruntime.set_input(self.dbgobj, key, value, **params)
         return self
 
     def set_debug_buffer(self):
@@ -157,7 +160,7 @@ class GraphModule(object):
         if not self.debug:
             self._run()
         else:
-            self.dbgctx.run("")
+            self.dbgobj.run("")
 
     def get_input(self, index, out):
         """Get index-th input to out

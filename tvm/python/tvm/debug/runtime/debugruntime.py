@@ -1,15 +1,20 @@
 """Debug runtime functions."""
 import json
+import numpy as np
 from tvm import ndarray as nd
 from ..wrappers import local_cli_wrapper as tvmdbg
 
 def _dump_json(nodes_list, dltype_list, shapes_list):
     """Create a debug runtime environment and start the CLI
 
-    Args:
-      nodes_list: List of the nodes in the graph and their details
-      dltype_list: List of datatypes of each node
-      shapes_list: List of shape of each node
+    Parameters
+    ----------
+    nodes_list: List
+        List of the nodes in the graph and their details
+    dltype_list: List
+        List of datatypes of each node
+    shapes_list: List
+        List of shape of each node
     """
     new_graph = {}
     new_graph['nodes'] = []
@@ -33,12 +38,41 @@ def _dump_json(nodes_list, dltype_list, shapes_list):
     with open(graph_dump_file_path, 'w') as outfile:
         json.dump(new_graph, outfile, indent=2, sort_keys=False)
 
+def _dump_input(file_name, key, value):
+    np.save(str(key + file_name), value.asnumpy())
+
+def set_input(cli_obj, key=None, value=None, **params):
+    """Set inputs to the module via kwargs
+
+    Parameters
+    ----------
+    cli_obj: obj
+        The CLI object
+
+    key : int or str
+       The input key
+
+    value : the input value.
+       The input key
+
+    params : dict of str to NDArray
+       Additonal arguments
+    """
+    if key:
+        _dump_input('_value_dump', key, value)
+
+    for k, v in params.items():
+        _dump_input('_value.json', k, v)
+
 def create(obj, graph):
     """Create a debug runtime environment and start the CLI
 
-    Args:
-      obj: The object being used to store the graph runtime.
-      graph: nnvm graph in json format
+    Parameters
+    ----------
+    obj: Object
+        The object being used to store the graph runtime.
+    graph: str
+        nnvm graph in json format
     """
 
     cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
