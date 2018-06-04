@@ -68,13 +68,19 @@ def _dimension_constraint():
         return False
     return _dim_check, "Only 2d kernel supported."
 
-def _infer_channels(inputs, params, transpose=False):
+def _infer_channels(inputs, params, transpose=False, attr_out_shapes=None):
     """A hack for getting 'channles' or 'units' since tensorflow don't provide
     these attributes. We check the shape of weights provided to get the number.
     """
     g = _graph.create(inputs)
     shape_dict = {k: v.shape for k, v in params.items()}
     _, out_shapes = graph_util.infer_shape(g, **shape_dict)
+    if not out_shapes[0] and attr_out_shapes:
+        out_shapes = [k.size for k in attr_out_shapes[0].dim]
+        channels = out_shapes[0] if not transpose else out_shapes[1]
+        return channels
+    else:
+        raise TypeError("Unable to find channel from parameter or graph")
     channels = out_shapes[0][0] if not transpose else out_shapes[0][1]
     return channels
 
@@ -264,7 +270,7 @@ def _check_numerics():
 
 def _matmul():
     def _impl(inputs, attr, params):
-        channels = _infer_channels(inputs[1], params, not attr['transpose_b'])
+        channels = _infer_channels(inputs[1], params, not attr['transpose_b'], attr['_output_shapes'])
         if attr['transpose_a']:
             inputs[0] = _sym.transpose(inputs[0], axis(1, 0))
         if not attr['transpose_b']:

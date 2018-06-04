@@ -137,7 +137,6 @@ class GraphModule(object):
         size = np_array.size
         for i in range (min(10, size)):
             print(np_array[i], end=', ')
-
     def debugRun(self):
         self.set_debug_buffer()
         self._run()
@@ -145,6 +144,7 @@ class GraphModule(object):
         #ndbuffer have the data, format and cli can use it
         for ndbuffer in self.ndarraylist:
             self.print_array(ndbuffer)
+        debugruntime.dump_output(self.dbgobj, self.ndarraylist)
 
     def run(self, **input_dict):
         """Run forward execution of the graph

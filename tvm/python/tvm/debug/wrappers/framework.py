@@ -266,6 +266,7 @@ class BaseDebugWrapperSession():
     PRINT()
     PRINT("ERROR :: session.SessionInterface need to implement")
     #PRINT(graph.json())
+    self._feed_dict = {}
     self._graph = graph
 
     #_check_type(sess, (session.BaseSession, monitored_session.MonitoredSession))
@@ -323,9 +324,12 @@ class BaseDebugWrapperSession():
   def session(self):
     return self._sess
 
+
+  def set_input(self, name, value):
+    self._feed_dict.update({name:value})
+
   def run(self,
           fetches,
-          feed_dict=None,
           options=None,
           run_metadata=None,
           callable_runner=None,
@@ -334,7 +338,6 @@ class BaseDebugWrapperSession():
 
     Args:
       fetches: Same as the `fetches` arg to regular `Session.run()`.
-      feed_dict: Same as the `feed_dict` arg to regular `Session.run()`.
       options: Same as the `options` arg to regular `Session.run()`.
       run_metadata: Same as the `run_metadata` arg to regular `Session.run()`.
       callable_runner: A `callable` returned by `Session.make_callable()`.
@@ -350,15 +353,11 @@ class BaseDebugWrapperSession():
     """
     PRINT()
     fetches = self._sess.get_output_names()
-    if not feed_dict:
-      feed_dict_names = common.get_flattened_names(self._sess.get_input_names())
-      for name in feed_dict_names:
-        feed_dict = {}
 
     if not callable_runner:
       self.increment_run_call_count()
     else:
-      if fetches or feed_dict:
+      if fetches or self._feed_dict:
         raise ValueError(
             "callable_runner and fetches/feed_dict are mutually exclusive, but "
             "are used simultaneously.")
@@ -367,12 +366,12 @@ class BaseDebugWrapperSession():
       if callable_runner:
         return callable_runner(*callable_runner_args)
       else:
-        self._sess.run(feed_dict)
+        self._sess.run(self._feed_dict)
         return True
 
     # Invoke on-run-start callback and obtain response.
     run_start_resp = self.on_run_start(
-        OnRunStartRequest(self._sess.get_output_names(), feed_dict, options, run_metadata,
+        OnRunStartRequest(self._sess.get_output_names(), self._feed_dict, options, run_metadata,
                           self._run_call_count,
                           is_callable_runner=bool(callable_runner)))
     _check_type(run_start_resp, OnRunStartResponse)
