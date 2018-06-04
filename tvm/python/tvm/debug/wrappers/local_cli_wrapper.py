@@ -310,7 +310,6 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
 
       debug_dump = debug_data.DebugDumpDir(
           self._dump_root, partition_graphs=None)
-      #debug_dump.set_python_graph(self._sess.graph)
 
       passed_filter = None
       if self._active_tensor_filter:

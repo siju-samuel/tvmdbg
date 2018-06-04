@@ -19,7 +19,7 @@ from . import debug_graphs
 
 from ..examples import debug_v
 def PRINT(txt=""):
-    debug_v.PRINT(txt)
+    debug_v.PRINT(str(txt))
 from ..examples import debuggraph
 
 # TODO(cais): Tie these string constants in with C++?
@@ -73,13 +73,13 @@ def load_tensor_from_event_file(event_file_path):
   """event = event_pb2.Event()
   with gfile.Open(event_file_path, "rb") as f:
     event.ParseFromString(f.read())
-    return load_tensor_from_event(event)"""
+    return load_tensor_from_event(event)
   path_components = os.path.normpath(event_file_path).split(os.sep)
   tensor = ""
   with open("/media/siju/DataDisk/work/tvmdbg/nnvm/tvm/tensor.txt", "rb") as f:
     tensor = pickle.load(f)
   PRINT(str(type(tensor)))
-  PRINT(str((tensor)))
+  PRINT(str((tensor)))"""
   """ip_shape = (4,4)
   shape_size = 1
   for posi in range (len((4,4))):
@@ -87,23 +87,14 @@ def load_tensor_from_event_file(event_file_path):
   a_src = np.arange(shape_size, dtype="int32").reshape(ip_shape)
   import tvm
   return tvm.nd.array(a_src.astype(a_src.dtype))"""
-  return tensor
+  print(event_file_path)
+  content = np.load(event_file_path)
+
+  return content
 
 def _load_graph_def_from_event_file(event_file_path):
   PRINT()
-  """event = event_pb2.Event()
-  with open(event_file_path, "rb") as f:
-    event.ParseFromString(f.read())
-
-  return graph_pb2.GraphDef.FromString(event.graph_def)"""
-  #graph = ""
-  #with open("/home/d00248762/shared-windows7/work_nnvm/daya_nnvm_dbg_work/tvmdbg/tvm/partition_graph.txt", "rb") as f:
-  #  graph = pickle.load(f)
-  #PRINT(str(type(graph)))
-  #PRINT(str((graph)))
-  #return graph
-  graph_dump_file_path = 'graph_dump.json'
-  with open(graph_dump_file_path) as json_data:
+  with open(event_file_path) as json_data:
       json_nodes = json.load(json_data)
       json_data.close()
   ctx = "tvm.cpu(0)"
