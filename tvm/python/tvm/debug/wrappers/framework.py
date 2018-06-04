@@ -409,7 +409,7 @@ class BaseDebugWrapperSession():
       except errors.OpError as op_error:
         if self._pass_through_operrors:
           raise op_error
-        tf_error = op_error
+        tvm_error = op_error
         retvals = op_error
       PRINT("ERROR :: self._sess.run need to implement")
 
