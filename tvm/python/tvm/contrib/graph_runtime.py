@@ -30,7 +30,6 @@ def create(graph_json_str, libmod, ctx, debug=False):
     graph_module : GraphModule
         Runtime graph module that can be used to execute the graph.
     """
-    print("graph_runtime.py create debug_flag =", debug)
     if not isinstance(graph_json_str, string_types):
         try:
             graph_json_str = graph_json_str._tvm_graph_json()
@@ -91,7 +90,6 @@ class GraphModule(object):
         self.ctx = ctx
         self.debug = debug
         if self.debug:
-            print(graph_json_str)
             self.dbgobj = debugruntime.create(self, graph_json_str)
 
     def set_input(self, key=None, value=None, **params):
@@ -129,21 +127,10 @@ class GraphModule(object):
 
         for ndbuffer in self.ndarraylist:
             self._set_debug_buffer(ndbuffer)
-    def print_array(self, ndbuffer):
-        np_array = ndbuffer.asnumpy()
-        print(" ")
-        print(np_array.shape, end=' ')
-        np_array = np_array.flatten()
-        size = np_array.size
-        for i in range (min(10, size)):
-            print(np_array[i], end=', ')
+
     def debugRun(self):
         self.set_debug_buffer()
         self._run()
-
-        #ndbuffer have the data, format and cli can use it
-        for ndbuffer in self.ndarraylist:
-            self.print_array(ndbuffer)
         debugruntime.dump_output(self.dbgobj, self.ndarraylist)
 
     def run(self, **input_dict):

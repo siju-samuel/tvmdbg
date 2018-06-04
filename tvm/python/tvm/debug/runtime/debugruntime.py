@@ -60,7 +60,7 @@ def dump_output(cli_obj, ndarraylist):
         ndbuffer = ndarraylist[i]
         if cli_obj._nodes_list[i]['op'] != 'null':
             #        `node_name`_`output_slot`_`debug_op`_`timestamp`
-            key = cli_obj._nodes_list[i]['name'] + "_0_DebugIdentity_1527758380792778.npy"
+            key = cli_obj._nodes_list[i]['name'] + "_0_DebugIdentity_000000" + str(i) + ".npy"
             file_name = str(cli_obj._dump_root + cli_obj._dump_folder + key)
             np.save(file_name, ndbuffer.asnumpy())
             os.rename(file_name, file_name.rpartition('.')[0])
