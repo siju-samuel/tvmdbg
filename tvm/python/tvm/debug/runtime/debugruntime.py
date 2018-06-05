@@ -40,6 +40,7 @@ def _dump_json(cli_obj, nodes_list, dltype_list, shapes_list):
         dltype = str("type: " +  dltype_list[1][i])
         if 'attrs' not in node:
             node['attrs'] = {}
+            node['op'] = "param"
         else :
             #node['op'] = node['name']
             node['op'] = node['attrs']['func_name']
@@ -61,7 +62,7 @@ def dump_output(cli_obj, ndarraylist):
     for i in range (len(cli_obj._nodes_list)):
         num_outputs = 1;
         node = cli_obj._nodes_list[i]
-        if node['op'] != 'null':
+        if node['op'] != 'param':
             num_outputs = int(node['attrs']['num_outputs'])
         for j in range (num_outputs):
             ndbuffer = ndarraylist[i + j]
