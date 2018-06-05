@@ -43,6 +43,7 @@ def _dump_json(cli_obj, nodes_list, dltype_list, shapes_list):
         else :
             #node['op'] = node['name']
             node['op'] = node['attrs']['func_name']
+        node['name'] = node['name'].replace("/", "_")
         node['attrs'].update({"T":dltype})
         node['shape'] = shapes_list[1][i]
         new_graph['nodes'].append(node)
@@ -56,14 +57,21 @@ def _dump_input(cli_obj, file_name, key, value):
     np.save(str(cli_obj._dump_root + cli_obj._dump_folder + key + file_name), value.asnumpy())
 
 def dump_output(cli_obj, ndarraylist):
-    for i in range (len(ndarraylist)):
-        ndbuffer = ndarraylist[i]
-        if cli_obj._nodes_list[i]['op'] != 'null':
-            #        `node_name`_`output_slot`_`debug_op`_`timestamp`
-            key = cli_obj._nodes_list[i]['name'] + "_0_DebugIdentity_000000" + str(i) + ".npy"
+    timestamp = 1
+    for i in range (len(cli_obj._nodes_list)):
+        num_outputs = 1;
+        node = cli_obj._nodes_list[i]
+        if node['op'] != 'null':
+            num_outputs = int(node['attrs']['num_outputs'])
+        for j in range (num_outputs):
+            ndbuffer = ndarraylist[i + j]
+            #`node_name`_`output_slot`_`debug_op`_`timestamp(dummy)`
+            key = node['name'] + "_" + str(j) + "_DebugIdentity_000000" + str(timestamp) + ".npy"
+            key = key.replace("/", "_")
             file_name = str(cli_obj._dump_root + cli_obj._dump_folder + key)
             np.save(file_name, ndbuffer.asnumpy())
             os.rename(file_name, file_name.rpartition('.')[0])
+            timestamp = timestamp + 1
 
 def set_input(cli_obj, key=None, value=None, **params):
     """Set inputs to the module via kwargs
@@ -84,11 +92,12 @@ def set_input(cli_obj, key=None, value=None, **params):
     """
     if key:
         #_dump_input(cli_obj, '_value_dump', key, value)
-        cli_obj.set_input(key, value);
+        cli_obj.set_input(key.replace("/", "_"), value);
 
-    for k, v in params.items():
+    '''for k, v in params.items():
         #_dump_input(cli_obj, '_value.json', k, v)
-        cli_obj.set_input(k, v);
+        k = k.replace("/", "_")
+        cli_obj.set_input(k, v);'''
 
 def create(obj, graph):
     """Create a debug runtime environment and start the CLI
@@ -102,7 +111,6 @@ def create(obj, graph):
     """
 
     cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
-    print("dump directory", cli_obj._dump_root)
     json_obj=json.loads(graph)
     cli_obj._nodes_list =json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']

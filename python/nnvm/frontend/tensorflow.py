@@ -79,7 +79,7 @@ def _infer_channels(inputs, params, transpose=False, attr_out_shapes=None):
         out_shapes = [k.size for k in attr_out_shapes[0].dim]
         channels = out_shapes[0] if not transpose else out_shapes[1]
         return channels
-    else:
+    elif not out_shapes[0]:
         raise TypeError("Unable to find channel from parameter or graph")
     channels = out_shapes[0][0] if not transpose else out_shapes[0][1]
     return channels
@@ -432,7 +432,7 @@ def _LSTMBlockCell(inputs, in_state_c, in_state_h, attr, params):
     ixh = _sym.concatenate(*[in_data, in_state_h], axis=1)
     in_weight = _sym.transpose(in_weight)
     gates = _sym.dense(ixh, in_weight, in_bias, use_bias=True,
-                       units=num_hidden_layers, name="dense")
+                       units=num_hidden_layers)
     gate_list = _sym.split(gates, indices_or_sections=4, axis=1)
     in_gate = _sym.sigmoid(gate_list[0])
     in_transform = _sym.tanh(gate_list[1])

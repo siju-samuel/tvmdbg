@@ -21,10 +21,10 @@ class Node(object):
     device="/job:localhost/replica:0/task:0/device:CPU:0" #TODO, remove job/replica/task
     input= []
     attr={}
-    if 'input' in node:
-        input= node['input']
-    if 'attr' in node:
-        attr= node['attr']
+    if 'inputs' in node:
+        input= node['inputs']
+    if 'attrs' in node:
+        attr= node['attrs']
 
     self._name = name
     self._op = op

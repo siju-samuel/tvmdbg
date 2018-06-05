@@ -218,4 +218,4 @@ class GraphModule(object):
         return self._get_input_names()
 
     def get_output_names(self):
-        return self._get_output_names()
+        return "get_output_namesxxx"#self._get_output_names()

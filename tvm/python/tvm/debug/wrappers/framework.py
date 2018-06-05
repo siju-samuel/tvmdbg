@@ -393,7 +393,7 @@ class BaseDebugWrapperSession():
           tensor_dtype_regex_whitelist=(
               run_start_resp.tensor_dtype_regex_whitelist),
           tolerate_debug_op_creation_failures=(
-              run_start_resp.tolerate_debug_op_creation_failures))"""
+              run_start_resp.tolerate_debug_op_creation_failures))
 
       # Invoke the run() method of the wrapped Session. Catch any TVM
       # runtime errors.
@@ -410,7 +410,9 @@ class BaseDebugWrapperSession():
           raise op_error
         tvm_error = op_error
         retvals = op_error
-      PRINT("ERROR :: self._sess.run need to implement")
+      PRINT("ERROR :: self._sess.run need to implement")"""
+      tvm_error = None
+      retvals = self._sess.debugRun()
 
       PRINT("ERROR :: self._sess.graph.as_graph_def() need to implement")
       run_end_req = OnRunEndRequest(

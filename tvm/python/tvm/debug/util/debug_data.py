@@ -909,6 +909,7 @@ class DebugDumpDir(object):
     PRINT()
     if not pending:
       return True
+    return True
 
     for datum in self._dump_tensor_data[device_name][start_i:]:
       if datum.timestamp > timestamp:

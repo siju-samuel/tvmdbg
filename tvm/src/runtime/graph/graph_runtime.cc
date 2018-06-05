@@ -63,13 +63,17 @@ class GraphRuntime : public ModuleNode {
   }
 
   void DebugRun() {
-    // setup the array and requirements.
-    size_t from_size = 0;
-
+    // Execute each op and copy the outs
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
-
-      TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
+      size_t num_outputs = 1;
+      if (nodes_[i].op_type != "null") {
+        num_outputs = nodes_[i].param.num_outputs;
+      }
+      for (size_t j = 0; j < num_outputs; j++) {
+          uint32_t eid = this->entry_id(i, j);
+          TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
+      }
       //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
     }
   }
@@ -210,11 +214,6 @@ class GraphRuntime : public ModuleNode {
   void GetOutput(int index, DLTensor* data_out) {
     CHECK_LT(static_cast<size_t>(index), outputs_.size());
     uint32_t eid = this->entry_id(outputs_[index]);
-
-    size_t from_size = GetDataSize(&data_entry_[eid]);
-    size_t to_size = GetDataSize(data_out);
-
-
     TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], data_out, nullptr));
   }
   std::string GetInputNames() {
