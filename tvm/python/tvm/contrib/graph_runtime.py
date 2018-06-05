@@ -85,7 +85,6 @@ class GraphModule(object):
         except AttributeError:
             pass
         self._load_params = module["load_params"]
-        self._get_input_names = module["get_input_names"]
         self.ctx = ctx
         self.debug = debug
         if self.debug:
@@ -212,6 +211,3 @@ class GraphModule(object):
             The key to the module.
         """
         return self.module[key]
-
-    def get_input_names(self):
-        return self._get_input_names()
