@@ -10,7 +10,7 @@ def ensure_dir(file_path):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def _dump_json(cli_obj, nodes_list, dltype_list, shapes_list):
+def _dump_json(cli_obj, dltype_list, shapes_list):
     """Create a debug runtime environment and start the CLI
 
     Parameters
@@ -27,6 +27,7 @@ def _dump_json(cli_obj, nodes_list, dltype_list, shapes_list):
     folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_CPU_0/"
     cli_obj._dump_folder = folder_name
     ensure_dir(path+folder_name)
+    nodes_list = cli_obj._nodes_list
     new_graph = {}
     new_graph['nodes'] = []
     for  i in range (len(nodes_list)):
@@ -53,6 +54,14 @@ def _dump_json(cli_obj, nodes_list, dltype_list, shapes_list):
 
     with open((path + folder_name + graph_dump_file_path), 'w') as outfile:
         json.dump(new_graph, outfile, indent=2, sort_keys=False)
+
+def _dump_outputs(cli_obj, heads_list):
+    output_list = []
+    for output in heads_list:
+        output_list.append(cli_obj._nodes_list[output[0]]['name'])
+    cli_obj._fetches = output_list
+    print(output_list)
+
 
 def _dump_input(cli_obj, file_name, key, value):
     np.save(str(cli_obj._dump_root + cli_obj._dump_folder + key + file_name), value.asnumpy())
@@ -116,8 +125,11 @@ def create(obj, graph):
     cli_obj._nodes_list =json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']
     shapes_list = json_obj['attrs']['shape']
+    heads_list = json_obj['heads']
+
     #dump the json information
-    _dump_json(cli_obj, cli_obj._nodes_list, dltype_list, shapes_list)
+    _dump_json(cli_obj, dltype_list, shapes_list)
+    _dump_outputs(cli_obj, heads_list)
     #prepare the out shape
     obj.ndarraylist = []
     for i in range (len(shapes_list[1])):

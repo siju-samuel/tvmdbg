@@ -86,7 +86,6 @@ class GraphModule(object):
             pass
         self._load_params = module["load_params"]
         self._get_input_names = module["get_input_names"]
-        self._get_output_names = module["get_output_names"]
         self.ctx = ctx
         self.debug = debug
         if self.debug:
@@ -216,6 +215,3 @@ class GraphModule(object):
 
     def get_input_names(self):
         return self._get_input_names()
-
-    def get_output_names(self):
-        return "get_output_namesxxx"#self._get_output_names()

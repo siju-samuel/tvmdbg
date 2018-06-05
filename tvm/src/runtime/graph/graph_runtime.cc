@@ -224,14 +224,6 @@ class GraphRuntime : public ModuleNode {
     }
     return names.str();
   }
-  std::string GetOutputNames() {
-    std::ostringstream names;
-    for (size_t index = 0; index<outputs_.size(); ++index) {
-      uint32_t eid = this->entry_id(outputs_[index]);
-      names << nodes_[eid].name <<";";
-    }
-    return names.str();
-  }
 #ifdef TVM_GRAPH_RUNTIME_DEBUG
   /*!
    * \brief Get the node index given the name of node.
@@ -719,10 +711,6 @@ PackedFunc GraphRuntime::GetFunction(
   } else if (name == "get_output") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
         this->GetOutput(args[0], args[1]);
-      });
-  } else if (name == "get_output_names") {
-    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-        *rv = this->GetOutputNames();
       });
   } else if (name == "get_input_names") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {

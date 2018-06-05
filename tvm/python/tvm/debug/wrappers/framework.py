@@ -352,7 +352,7 @@ class BaseDebugWrapperSession():
         is not `None` and either or both of `fetches` and `feed_dict` is `None`.
     """
     PRINT()
-    fetches = self._sess.get_output_names()
+    fetches = self._fetches
 
     if not callable_runner:
       self.increment_run_call_count()
@@ -371,7 +371,7 @@ class BaseDebugWrapperSession():
 
     # Invoke on-run-start callback and obtain response.
     run_start_resp = self.on_run_start(
-        OnRunStartRequest(self._sess.get_output_names(), self._feed_dict, options, run_metadata,
+        OnRunStartRequest(self._fetches, self._feed_dict, options, run_metadata,
                           self._run_call_count,
                           is_callable_runner=bool(callable_runner)))
     _check_type(run_start_resp, OnRunStartResponse)
