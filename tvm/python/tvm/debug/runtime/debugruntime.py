@@ -120,7 +120,7 @@ def create(obj, graph):
         nnvm graph in json format
     """
 
-    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph)
+    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=str(obj.ctx))
     json_obj=json.loads(graph)
     cli_obj._nodes_list =json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']

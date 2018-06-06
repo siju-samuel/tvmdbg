@@ -66,17 +66,15 @@ class GraphRuntime : public ModuleNode {
     // Execute each op and copy the outs
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
-      size_t num_outputs = 1;
-      if (nodes_[i].op_type != "null") {
-        num_outputs = nodes_[i].param.num_outputs;
-      }
+      size_t num_outputs = (nodes_[i].op_type == "null") ? 1: nodes_[i].param.num_outputs;
       for (size_t j = 0; j < num_outputs; j++) {
           uint32_t eid = this->entry_id(i, j);
           TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
+          //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
       }
-      //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
     }
   }
+
   /*!
    * \brief Initialize the graph executor with graph and context.
    * \param graph_json The execution graph.
@@ -498,7 +496,7 @@ class GraphRuntime : public ModuleNode {
   std::vector<std::function<void()> > op_execs_;
   /*! \brief debugging functionality is enabled */
   bool debug_;
-  /*! \brief common storage pool */
+  /*! \brief debug buffer storage pool */
   std::vector<DLTensor*> debug_buffers_;
 };
 

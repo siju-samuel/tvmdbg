@@ -324,7 +324,6 @@ class BaseDebugWrapperSession():
   def session(self):
     return self._sess
 
-
   def set_input(self, name, value):
     self._feed_dict.update({name:value})
 

@@ -97,8 +97,7 @@ def _load_graph_def_from_event_file(event_file_path):
   with open(event_file_path) as json_data:
       json_nodes = json.load(json_data)
       json_data.close()
-  ctx = "tvm.cpu(0)"
-  return debuggraph.DebugGraph(ctx, json_nodes)
+  return debuggraph.DebugGraph(self._ctx, json_nodes)
 
 def _is_graph_file(file_name):
   PRINT()
@@ -451,7 +450,7 @@ class DebugDumpDir(object):
   in a tvmdbg dump root directory.
   """
 
-  def __init__(self, dump_root, partition_graphs=None, validate=True):
+  def __init__(self, ctx, dump_root, partition_graphs=None, validate=True):
     """`DebugDumpDir` constructor.
 
     Args:
@@ -475,7 +474,7 @@ class DebugDumpDir(object):
 
     # Find the list of devices.
     self._dump_root = dump_root
-
+    self._ctx = ctx
     self._load_core_metadata()
     self._load_fetches_info()
     self._load_feeds_info()

@@ -145,6 +145,7 @@ class GraphModule(object):
         if not self.debug:
             self._run()
         else:
+            #call cli debug run and when user execute run command debugRun will be invoked
             self.dbgobj.run("")
 
     def get_input(self, index, out):
