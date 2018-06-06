@@ -60,21 +60,21 @@ def _dump_outputs(cli_obj, heads_list):
     for output in heads_list:
         output_list.append(cli_obj._nodes_list[output[0]]['name'])
     cli_obj._fetches = output_list
-    print(output_list)
-
 
 def _dump_input(cli_obj, file_name, key, value):
     np.save(str(cli_obj._dump_root + cli_obj._dump_folder + key + file_name), value.asnumpy())
 
 def dump_output(cli_obj, ndarraylist):
     timestamp = 1
+    eid = 0
     for i in range (len(cli_obj._nodes_list)):
         num_outputs = 1;
         node = cli_obj._nodes_list[i]
         if node['op'] != 'param':
             num_outputs = int(node['attrs']['num_outputs'])
         for j in range (num_outputs):
-            ndbuffer = ndarraylist[i + j]
+            ndbuffer = ndarraylist[eid]
+            eid = eid + 1
             #`node_name`_`output_slot`_`debug_op`_`timestamp(dummy)`
             key = node['name'] + "_" + str(j) + "_DebugIdentity_000000" + str(timestamp) + ".npy"
             key = key.replace("/", "_")
