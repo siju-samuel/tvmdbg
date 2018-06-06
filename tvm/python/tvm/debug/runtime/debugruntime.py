@@ -5,16 +5,25 @@ import numpy as np
 from tvm import ndarray as nd
 from ..wrappers import local_cli_wrapper as tvmdbg
 
-def ensure_dir(file_path):
+def _ensure_dir(file_path):
+    """Create a directory if not exists
+
+    Parameters
+    ----------
+    file_path: str
+        File path to create
+    """
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def _dump_json(cli_obj, dltype_list, shapes_list):
-    """Create a debug runtime environment and start the CLI
+def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
+    """Dump the nodes in json format to file
 
     Parameters
     ----------
+    ctx: Str
+        context in string
     nodes_list: List
         List of the nodes in the graph and their details
     dltype_list: List
@@ -23,10 +32,6 @@ def _dump_json(cli_obj, dltype_list, shapes_list):
         List of shape of each node
     """
 
-    path = cli_obj._dump_root
-    folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_CPU_0/"
-    cli_obj._dump_folder = folder_name
-    ensure_dir(path+folder_name)
     nodes_list = cli_obj._nodes_list
     new_graph = {}
     new_graph['nodes'] = []
@@ -36,52 +41,69 @@ def _dump_json(cli_obj, dltype_list, shapes_list):
         for input in (node['inputs']):
             input_list.append(nodes_list[input[0]]['name'])
         node['inputs'] = input_list
-        if not len(node['inputs']):
-            del node['inputs']
+        if not len(node['inputs']): del node['inputs']
         dltype = str("type: " +  dltype_list[1][i])
         if 'attrs' not in node:
             node['attrs'] = {}
             node['op'] = "param"
         else :
-            #node['op'] = node['name']
             node['op'] = node['attrs']['func_name']
         node['name'] = node['name'].replace("/", "_")
         node['attrs'].update({"T":dltype})
         node['shape'] = shapes_list[1][i]
         new_graph['nodes'].append(node)
-    #save to file
-    graph_dump_file_path = '_tvmdbg_graph_dump.json'
 
-    with open((path + folder_name + graph_dump_file_path), 'w') as outfile:
+    #save to file
+    graph_dump_file_name = '_tvmdbg_graph_dump.json'
+    folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
+    folder_name = folder_name + ctx.replace(":", "_") + "/"
+    cli_obj._dump_folder = folder_name
+    path = cli_obj._dump_root + folder_name
+    _ensure_dir(path)
+    with open((path + graph_dump_file_name), 'w') as outfile:
         json.dump(new_graph, outfile, indent=2, sort_keys=False)
 
-def _dump_outputs(cli_obj, heads_list):
+def _dump_heads(cli_obj, heads_list):
+    """Dump the heads to a list
+
+    Parameters
+    ----------
+    cli_obj: obj
+        The CLI object
+
+    heads_list : List
+       The list of outputs from the json node
+    """
     output_list = []
     for output in heads_list:
         output_list.append(cli_obj._nodes_list[output[0]]['name'])
     cli_obj._fetches = output_list
 
-def _dump_input(cli_obj, file_name, key, value):
-    np.save(str(cli_obj._dump_root + cli_obj._dump_folder + key + file_name), value.asnumpy())
-
 def dump_output(cli_obj, ndarraylist):
-    timestamp = 1
+    """Dump the outputs to a temporary folder
+
+    Parameters
+    ----------
+    cli_obj: obj
+        The CLI object
+
+    ndarraylist : List of tvm.ndarray
+       The list of outputs, for each node in node list
+
+    """
+    order = 1
     eid = 0
-    for i in range (len(cli_obj._nodes_list)):
-        num_outputs = 1;
-        node = cli_obj._nodes_list[i]
-        if node['op'] != 'param':
-            num_outputs = int(node['attrs']['num_outputs'])
+    for node in cli_obj._nodes_list:
+        num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
         for j in range (num_outputs):
             ndbuffer = ndarraylist[eid]
             eid = eid + 1
-            #`node_name`_`output_slot`_`debug_op`_`timestamp(dummy)`
-            key = node['name'] + "_" + str(j) + "_DebugIdentity_000000" + str(timestamp) + ".npy"
+            key = node['name'] + "_" + str(j) + "_DebugIdentity_000000" + str(order) + ".npy"
             key = key.replace("/", "_")
             file_name = str(cli_obj._dump_root + cli_obj._dump_folder + key)
             np.save(file_name, ndbuffer.asnumpy())
             os.rename(file_name, file_name.rpartition('.')[0])
-            timestamp = timestamp + 1
+            order = order+ 1
 
 def set_input(cli_obj, key=None, value=None, **params):
     """Set inputs to the module via kwargs
@@ -101,13 +123,7 @@ def set_input(cli_obj, key=None, value=None, **params):
        Additonal arguments
     """
     if key:
-        #_dump_input(cli_obj, '_value_dump', key, value)
         cli_obj.set_input(key.replace("/", "_"), value);
-
-    '''for k, v in params.items():
-        #_dump_input(cli_obj, '_value.json', k, v)
-        k = k.replace("/", "_")
-        cli_obj.set_input(k, v);'''
 
 def create(obj, graph):
     """Create a debug runtime environment and start the CLI
@@ -119,8 +135,8 @@ def create(obj, graph):
     graph: str
         nnvm graph in json format
     """
-
-    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=str(obj.ctx))
+    ctx = str(obj.ctx).upper().replace("(",":").replace(")","")
+    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=ctx)
     json_obj=json.loads(graph)
     cli_obj._nodes_list =json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']
@@ -128,8 +144,8 @@ def create(obj, graph):
     heads_list = json_obj['heads']
 
     #dump the json information
-    _dump_json(cli_obj, dltype_list, shapes_list)
-    _dump_outputs(cli_obj, heads_list)
+    _dump_json(ctx, cli_obj, dltype_list, shapes_list)
+    _dump_heads(cli_obj, heads_list)
     #prepare the out shape
     obj.ndarraylist = []
     for i in range (len(shapes_list[1])):

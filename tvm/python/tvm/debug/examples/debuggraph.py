@@ -18,7 +18,7 @@ class Node(object):
 
     name = node['name']
     op = node['op']
-    device="/job:localhost/replica:0/task:0/device:CPU:0" #TODO, remove job/replica/task
+    device="/job:localhost/replica:0/task:0/device:" + ctx #TODO, remove job/replica/task
     input= []
     attr={}
     if 'inputs' in node:
