@@ -4,7 +4,7 @@ from .._ffi.base import string_types
 from .._ffi.function import get_global_func
 from .rpc import base as rpc_base
 from .. import ndarray as nd
-from ..debug.runtime import debugruntime
+from ..tools.debug.runtime import debugruntime
 
 def create(graph_json_str, libmod, ctx, debug=False):
     """Create a runtime executor module given a graph and module.
