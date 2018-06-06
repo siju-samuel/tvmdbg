@@ -324,7 +324,6 @@ class BaseDebugWrapperSession():
   def session(self):
     return self._sess
 
-
   def set_input(self, name, value):
     self._feed_dict.update({name:value})
 
@@ -352,7 +351,7 @@ class BaseDebugWrapperSession():
         is not `None` and either or both of `fetches` and `feed_dict` is `None`.
     """
     PRINT()
-    fetches = self._sess.get_output_names()
+    fetches = self._fetches
 
     if not callable_runner:
       self.increment_run_call_count()
@@ -371,7 +370,7 @@ class BaseDebugWrapperSession():
 
     # Invoke on-run-start callback and obtain response.
     run_start_resp = self.on_run_start(
-        OnRunStartRequest(self._sess.get_output_names(), self._feed_dict, options, run_metadata,
+        OnRunStartRequest(self._fetches, self._feed_dict, options, run_metadata,
                           self._run_call_count,
                           is_callable_runner=bool(callable_runner)))
     _check_type(run_start_resp, OnRunStartResponse)
@@ -393,7 +392,7 @@ class BaseDebugWrapperSession():
           tensor_dtype_regex_whitelist=(
               run_start_resp.tensor_dtype_regex_whitelist),
           tolerate_debug_op_creation_failures=(
-              run_start_resp.tolerate_debug_op_creation_failures))"""
+              run_start_resp.tolerate_debug_op_creation_failures))
 
       # Invoke the run() method of the wrapped Session. Catch any TVM
       # runtime errors.
@@ -410,7 +409,9 @@ class BaseDebugWrapperSession():
           raise op_error
         tvm_error = op_error
         retvals = op_error
-      PRINT("ERROR :: self._sess.run need to implement")
+      PRINT("ERROR :: self._sess.run need to implement")"""
+      tvm_error = None
+      retvals = self._sess.debugRun()
 
       PRINT("ERROR :: self._sess.graph.as_graph_def() need to implement")
       run_end_req = OnRunEndRequest(

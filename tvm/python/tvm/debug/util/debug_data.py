@@ -92,12 +92,11 @@ def load_tensor_from_event_file(event_file_path):
 
   return content
 
-def _load_graph_def_from_event_file(event_file_path):
+def _load_graph_def_from_event_file(ctx, event_file_path):
   PRINT()
   with open(event_file_path) as json_data:
       json_nodes = json.load(json_data)
       json_data.close()
-  ctx = "tvm.cpu(0)"
   return debuggraph.DebugGraph(ctx, json_nodes)
 
 def _is_graph_file(file_name):
@@ -451,7 +450,7 @@ class DebugDumpDir(object):
   in a tvmdbg dump root directory.
   """
 
-  def __init__(self, dump_root, partition_graphs=None, validate=True):
+  def __init__(self, ctx, dump_root, partition_graphs=None, validate=True):
     """`DebugDumpDir` constructor.
 
     Args:
@@ -475,7 +474,7 @@ class DebugDumpDir(object):
 
     # Find the list of devices.
     self._dump_root = dump_root
-
+    self._ctx = ctx
     self._load_core_metadata()
     self._load_fetches_info()
     self._load_feeds_info()
@@ -778,7 +777,7 @@ class DebugDumpDir(object):
       for device_name in self._device_names:
         partition_graph = None
         if device_name in self._dump_graph_file_paths:
-          partition_graph = _load_graph_def_from_event_file(
+          partition_graph = _load_graph_def_from_event_file(self._ctx,
               self._dump_graph_file_paths[device_name])
         else:
           partition_graph = self._find_partition_graph(partition_graphs,
@@ -909,6 +908,7 @@ class DebugDumpDir(object):
     PRINT()
     if not pending:
       return True
+    return True
 
     for datum in self._dump_tensor_data[device_name][start_i:]:
       if datum.timestamp > timestamp:

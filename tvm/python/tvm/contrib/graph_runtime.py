@@ -30,7 +30,6 @@ def create(graph_json_str, libmod, ctx, debug=False):
     graph_module : GraphModule
         Runtime graph module that can be used to execute the graph.
     """
-    print("graph_runtime.py create debug_flag =", debug)
     if not isinstance(graph_json_str, string_types):
         try:
             graph_json_str = graph_json_str._tvm_graph_json()
@@ -86,12 +85,9 @@ class GraphModule(object):
         except AttributeError:
             pass
         self._load_params = module["load_params"]
-        self._get_input_names = module["get_input_names"]
-        self._get_output_names = module["get_output_names"]
         self.ctx = ctx
         self.debug = debug
         if self.debug:
-            print(graph_json_str)
             self.dbgobj = debugruntime.create(self, graph_json_str)
 
     def set_input(self, key=None, value=None, **params):
@@ -129,21 +125,10 @@ class GraphModule(object):
 
         for ndbuffer in self.ndarraylist:
             self._set_debug_buffer(ndbuffer)
-    def print_array(self, ndbuffer):
-        np_array = ndbuffer.asnumpy()
-        print(" ")
-        print(np_array.shape, end=' ')
-        np_array = np_array.flatten()
-        size = np_array.size
-        for i in range (min(10, size)):
-            print(np_array[i], end=', ')
+
     def debugRun(self):
         self.set_debug_buffer()
         self._run()
-
-        #ndbuffer have the data, format and cli can use it
-        for ndbuffer in self.ndarraylist:
-            self.print_array(ndbuffer)
         debugruntime.dump_output(self.dbgobj, self.ndarraylist)
 
     def run(self, **input_dict):
@@ -160,6 +145,7 @@ class GraphModule(object):
         if not self.debug:
             self._run()
         else:
+            #call cli debug run and when user execute run command debugRun will be invoked
             self.dbgobj.run("")
 
     def get_input(self, index, out):
@@ -226,9 +212,3 @@ class GraphModule(object):
             The key to the module.
         """
         return self.module[key]
-
-    def get_input_names(self):
-        return self._get_input_names()
-
-    def get_output_names(self):
-        return self._get_output_names()

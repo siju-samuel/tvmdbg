@@ -60,29 +60,21 @@ class GraphRuntime : public ModuleNode {
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
     }
-    printf("\nRun Completed");
   }
 
   void DebugRun() {
-    // setup the array and requirements.
-    size_t from_size = 0;
-
+    // Execute each op and copy the outs
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
-
-      //from_size = GetDataSize(&data_entry_[i]);
-      //printf("\nRunning nodes %ld output_size=%ld", i, from_size);
-
-      PrintNode(&nodes_[i]);
-      //printf("\nbefore editing val0= %f", ((float *)data_entry_[i].data)[0]);
-      //((float *)data_entry_[i].data)[0] = 0.1111;
-      //printf(" after editing val0= %f", ((float *)data_entry_[i].data)[0]);
-      TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[i], debug_buffers_[i], nullptr));
-      PrintDlTensor(debug_buffers_[i]);
-      //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
+      size_t num_outputs = (nodes_[i].op_type == "null") ? 1: nodes_[i].param.num_outputs;
+      for (size_t j = 0; j < num_outputs; j++) {
+          uint32_t eid = this->entry_id(i, j);
+          TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
+          //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
+      }
     }
-    printf("\nDebugRun Completed");
   }
+
   /*!
    * \brief Initialize the graph executor with graph and context.
    * \param graph_json The execution graph.
@@ -220,31 +212,7 @@ class GraphRuntime : public ModuleNode {
   void GetOutput(int index, DLTensor* data_out) {
     CHECK_LT(static_cast<size_t>(index), outputs_.size());
     uint32_t eid = this->entry_id(outputs_[index]);
-
-    size_t from_size = GetDataSize(&data_entry_[eid]);
-    size_t to_size = GetDataSize(data_out);
-
-    printf("\nGetOutput eid=%u index=%d givenSize=%ld ActualSize=%ld", eid, index, to_size, from_size);
-
     TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], data_out, nullptr));
-    PrintDlTensor(data_out);
-    DumpGraphRuntime();
-  }
-  std::string GetInputNames() {
-    std::ostringstream names;
-    for (size_t index = 0; index<input_nodes_.size(); ++index) {
-      uint32_t eid = this->entry_id(input_nodes_[index], 0);
-      names << nodes_[eid].name <<";";
-    }
-    return names.str();
-  }
-  std::string GetOutputNames() {
-    std::ostringstream names;
-    for (size_t index = 0; index<outputs_.size(); ++index) {
-      uint32_t eid = this->entry_id(outputs_[index]);
-      names << nodes_[eid].name <<";";
-    }
-    return names.str();
   }
 #ifdef TVM_GRAPH_RUNTIME_DEBUG
   /*!
@@ -528,7 +496,7 @@ class GraphRuntime : public ModuleNode {
   std::vector<std::function<void()> > op_execs_;
   /*! \brief debugging functionality is enabled */
   bool debug_;
-  /*! \brief common storage pool */
+  /*! \brief debug buffer storage pool */
   std::vector<DLTensor*> debug_buffers_;
 };
 
@@ -652,7 +620,6 @@ void GraphRuntime::SetupStorage() {
 }
 
 void GraphRuntime::SetupOpExecs() {
-  printf("\nSetupOpExecs ");
   op_execs_.resize(this->num_nodes());
   // setup the array and requirements.
   for (uint32_t nid = 0; nid < this->num_nodes(); ++nid) {
@@ -669,8 +636,6 @@ void GraphRuntime::SetupOpExecs() {
     CHECK_EQ(inode.op_type, "tvm_op")
         << "Can only take tvm_op as op";
 
-    printf("\nNid = %d param.func_name =%s param.inputs=%d, param.outputs=%d inp_size=%ld ",
-        nid, inode.param.func_name.c_str(), inode.param.num_inputs , inode.param.num_outputs, inode.inputs.size());
     op_execs_[nid] = CreateTVMOp(inode.param, args, inode.inputs.size());
   }
 }
@@ -736,14 +701,6 @@ PackedFunc GraphRuntime::GetFunction(
   } else if (name == "get_output") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
         this->GetOutput(args[0], args[1]);
-      });
-  } else if (name == "get_output_names") {
-    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-        *rv = this->GetOutputNames();
-      });
-  } else if (name == "get_input_names") {
-    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-        *rv = this->GetInputNames();
       });
   } else if (name == "get_input") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {

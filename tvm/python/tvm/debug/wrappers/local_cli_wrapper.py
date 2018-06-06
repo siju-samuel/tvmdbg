@@ -39,6 +39,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
   def __init__(self,
                sess,
                graph,
+               ctx = None,
                dump_root=None,
                log_usage=True,
                ui_type="curses",
@@ -52,7 +53,6 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
       ValueError: If dump_root is an existing and non-empty directory or if
         dump_root is a file.
     """
-    open("/var/log/tvm_dgb_log.txt", 'w').close()
     PRINT()
 
     if log_usage:
@@ -73,6 +73,8 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
 
       self._dump_root = dump_root
 
+    if ctx:
+        self._ctx = ctx
     self._initialize_argparsers()
 
     # Registered tensor filters.
@@ -308,7 +310,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
         # unwrapped Session does.
         raise request.tvm_error
 
-      debug_dump = debug_data.DebugDumpDir(
+      debug_dump = debug_data.DebugDumpDir(self._ctx,
           self._dump_root, partition_graphs=None)
 
       passed_filter = None

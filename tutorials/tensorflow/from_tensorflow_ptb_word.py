@@ -211,7 +211,7 @@ with open("imagenet_tensorflow.params", "wb") as fo:
 from tvm.contrib import graph_runtime
 ctx = tvm.cpu(0)
 out_dtype = 'float32'
-m = graph_runtime.create(graph, lib, ctx)
+m = graph_runtime.create(graph, lib, ctx, debug=True)
 
 ######################################################################
 # Predition
