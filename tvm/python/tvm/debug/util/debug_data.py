@@ -92,12 +92,12 @@ def load_tensor_from_event_file(event_file_path):
 
   return content
 
-def _load_graph_def_from_event_file(event_file_path):
+def _load_graph_def_from_event_file(ctx, event_file_path):
   PRINT()
   with open(event_file_path) as json_data:
       json_nodes = json.load(json_data)
       json_data.close()
-  return debuggraph.DebugGraph(self._ctx, json_nodes)
+  return debuggraph.DebugGraph(ctx, json_nodes)
 
 def _is_graph_file(file_name):
   PRINT()
@@ -777,7 +777,7 @@ class DebugDumpDir(object):
       for device_name in self._device_names:
         partition_graph = None
         if device_name in self._dump_graph_file_paths:
-          partition_graph = _load_graph_def_from_event_file(
+          partition_graph = _load_graph_def_from_event_file(self._ctx,
               self._dump_graph_file_paths[device_name])
         else:
           partition_graph = self._find_partition_graph(partition_graphs,
