@@ -47,6 +47,7 @@ def _parse_command(command):
 
     return command_items[0], command_items[1:], output_file_path
 
+
 def _analyze_tab_complete_input(text):
     """Analyze raw input to tab-completer.
 
@@ -88,6 +89,7 @@ def _analyze_tab_complete_input(text):
             except_last_word = " ".join(items[:-1]) + " "
 
     return context, prefix, except_last_word
+
 
 class BaseUI(object):
     """Base class of tvmdbg user interface."""

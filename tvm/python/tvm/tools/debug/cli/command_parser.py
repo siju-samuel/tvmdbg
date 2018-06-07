@@ -469,7 +469,7 @@ def parse_readable_time_str(time_str):
       Microseconds value.
     """
 
-    def parse_positive_float(value_str):
+    def _parse_positive_float(value_str):
         value = float(value_str)
         if value < 0:
             raise ValueError(
@@ -478,12 +478,12 @@ def parse_readable_time_str(time_str):
 
     time_str = time_str.strip()
     if time_str.endswith("us"):
-        return int(parse_positive_float(time_str[:-2]))
+        return int(_parse_positive_float(time_str[:-2]))
     elif time_str.endswith("ms"):
-        return int(parse_positive_float(time_str[:-2]) * 1e3)
+        return int(_parse_positive_float(time_str[:-2]) * 1e3)
     elif time_str.endswith("s"):
-        return int(parse_positive_float(time_str[:-1]) * 1e6)
-    return int(parse_positive_float(time_str))
+        return int(_parse_positive_float(time_str[:-1]) * 1e6)
+    return int(_parse_positive_float(time_str))
 
 
 def evaluate_tensor_slice(tensor, tensor_slicing):
