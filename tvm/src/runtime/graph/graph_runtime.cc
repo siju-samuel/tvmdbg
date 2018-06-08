@@ -55,7 +55,6 @@ class GraphRuntime : public ModuleNode {
   const char* type_key() const final {
     return "GraphRuntime";
   }
-
   void Run() {
     // setup the array and requirements.
     for (size_t i = 0; i < op_execs_.size(); ++i) {
@@ -71,7 +70,7 @@ class GraphRuntime : public ModuleNode {
       for (size_t j = 0; j < num_outputs; j++) {
           uint32_t eid = this->entry_id(i, j);
           TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
-          //CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
+          // CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
       }
     }
   }
@@ -120,7 +119,6 @@ class GraphRuntime : public ModuleNode {
    * \param data_in The input data.
    */
   void SetInput(int index, DLTensor* data_in) {
-
     CHECK_LT(static_cast<size_t>(index), input_nodes_.size());
     uint32_t eid = this->entry_id(input_nodes_[index], 0);
     TVM_CCALL(TVMArrayCopyFromTo(data_in, &data_entry_[eid], nullptr));
@@ -136,38 +134,14 @@ class GraphRuntime : public ModuleNode {
     TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], data_out, nullptr));
   }
   /*!
-   * \brief Copy index-th output to data_out.
-   * \param index The output index.
-   * \param data_out the output data.
+   * \brief Check whether the data contains NAN or INF.
+   * \param data The data pointer.
+   * \param check_flag The flag which denotes whether to check NAN or INF.
    */
-
-  inline size_t GetDataSize(TVMArray* arr) {
-    size_t size = 1;
-    for (tvm_index_t i = 0; i < arr->ndim; ++i) {
-      size *= arr->shape[i];
-    }
-    size *= (arr->dtype.bits * arr->dtype.lanes + 7) / 8;
-    return size;
-  }
-  void PrintDlTensor(DLTensor* data) {
-    printf("\nTensor ndim=%d [", data->ndim);
-    size_t size = 1;
-    for (tvm_index_t i = 0; i < data->ndim; ++i) {
-        printf("%ld, ", data->shape[i]);
-       size *= data->shape[i];
-    }
-    printf("] Dtype=%d, Bits=%d Lanes=%d Data=", data->dtype.code, data->dtype.bits, data->dtype.lanes);
-    size *= (data->dtype.bits * data->dtype.lanes + 7) / 8;
-    for (size_t i=0; (i < 10 && i < size); ++i) {
-        printf("%f, ", ((float *)data->data)[i]);
-    }
-  }
-
   void CheckNanOrInf(DLTensor* data, int check_flag) {
     if (check_flag == CHECK_NONE) {
         return;
     }
-
     size_t size = 1;
     for (tvm_index_t i = 0; i < data->ndim; ++i) {
        size *= data->shape[i];
@@ -184,32 +158,20 @@ class GraphRuntime : public ModuleNode {
         }
     }
   }
-  void SetDebugBuffer(DLTensor* data){
+
+  /*!
+   * \brief Set the debug buffer to copy the output of each operation.
+   * \param data The data pointer.
+   */
+  void SetDebugBuffer(DLTensor* data) {
       debug_buffers_.push_back(data);
   }
 
-  void DumpGraphRuntime() {
-    printf("\n*******Dump Nodes Information*******");
-
-    printf("\nTotal nodes_ Count = %ld", nodes_.size());
-    printf("\nTotal input_nodes_ Count = %ld", input_nodes_.size());
-    printf("\nTotal node_row_ptr_ Count = %ld", node_row_ptr_.size());
-    printf("\nTotal outputs_ Count = %ld", outputs_.size());
-
-    printf("\nGraph attributes");
-    printf("\nTotal attrs_.storage_id Count = %ld", attrs_.storage_id.size());
-    printf("\nTotal attrs_.dltype Count = %ld", attrs_.dltype.size());
-    printf("\nTotal attrs_.shape Count = %ld", attrs_.shape.size());
-
-    printf("\nctx_.device_type = %d", ctx_.device_type);
-    printf("\nctx_.device_id = %d", ctx_.device_id);
-
-    printf("\nTotal storage_pool_ Count = %ld", storage_pool_.size());
-    printf("\nTotal data_entry_ Count = %ld", data_entry_.size());
-    printf("\nTotal op_execs_ Count = %ld", op_execs_.size());
-
-    printf("\n*******Dump Nodes Information*******");
-  }
+  /*!
+   * \brief Copy index-th output to data_out.
+   * \param index The output index.
+   * \param data_out the output data.
+   */
   void GetOutput(int index, DLTensor* data_out) {
     CHECK_LT(static_cast<size_t>(index), outputs_.size());
     uint32_t eid = this->entry_id(outputs_[index]);
@@ -275,7 +237,6 @@ class GraphRuntime : public ModuleNode {
     uint32_t version;
     // JSON Loader
     void Load(dmlc::JSONReader *reader) {
-      //printf("\nNodeEntry Load json");
       reader->BeginArray();
       CHECK(reader->NextArrayItem()) << "invalid json format";
       reader->Read(&node_id);
@@ -303,7 +264,6 @@ class GraphRuntime : public ModuleNode {
     std::vector<uint32_t> control_deps;
     // JSON Loader
     void LoadAttrs(dmlc::JSONReader *reader, TVMOpParam* param) {
-    //printf("\nNode LoadAttrs json");
       int bitmask = 0;
       std::string key, value;
       reader->BeginObject();
@@ -327,7 +287,6 @@ class GraphRuntime : public ModuleNode {
     }
     // JSON Loader
     void Load(dmlc::JSONReader *reader) {
-      //printf("\nNode Load json");
       reader->BeginObject();
       std::unordered_map<std::string, std::string> dict;
       int bitmask = 0;
@@ -451,11 +410,6 @@ class GraphRuntime : public ModuleNode {
    * \param num_inputs Number of inputs
    * \return The created executor.
    */
-
-  void PrintNode(Node *node) {
-      printf("\nNode information op_type=%s name=%s", node->op_type.c_str(), node->name.c_str());
-  }
-
   std::function<void()> CreateTVMOp(const TVMOpParam& attrs,
                                     const std::vector<DLTensor>& args,
                                     size_t num_inputs);
@@ -753,9 +707,8 @@ Module GraphRuntimeCreate(std::string sym_json,
                           tvm::runtime::Module m,
                           int device_type,
                           int device_id,
-                          bool debug=false) {
+                          bool debug = false) {
   TVMContext ctx;
-
   ctx.device_type = static_cast<DLDeviceType>(device_type);
   ctx.device_id   = device_id;
   std::shared_ptr<GraphRuntime> exec = std::make_shared<GraphRuntime>();

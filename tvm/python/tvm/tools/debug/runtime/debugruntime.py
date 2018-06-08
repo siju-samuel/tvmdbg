@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 """Debug runtime functions."""
 import json
 import os
@@ -37,13 +38,14 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     nodes_list = cli_obj._nodes_list
     new_graph = {}
     new_graph['nodes'] = []
-    for i in range(len(nodes_list)):
+    nodes_len = len(nodes_list)
+    for i in range(nodes_len):
         node = nodes_list[i]
         input_list = []
-        for input in (node['inputs']):
-            input_list.append(nodes_list[input[0]]['name'])
+        for input_node in node['inputs']:
+            input_list.append(nodes_list[input_node[0]]['name'])
+        del node['inputs']
         node['inputs'] = input_list
-        if not len(node['inputs']): del node['inputs']
         dltype = str("type: " + dltype_list[1][i])
         if 'attrs' not in node:
             node['attrs'] = {}
@@ -126,7 +128,7 @@ def set_input(cli_obj, key=None, value=None, **params):
        Additonal arguments
     """
     if key:
-        cli_obj.set_input(key.replace("/", "_"), value);
+        cli_obj.set_input(key.replace("/", "_"), value)
 
 
 def create(obj, graph):
@@ -153,6 +155,5 @@ def create(obj, graph):
     # prepare the out shape
     obj.ndarraylist = []
     for i in range(len(shapes_list[1])):
-        shape = shapes_list[1][i]
         obj.ndarraylist.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
     return cli_obj

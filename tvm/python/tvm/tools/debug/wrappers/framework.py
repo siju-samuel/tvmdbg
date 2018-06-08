@@ -372,7 +372,7 @@ class BaseDebugWrapperSession():
             if callable_runner:
                 return callable_runner(*callable_runner_args)
 
-            self._sess.debugRun()
+            self._sess.debug_run()
             return True
 
         # Invoke on-run-start callback and obtain response.
@@ -408,14 +408,14 @@ class BaseDebugWrapperSession():
 #                                              options=decorated_run_options,
 #                                              run_metadata=run_metadata)
 #                else:
-#                    retvals = self._sess.debugRun()
+#                    retvals = self._sess.debug_run()
 #            except errors.OpError as op_error:
 #                if self._pass_through_operrors:
 #                    raise op_error
 #                tvm_error = op_error
 #                retvals = op_error
             tvm_error = None
-            retvals = self._sess.debugRun()
+            retvals = self._sess.debug_run()
 
             run_end_req = OnRunEndRequest(
                 run_start_resp.action,
@@ -453,7 +453,7 @@ class BaseDebugWrapperSession():
                         node_stepper, restore_variable_values_on_exit=True)
 
             # Invoke run() method of the wrapped session.
-            self._sess.debugRun()
+            self._sess.debug_run()
             retvals = True
             # retvals = self._sess.run(
             #    fetches,

@@ -125,7 +125,7 @@ class GraphModule(object):
         for ndbuffer in self.ndarraylist:
             self._set_debug_buffer(ndbuffer)
 
-    def debugRun(self):
+    def debug_run(self):
         self.set_debug_buffer()
         self._run()
         debugruntime.dump_output(self.dbgobj, self.ndarraylist)
@@ -144,7 +144,7 @@ class GraphModule(object):
         if not self.debug:
             self._run()
         else:
-            #call cli debug run and when user execute run command debugRun will be invoked
+            #call cli debug run and when user execute run command debug_run will be invoked
             self.dbgobj.run("")
 
     def get_input(self, index, out):
