@@ -5,6 +5,7 @@ import numpy as np
 from tvm import ndarray as nd
 from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
 
+
 def _ensure_dir(file_path):
     """Create a directory if not exists
 
@@ -16,6 +17,7 @@ def _ensure_dir(file_path):
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
+
 
 def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     """Dump the nodes in json format to file
@@ -35,25 +37,25 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     nodes_list = cli_obj._nodes_list
     new_graph = {}
     new_graph['nodes'] = []
-    for  i in range (len(nodes_list)):
+    for i in range(len(nodes_list)):
         node = nodes_list[i]
         input_list = []
         for input in (node['inputs']):
             input_list.append(nodes_list[input[0]]['name'])
         node['inputs'] = input_list
         if not len(node['inputs']): del node['inputs']
-        dltype = str("type: " +  dltype_list[1][i])
+        dltype = str("type: " + dltype_list[1][i])
         if 'attrs' not in node:
             node['attrs'] = {}
             node['op'] = "param"
-        else :
+        else:
             node['op'] = node['attrs']['func_name']
         node['name'] = node['name'].replace("/", "_")
-        node['attrs'].update({"T":dltype})
+        node['attrs'].update({"T": dltype})
         node['shape'] = shapes_list[1][i]
         new_graph['nodes'].append(node)
 
-    #save to file
+    # save to file
     graph_dump_file_name = '_tvmdbg_graph_dump.json'
     folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
     folder_name = folder_name + ctx.replace(":", "_") + "/"
@@ -62,6 +64,7 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     _ensure_dir(path)
     with open((path + graph_dump_file_name), 'w') as outfile:
         json.dump(new_graph, outfile, indent=2, sort_keys=False)
+
 
 def _dump_heads(cli_obj, heads_list):
     """Dump the heads to a list
@@ -74,10 +77,9 @@ def _dump_heads(cli_obj, heads_list):
     heads_list : List
        The list of outputs from the json node
     """
-    output_list = []
     for output in heads_list:
-        output_list.append(cli_obj._nodes_list[output[0]]['name'])
-    cli_obj._fetches = output_list
+        cli_obj.set_ouputs(cli_obj._nodes_list[output[0]]['name'])
+
 
 def dump_output(cli_obj, ndarraylist):
     """Dump the outputs to a temporary folder
@@ -95,15 +97,16 @@ def dump_output(cli_obj, ndarraylist):
     eid = 0
     for node in cli_obj._nodes_list:
         num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
-        for j in range (num_outputs):
+        for j in range(num_outputs):
             ndbuffer = ndarraylist[eid]
             eid = eid + 1
-            key = node['name'] + "_" + str(j) + "_DebugIdentity_000000" + str(order) + ".npy"
+            key = node['name'] + "_" + str(j) + "__000000" + str(order) + ".npy"
             key = key.replace("/", "_")
             file_name = str(cli_obj._dump_root + cli_obj._dump_folder + key)
             np.save(file_name, ndbuffer.asnumpy())
             os.rename(file_name, file_name.rpartition('.')[0])
-            order = order+ 1
+            order = order + 1
+
 
 def set_input(cli_obj, key=None, value=None, **params):
     """Set inputs to the module via kwargs
@@ -125,6 +128,7 @@ def set_input(cli_obj, key=None, value=None, **params):
     if key:
         cli_obj.set_input(key.replace("/", "_"), value);
 
+
 def create(obj, graph):
     """Create a debug runtime environment and start the CLI
 
@@ -135,20 +139,20 @@ def create(obj, graph):
     graph: str
         nnvm graph in json format
     """
-    ctx = str(obj.ctx).upper().replace("(",":").replace(")","")
+    ctx = str(obj.ctx).upper().replace("(", ":").replace(")", "")
     cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=ctx)
-    json_obj=json.loads(graph)
-    cli_obj._nodes_list =json_obj['nodes']
+    json_obj = json.loads(graph)
+    cli_obj._nodes_list = json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']
     shapes_list = json_obj['attrs']['shape']
     heads_list = json_obj['heads']
 
-    #dump the json information
+    # dump the json information
     _dump_json(ctx, cli_obj, dltype_list, shapes_list)
     _dump_heads(cli_obj, heads_list)
-    #prepare the out shape
+    # prepare the out shape
     obj.ndarraylist = []
-    for i in range (len(shapes_list[1])):
+    for i in range(len(shapes_list[1])):
         shape = shapes_list[1][i]
         obj.ndarraylist.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
     return cli_obj

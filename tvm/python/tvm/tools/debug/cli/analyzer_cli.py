@@ -130,12 +130,14 @@ def _add_main_menu(output,
 
     output.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
+
 def _reconstruct_print_source_command(parsed,
                                       line_begin,
                                       max_elements_per_line_increase=0):
     return "ps %s %s -b %d -m %d" % (
         parsed.source_file_path, "-t" if parsed.tensors else "", line_begin,
         parsed.max_elements_per_line + max_elements_per_line_increase)
+
 
 def _make_source_table(source_list, is_tvm_py_library):
     """Make a table summarizing the source files that create nodes and tensors.
@@ -190,7 +192,7 @@ def _make_source_table(source_list, is_tvm_py_library):
     for (file_path, _, num_nodes, num_tensors, num_dumps,
          first_line_num) in source_list:
         path_attributes = [color]
-        if source_utils.is_extension_uncompiled_python_source(file_path):
+        if source_utils._is_extension_uncompiled_python_source(file_path):
             path_attributes.append(
                 debugger_cli_common.MenuItem(None, "ps %s -b %d" %
                                              (file_path, first_line_num)))
@@ -208,6 +210,7 @@ def _make_source_table(source_list, is_tvm_py_library):
     lines.append(RL())
 
     return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+
 
 class DebugAnalyzer(object):
     """Analyzer for debug data from dump directories."""
@@ -861,8 +864,9 @@ class DebugAnalyzer(object):
         if parsed.dumps:
             output.extend(self._list_node_dumps(node_name))
 
-        if parsed.traceback:
-            output.extend(self._render_node_traceback(node_name))
+        # TODO(Pariksheet): Python traceback implementation not support now.
+        #if hasattr(parsed, "traceback") and parsed.traceback:
+        #    output.extend(self._render_node_traceback(node_name))
 
         _add_main_menu(output, node_name=node_name, enable_node_info=False)
         return output
@@ -1290,10 +1294,8 @@ class DebugAnalyzer(object):
             include_ctrls_str = ""
 
         line = "%s node \"%s\"" % (type_str, node_name)
-        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "bold")
-                            ]
-        lines.append(line + " (Depth limit = %d%s):" % (max_depth, include_ctrls_str
-                                                       ))
+        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "bold")]
+        lines.append(line + " (Depth limit = %d%s):" % (max_depth, include_ctrls_str))
 
         command_template = "lo -c -r %s" if do_outputs else "li -c -r %s"
         self._dfs_from_node(
@@ -1436,7 +1438,7 @@ class DebugAnalyzer(object):
                 show_op_type=show_op_type,
                 command_template=command_template)
 
-    def _format_neighbors(self, neighbor_type, non_ctrls, ctrls):
+    def _format_neighbors(self, neighbor_type, non_ctrls, ctrls, neighbors_display=False):
         """List neighbors (inputs or recipients) of a node.
 
         Args:
@@ -1454,18 +1456,25 @@ class DebugAnalyzer(object):
         font_attr_segs = {}
 
         lines.append("")
-        lines.append("  %d %s(s) + %d control %s(s):" %
-                     (len(non_ctrls), neighbor_type, len(ctrls), neighbor_type))
-        lines.append("    %d %s(s):" % (len(non_ctrls), neighbor_type))
+        if neighbors_display:
+            lines.append("  %d %s(s) + %d control %s(s):" %
+                         (len(non_ctrls), neighbor_type, len(ctrls), neighbor_type))
+            lines.append("    %d %s(s):" % (len(non_ctrls), neighbor_type))
+        else:
+            lines.append("  %d %s(s):" % (len(non_ctrls), neighbor_type))
         for non_ctrl in non_ctrls:
-            line = "      [%s] %s" % (self._debug_dump.node_op_type(non_ctrl),
-                                      non_ctrl)
+            if neighbors_display:
+                line = "      [%s] %s" % (self._debug_dump.node_op_type(non_ctrl),
+                                          non_ctrl)
+            else:
+                line = "    [%s] %s" % (self._debug_dump.node_op_type(non_ctrl),
+                                        non_ctrl)
             lines.append(line)
             font_attr_segs[len(lines) - 1] = [(
                 len(line) - len(non_ctrl), len(line),
                 debugger_cli_common.MenuItem(None, "ni -a -d -t %s" % non_ctrl))]
 
-        if ctrls:
+        if ctrls and neighbors_display:
             lines.append("")
             lines.append("    %d control %s(s):" % (len(ctrls), neighbor_type))
             for ctrl in ctrls:
@@ -1520,9 +1529,14 @@ class DebugAnalyzer(object):
         for watch_key in watch_keys:
             debug_tensor_data = self._debug_dump.watch_key_to_data(watch_key)
             for datum in debug_tensor_data:
-                line = "  Slot %d @ %s @ %.3f ms" % (
-                    datum.output_slot, datum.debug_op,
-                    (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                if not datum.debug_op:
+                    line = "  Slot %d @ %.3f ms" % (
+                        datum.output_slot,
+                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                else:
+                    line = "  Slot %d @ %s @ %.3f ms" % (
+                        datum.output_slot, datum.debug_op,
+                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
                 lines.append(line)
                 command = "pt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
                 font_attr_segs[len(lines) - 1] = [(

@@ -1,5 +1,5 @@
 # coding: utf-8
-# pylint: disable=invalid-name, too-many-arguments, too-many-locals
+# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals
 # Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -270,7 +270,7 @@ def _recommend_command(command, description, indent=2, create_link=False):
         font_attr = "bold"
 
     lines = [RL(indent_str) + RL(command, font_attr) + ":",
-             indent_str + "  " + description]
+             indent_str + "   " + description]
 
     return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
 
@@ -280,17 +280,17 @@ def get_tvmdbg_logo():
 
     lines = [
         "",
-        "TTTTTT V     V MM   MM DDD  BBBB   GGG ",
-        "  TT   V     V M M M M D  D B   B G    ",
-        "  TT    V   V  M  M  M D  D BBBB  G  GG",
-        "  TT     V V   M     M D  D B   B G   G",
-        "  TT      V    M     M DDD  BBBB   GGG ",
+        " TTTTTTTT V     V MM   MM DDDD  BBBB   GGGG ",
+        "    TT    V     V M M M M D   D B   B G    ",
+        "    TT     V   V  M  M  M D   D BBBB  G   GG",
+        "    TT      V V   M     M D   D B   B G    G",
+        "    TT       V    M     M DDDD  BBBB   GGGG ",
         "",
     ]
     return debugger_cli_common.RichTextLines(lines)
 
 
-_HORIZONTAL_BAR = "======================================"
+_HORIZONTAL_BAR = " ======================================"
 
 
 def get_run_start_intro(run_call_count,
@@ -302,17 +302,17 @@ def get_run_start_intro(run_call_count,
 
     Args:
       run_call_count: (int) Run call counter.
-      fetches: Fetches of the `Session.run()` call. See doc of `Session.run()`
+      fetches: Fetches of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
-      feed_dict: Feeds to the `Session.run()` call. See doc of `Session.run()`
+      feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       tensor_filters: (dict) A dict from tensor-filter name to tensor-filter
         callable.
       is_callable_runner: (bool) whether a runner returned by
-          Session.make_callable is being run.
+          GraphRuntime.make_callable is being run.
 
     Returns:
-      (RichTextLines) Formatted intro message about the `Session.run()` call.
+      (RichTextLines) Formatted intro message about the `GraphRuntime.run()` call.
     """
 
     fetch_lines = common.get_flattened_names(fetches)
@@ -335,19 +335,19 @@ def get_run_start_intro(run_call_count,
 
     out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
     if is_callable_runner:
-        out.append("Running a runner returned by Session.make_callable()")
+        out.append(" Running a runner returned by GraphRuntime.make_callable()")
     else:
-        out.append("Session.run() call #%d:" % run_call_count)
+        out.append(" GraphRuntime.run() call #%d:" % run_call_count)
         out.append("")
-        out.append("Fetch(es):")
+        out.append(" Output:")
         out.extend(debugger_cli_common.RichTextLines(
-            ["  " + line for line in fetch_lines]))
+            ["   " + line for line in fetch_lines]))
         out.append("")
-        out.append("Feed dict:")
+        out.append(" Inputs:")
         out.extend(feed_dict_lines)
     out.append(_HORIZONTAL_BAR)
     out.append("")
-    out.append("Select one of the following commands to proceed ---->")
+    out.append(" Select one of the following commands to proceed ---->")
 
     out.extend(
         _recommend_command(
@@ -384,25 +384,27 @@ def get_run_start_intro(run_call_count,
     out.extend(
         debugger_cli_common.rich_text_lines_from_rich_line_list(more_lines))
 
-    out.extend(
-        _recommend_command(
-            "invoke_stepper",
-            "Use the node-stepper interface, which allows you to interactively "
-            "step through nodes involved in the graph run() call and "
-            "inspect/modify their values", create_link=True))
+    # TODO(Pariksheet): Python invoke_stepper implementation not support now.
+#    out.extend(
+#        _recommend_command(
+#            "invoke_stepper",
+#            "Use the node-stepper interface, which allows you to interactively "
+#            "step through nodes involved in the graph run() call and "
+#            "inspect/modify their values", create_link=True))
 
     out.append("")
 
-    out.append_rich_line(RL("For more details, see ") +
-                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
-                         ".")
-    out.append("")
+#    out.append_rich_line(RL("For more details, see ") +
+#                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
+#                         ".")
+#    out.append("")
 
     # Make main menu for the run-start intro.
     menu = debugger_cli_common.Menu()
     menu.append(debugger_cli_common.MenuItem("run", "run"))
-    menu.append(debugger_cli_common.MenuItem(
-        "invoke_stepper", "invoke_stepper"))
+    # TODO(Pariksheet): Python invoke_stepper implementation not support now.
+#    menu.append(debugger_cli_common.MenuItem(
+#        "invoke_stepper", "invoke_stepper"))
     menu.append(debugger_cli_common.MenuItem("exit", "exit"))
     out.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
@@ -417,12 +419,12 @@ def get_run_short_description(run_call_count,
 
     Args:
       run_call_count: (int) Run call counter.
-      fetches: Fetches of the `Session.run()` call. See doc of `Session.run()`
+      fetches: Fetches of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
-      feed_dict: Feeds to the `Session.run()` call. See doc of `Session.run()`
+      feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       is_callable_runner: (bool) whether a runner returned by
-          Session.make_callable is being run.
+          GraphRuntime.make_callable is being run.
 
     Returns:
       (str) A short description of the run() call, including information about
@@ -434,25 +436,25 @@ def get_run_short_description(run_call_count,
     description = "run #%d: " % run_call_count
 
     if ';' not in fetches:
-        description += "1 fetch (%s); " % common.get_graph_element_name(fetches)
+        description += "1 input (%s); " % common.get_graph_element_name(fetches)
     else:
         # Could be (nested) list, tuple, dict or namedtuple.
         num_fetches = len(common.get_flattened_names(fetches))
         if num_fetches > 1:
-            description += "%d fetches; " % num_fetches
+            description += "%d outputs; " % num_fetches
         else:
-            description += "%d fetch; " % num_fetches
+            description += "%d output; " % num_fetches
 
     if not feed_dict:
-        description += "0 feeds"
+        description += "0 inputs"
     else:
         if len(feed_dict) == 1:
             for key in feed_dict:
-                description += "1 feed (%s)" % (
+                description += "1 input (%s)" % (
                     key if isinstance(key, six.string_types) or not hasattr(key, "name")
                     else key.name)
         else:
-            description += "%d feeds" % len(feed_dict)
+            description += "%d inputs" % len(feed_dict)
 
     return description
 
