@@ -1,23 +1,37 @@
 TVM Documentation
 =================
 
-Welcome to TVM documentation.
-
-
-Contents
---------
-
+Get Started
+-----------
 .. toctree::
    :maxdepth: 1
 
-   self
-   how_to/install
+   install/index
    tutorials/index
+   deploy/index
+   contribute/index
    faq
-   how_to/deploy
-   how_to/integrate
-   how_to/contribute
+
+API Reference
+-------------
+.. toctree::
+   :maxdepth: 2
+
    api/python/index
-   dev/index
    api_links
+
+Developer Guide
+---------------
+.. toctree::
+   :maxdepth: 2
+
+   dev/index
+   nnvm_top
+
+
+Index
+-----
+.. toctree::
+   :maxdepth: 1
+
    genindex

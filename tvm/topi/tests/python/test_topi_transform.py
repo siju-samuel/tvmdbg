@@ -184,6 +184,29 @@ def verify_expand_like(in_shape, out_shape, axis):
     for device in ["llvm"]:
         check_device(device)
 
+def verify_flip(in_shape, axis):
+    A = tvm.placeholder(shape=in_shape, name="A")
+    B = topi.flip(A, axis) + 1
+    def check_device(device):
+        ctx = tvm.context(device, 0)
+        if not ctx.exist:
+            print("Skip because %s is not enabled" % device)
+            return
+        print("Running on target: %s" % device)
+        with tvm.target.create(device):
+            s = topi.generic.schedule_injective(B)
+
+        foo = tvm.build(s, [A, B], device, name="reverse")
+        x_np = np.random.uniform(size=in_shape).astype(A.dtype)
+        out_npy = np.flip(x_np, axis) + 1
+        data_nd = tvm.nd.array(x_np, ctx)
+        out_nd = tvm.nd.empty(out_npy.shape, ctx=ctx, dtype=A.dtype)
+        foo(data_nd, out_nd)
+        np.testing.assert_allclose(out_nd.asnumpy(), out_npy)
+
+    for device in ["llvm", "cuda", "opencl"]:
+        check_device(device)
+
 def verify_take(src_shape, indices_src, axis=None):
     src_dtype = "float32"
     indices_dtype = "int32"
@@ -218,18 +241,18 @@ def verify_take(src_shape, indices_src, axis=None):
         indices_nd = tvm.nd.array(indices_src, ctx)
         out_nd = tvm.nd.empty(out_npys.shape, ctx=ctx, dtype=src_dtype)
         foo(data_nd, indices_nd, out_nd)
-        #print("out_npys:", out_npys.shape, "\n", out_npys)
-        #print("indices_nd:", indices_nd.shape, "\n", indices_nd)
-        #print("data_npy:", data_npy.shape, "\n", data_npy)
-        #print("out_nd:", out_nd.shape, "\n", out_nd.asnumpy())
         np.testing.assert_allclose(out_nd.asnumpy(), out_npys)
 
     for device in ["llvm", "opencl"]:
         check_device(device)
 
-def verify_strided_slice(in_shape, begin, end, stride):
+def verify_strided_slice(in_shape, begin, end, stride=None):
+    stride = stride if stride else [1, 1, 1]
     A = tvm.placeholder(shape=in_shape, name="A")
-    B = topi.cpp.strided_slice(A, begin, end, stride)
+    B = topi.strided_slice(A, begin, end, stride) + 1
+    def test_forward(x, begin, end, stride):
+        return x[begin[0]:end[0]:stride[0],
+                    begin[1]:end[1]:stride[1], begin[2]:end[2]:stride[2]] + 1
     def check_device(device):
         ctx = tvm.context(device, 0)
         if not ctx.exist:
@@ -241,16 +264,22 @@ def verify_strided_slice(in_shape, begin, end, stride):
 
         foo = tvm.build(s, [A, B], device, name="stride_slice")
         x_np = np.random.uniform(size=in_shape).astype(A.dtype)
-        out_npy = x_np[begin[0]:end[0]:stride[0],
-                    begin[1]:end[1]:stride[1], begin[2]:end[2]:stride[2]]
+        out_npy = test_forward(x_np, begin, end, stride)
         data_nd = tvm.nd.array(x_np, ctx)
         out_nd = tvm.nd.empty(out_npy.shape, ctx=ctx, dtype=A.dtype)
         foo(data_nd, out_nd)
         np.testing.assert_allclose(out_nd.asnumpy(), out_npy)
 
-    for device in ["llvm"]:
+    for device in ["llvm", "opencl"]:
         check_device(device)
 
+def test_strided_slice():
+    verify_strided_slice((3, 4, 3), [0, 0, 0], [4, -5, 4], [1, -1, 2])
+    verify_strided_slice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1])
+    verify_strided_slice((3, 4, 3), [1, -1, 0], [4, -5, 3], [2, -1, 1])
+    verify_strided_slice((3, 4, 3), [1, 0, 0], [2, 2, 3], [1, 1, 2])
+    verify_strided_slice((3, 4, 3), [1, -1, 0], [2, -3, 3], [1, -1, 1])
+    verify_strided_slice((3, 4, 3), [1, 1, 0], [4, 4, 3])
 
 def test_expand_dims():
     verify_expand_dims((3, 10), (3, 10, 1, 1), 2, 2)
@@ -293,9 +322,13 @@ def test_split():
     verify_split((2, 12, 3), [2, 4], 1)
     verify_split((10, 12, 24), [5, 7, 9], -1)
 
-def test_stridedslice():
-    verify_strided_slice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1])
-    verify_strided_slice((3, 4, 3), [1, -1, 0], [4, -5, 3], [2, -1, 1])
+def test_flip():
+    verify_flip((3, 4, 3), 1)
+    verify_flip((3, 4, 3), 0)
+    verify_flip((3, 4, 3), 2)
+    verify_flip((3, 4, 3), -1)
+    verify_flip((3, 4, 3), -3)
+    verify_flip((3, 4, 3), -2)
 
 def test_expand_like():
     verify_expand_like((3,), (2, 3), [0])
@@ -320,6 +353,7 @@ if __name__ == "__main__":
     test_reshape()
     test_squeeze()
     test_split()
+    test_flip()
     test_expand_like()
     test_take()
-    test_stridedslice()
+    test_strided_slice()

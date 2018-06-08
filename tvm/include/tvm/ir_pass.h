@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2016 by Contributors
- * \file ir_pass.h
+ * \file tvm/ir_pass.h
  * \brief Collection of IR pass functions
  *
  *  When the pass functions in this file are for Stmt,
@@ -53,8 +53,8 @@ Stmt CanonicalSimplify(Stmt stmt,
  * \param vrange The range information about the variable.
  * \return Canonicalized expression.
  */
-Expr CanonicalSimplify(Expr expr,
-                       Map<Var, Range> vrange = Map<Var, Range>());
+EXPORT Expr CanonicalSimplify(Expr expr,
+                              Map<Var, Range> vrange = Map<Var, Range>());
 
 /*!
  * \brief Deep compare lhs and rhs

@@ -111,6 +111,49 @@ def transpose(a, axes=None):
         return a(*idx)
     return tvm.compute(new_shape, _compute)
 
+@tvm.tag_scope(tag=tag.INJECTIVE)
+def flip(a, axis=0):
+    """Flip/reverse elements of an array in a particular axis.
+
+    Parameters
+    ----------
+    a : tvm.Tensor
+        The tensor to be expanded.
+
+    axis : int, optional
+        The axis along which the tensors will be reveresed.
+
+    Returns
+    -------
+    ret : tvm.Tensor
+    """
+    return cpp.flip(a, axis)
+
+@tvm.tag_scope(tag=tag.INJECTIVE)
+def strided_slice(a, begin, end, strides=None):
+    """Slice of an array.
+
+    Parameters
+    ----------
+    a : tvm.Tensor
+        The tensor to be sliced.
+
+    begin: list of int
+        The indices to begin with in the slicing.
+
+    end: list of int
+        Indicies indicating end of the slice.
+
+    strides: list of int, optional
+        Specifies the stride values, it can be negative
+        in that case, the input tensor will be reversed
+        in that particular axis.
+
+    Returns
+    -------
+    ret : tvm.Tensor
+    """
+    return cpp.strided_slice(a, begin, end, strides)
 
 @tvm.tag_scope(tag=tag.INJECTIVE)
 def reshape(a, newshape):
@@ -209,6 +252,7 @@ def concatenate(a_tuple, axis=0):
     axis_sizes = [a_tuple[i].shape[axis] for i in range(len(a_tuple))]
     out_shape = [a_tuple[0].shape[i] for i in range(0, axis)] + [sum(axis_sizes)]\
                 + [a_tuple[0].shape[i] for i in range(axis + 1, len(a_tuple[0].shape))]
+    out_shape[axis] = tvm.ir_pass.Simplify(out_shape[axis])
 
     def _compute(*indices):
         ret = a_tuple[0](*indices)

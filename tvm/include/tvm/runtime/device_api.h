@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2016 by Contributors
- * \file device_api.h
+ * \file tvm/runtime/device_api.h
  * \brief Abstract device memory management API
  */
 #ifndef TVM_RUNTIME_DEVICE_API_H_
@@ -81,18 +81,21 @@ class DeviceAPI {
    * \param from_offset The byte offeset in the from.
    * \param to The target array.
    * \param to_offset The byte offset in the to.
-   * \param size The size of the memory
+   * \param num_bytes The size of the memory in bytes
    * \param ctx_from The source context
    * \param ctx_to The target context
+   * \param type_hint The type of elements, only neded by certain backends.
+   *                  can be useful for cross device endian converison.
    * \param stream Optional stream object.
    */
   virtual void CopyDataFromTo(const void* from,
                               size_t from_offset,
                               void* to,
                               size_t to_offset,
-                              size_t size,
+                              size_t num_bytes,
                               TVMContext ctx_from,
                               TVMContext ctx_to,
+                              TVMType type_hint,
                               TVMStreamHandle stream) = 0;
     /*!
    * \brief Create a new stream of execution.
@@ -124,7 +127,7 @@ class DeviceAPI {
   /*!
    * \brief Synchronize 2 streams of execution.
    *
-   * An event is created in event_src stream that the second then 
+   * An event is created in event_src stream that the second then
    * stream waits on.  Neither event_src or event_dst need to be of
    * the same device ID as the context, but they must be of the same
    * device type.

@@ -1,6 +1,6 @@
 /*!
  *  Copyright (c) 2016 by Contributors
- * \file operation.h
+ * \file tvm/operation.h
  * \brief Operation node can generate one or multiple Tensors
  */
 #ifndef TVM_OPERATION_H_
@@ -181,7 +181,7 @@ class PlaceholderOpNode : public OperationNode {
 /*!
  * \brief A Compute op that compute a tensor on certain domain.
  */
-class ComputeOpNode : public OperationNode {
+class TVM_DLL ComputeOpNode : public OperationNode {
  public:
   /*! \brief IterVar on each axis */
   Array<IterVar> axis;

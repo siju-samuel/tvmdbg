@@ -1,5 +1,4 @@
 """Minimum graph runtime that executes graph containing TVM PackedFunc."""
-from __future__ import print_function
 from .._ffi.base import string_types
 from .._ffi.function import get_global_func
 from .rpc import base as rpc_base

@@ -177,7 +177,9 @@ void InputSplitBase::InitInputFileInfo(const std::string& uri,
 size_t InputSplitBase::Read(void *ptr, size_t size) {
   if (offset_begin_ >= offset_end_) return 0;
   if (offset_curr_ +  size > offset_end_) {
-    size = offset_end_ - offset_curr_;
+    // allow for extra newlines between files
+    const size_t num_extra_eol = files_.size() - file_ptr_ - 1;
+    size = offset_end_ - offset_curr_ + num_extra_eol;
   }
   if (size == 0) return 0;
   size_t nleft = size;
@@ -188,6 +190,7 @@ size_t InputSplitBase::Read(void *ptr, size_t size) {
     offset_curr_ += n;
     if (nleft == 0) break;
     if (n == 0) {
+      buf[0] = '\n'; ++buf; --nleft;  // insert a newline between files
       if (offset_curr_ != file_offset_[file_ptr_ + 1]) {
         LOG(ERROR) << "curr=" << offset_curr_
                    << ",begin=" << offset_begin_

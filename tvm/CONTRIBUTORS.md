@@ -28,7 +28,7 @@ list of contributions that are welcomed
 
 How to Contribute
 -----------------
-See [Contributor guide](docs/how_to/contribute.md) on tips for contributions.
+See [Contributor guide](http://tvm.ai/contribute/) on tips for contributions.
 
 
 Committers
@@ -62,3 +62,5 @@ List of Contributors
 - [Haolong Zhang](https://github.com/haolongzhangm)
 - [Cody Hao Yu](https://github.com/comaniac)
 - [Chris Nuernberger](https://github.com/cnuernber)
+- [Tatsuya Nishiyama](https://github.com/nishi-t)
+- [Kazutaka Morita](https://github.com/kazum)

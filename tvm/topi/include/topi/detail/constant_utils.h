@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "tvm/tvm.h"
+#include "tvm/ir_pass.h"
 
 namespace topi {
 namespace detail {
@@ -61,6 +62,42 @@ inline std::vector<int> GetConstIntValues(Array<Expr> exprs, const std::string& 
   for (auto expr : exprs) {
     CHECK(IsConstInt(expr)) << "All elements of " << var_name << " must be constant integers";
     result.push_back(GetConstInt(expr));
+  }
+  return result;
+}
+
+/*!
+ * \brief Get the value of all the constant integer expressions in the given array
+ *
+ * \param exprs The array of expressions to get the values of
+ * \param var_name The name to be used when logging an error in the event that any
+ * of the expressions are not constant integers.
+ *
+ * \return A vector of the int64_t values
+ */
+inline std::vector<int64_t> GetConstInt64Values(Array<Expr> exprs, const std::string& var_name) {
+  std::vector<int64_t> result;
+  for (auto expr : exprs) {
+    CHECK(IsConstInt(expr)) << "All elements of " << var_name << " must be constant integers";
+    result.push_back(GetConstInt(expr));
+  }
+  return result;
+}
+
+/*!
+ * \brief Check weather the two expressions are equal or not, if not simplify the expressions and check again
+ * \note This is stronger equality check than tvm::ir::Equal
+ *
+ * \param lhs First expreesion
+ * \param rhs Second expreesion
+ *
+ * \return result True if both expressions are equal, else false
+ */
+inline bool EqualCheck(Expr lhs, Expr rhs) {
+  bool result = tvm::ir::Equal(lhs, rhs);
+  if (!result) {
+    Expr zero(0);
+    result = tvm::ir::Equal(tvm::ir::CanonicalSimplify(lhs-rhs), zero);
   }
   return result;
 }

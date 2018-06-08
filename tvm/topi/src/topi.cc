@@ -191,7 +191,7 @@ TVM_REGISTER_GLOBAL("topi.nn.relu")
 
 TVM_REGISTER_GLOBAL("topi.nn.leaky_relu")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = leaky_relu<float>(args[0]);
+  *rv = leaky_relu(args[0], args[1]);
   });
 
 TVM_REGISTER_GLOBAL("topi.nn.prelu")
@@ -239,6 +239,11 @@ TVM_REGISTER_GLOBAL("topi.expand_dims")
 TVM_REGISTER_GLOBAL("topi.transpose")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = transpose(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.flip")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = flip(args[0], args[1]);
   });
 
 TVM_REGISTER_GLOBAL("topi.reshape")
@@ -337,7 +342,7 @@ TVM_REGISTER_GLOBAL("topi.nn.pool")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = nn::pool(args[0], args[1], args[2], args[3],
                  static_cast<nn::PoolType>(static_cast<int>(args[4])),
-                 args[5], args[6]);
+                 args[5], args[6], args[7]);
   });
 
 TVM_REGISTER_GLOBAL("topi.nn.global_pool")

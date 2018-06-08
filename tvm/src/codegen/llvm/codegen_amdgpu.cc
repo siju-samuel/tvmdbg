@@ -200,20 +200,37 @@ runtime::Module BuildAMDGPU(Array<LoweredFunc> funcs, std::string target) {
   dest_ll.SetUnbuffered();
   destAsm.SetUnbuffered();
   module->print(dest_ll, nullptr);
+#if TVM_LLVM_VERSION <= 60
   std::unique_ptr<llvm::Module> mAsm = llvm::CloneModule(module.get());
   std::unique_ptr<llvm::Module> mObj = llvm::CloneModule(module.get());
+#else
+  std::unique_ptr<llvm::Module> mAsm = llvm::CloneModule(*module.get());
+  std::unique_ptr<llvm::Module> mObj = llvm::CloneModule(*module.get());
+#endif
   llvm::legacy::PassManager pass;
 
+#if TVM_LLVM_VERSION <= 60
   CHECK(tm->addPassesToEmitFile(
             pass, destObj, llvm::TargetMachine::CGFT_ObjectFile) == 0)
             << "Cannot emit target CGFT_ObjectFile";
+#else
+  CHECK(tm->addPassesToEmitFile(
+            pass, destObj, nullptr, llvm::TargetMachine::CGFT_ObjectFile) == 0)
+            << "Cannot emit target CGFT_ObjectFile";
+#endif
   pass.run(*mObj);
   std::string obj(dataObj.begin(), dataObj.end());
 
   llvm::legacy::PassManager passAsm;
+#if TVM_LLVM_VERSION <= 60
   CHECK(tm->addPassesToEmitFile(passAsm, destAsm,
                                 llvm::TargetMachine::CGFT_AssemblyFile) == 0)
       << "Cannot emit target CGFT_AssemblyFile";
+#else
+  CHECK(tm->addPassesToEmitFile(passAsm, destAsm, nullptr,
+                                llvm::TargetMachine::CGFT_AssemblyFile) == 0)
+      << "Cannot emit target CGFT_AssemblyFile";
+#endif
   passAsm.run(*mAsm);
   std::string assembly(dataAsm.begin(), dataAsm.end());
 

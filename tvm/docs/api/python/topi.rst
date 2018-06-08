@@ -1,11 +1,9 @@
-TVM Operator Inventory
-----------------------
+TOPI
+----
 .. automodule:: topi
 
-Index
-~~~~~
-
-**List of operators**
+List of operators
+~~~~~~~~~~~~~~~~~
 
 .. autosummary::
 
@@ -19,11 +17,14 @@ Index
    topi.clip
    topi.cast
    topi.transpose
+   topi.flip
+   topi.strided_slice
    topi.expand_dims
    topi.reshape
    topi.squeeze
    topi.concatenate
    topi.split
+   topi.take
    topi.full
    topi.full_like
    topi.greater
@@ -52,8 +53,8 @@ Index
    topi.broadcast_minimum
 
 
-**List of schedules**
-
+List of schedules
+~~~~~~~~~~~~~~~~~
 .. autosummary::
 
    topi.generic.schedule_conv2d_nchw
@@ -74,11 +75,14 @@ topi
 .. autofunction:: topi.clip
 .. autofunction:: topi.cast
 .. autofunction:: topi.transpose
+.. autofunction:: topi.flip
+.. autofunction:: topi.strided_slice
 .. autofunction:: topi.expand_dims
 .. autofunction:: topi.reshape
 .. autofunction:: topi.squeeze
 .. autofunction:: topi.concatenate
 .. autofunction:: topi.split
+.. autofunction:: topi.take
 .. autofunction:: topi.full
 .. autofunction:: topi.full_like
 .. autofunction:: topi.greater
