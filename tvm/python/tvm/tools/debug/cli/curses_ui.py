@@ -70,7 +70,7 @@ def _get_command_from_line_attr_segs(mouse_x, attr_segs):
     return None
 
 
-class ScrollBar(object):# pylint: disable=too-few-public-methods
+class ScrollBar(object):  # pylint: disable=too-few-public-methods
     """Vertical ScrollBar for Curses-based CLI.
 
     An object of this class has knowledge of the location of the scroll bar
@@ -212,6 +212,7 @@ class ScrollBar(object):# pylint: disable=too-few-public-methods
 def _screen_getmouse():
     return curses.getmouse()
 
+
 def _screen_new_output_pad(rows, cols):
     """Generate a new pad on the screen.
 
@@ -226,17 +227,20 @@ def _screen_new_output_pad(rows, cols):
 
     return curses.newpad(rows, cols)
 
+
 def _refresh_pad(pad, *args):
     try:
         pad.refresh(*args)
     except curses.error:
         pass
 
+
 def _format_indices(indices):
     # Remove the spaces to make it compact.
     return repr(indices).replace(" ", "")
 
-class CursesUI(base_ui.BaseUI):# pylint: disable=too-many-instance-attributes
+
+class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
     """Curses-based Command-line UI.
 
     In this class, the methods with the prefix "_screen_" are the methods that
@@ -804,7 +808,7 @@ class CursesUI(base_ui.BaseUI):# pylint: disable=too-many-instance-attributes
 
         self._command_pointer = 0
         self._pending_command = ""
-        return  None
+        return None
 
     def _screen_gather_textbox_str(self):
         """Gather the text string in the command text box.
