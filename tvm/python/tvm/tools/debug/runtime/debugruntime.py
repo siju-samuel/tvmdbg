@@ -1,5 +1,6 @@
 # pylint: disable=unused-argument
 """Debug runtime functions."""
+
 import json
 import os
 import numpy as np
@@ -12,8 +13,10 @@ def _ensure_dir(file_path):
 
     Parameters
     ----------
+
     file_path: str
         File path to create
+
     """
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
@@ -25,14 +28,19 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
 
     Parameters
     ----------
+
     ctx: Str
         context in string
-    nodes_list: List
-        List of the nodes in the graph and their details
+
+    cli_obj: obj
+        CLI object where common information is stored
+
     dltype_list: List
         List of datatypes of each node
+
     shapes_list: List
         List of shape of each node
+
     """
 
     nodes_list = cli_obj._nodes_list
@@ -44,7 +52,7 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
         input_list = []
         for input_node in node['inputs']:
             input_list.append(nodes_list[input_node[0]]['name'])
-        del node['inputs']
+        #del node['inputs']
         node['inputs'] = input_list
         dltype = str("type: " + dltype_list[1][i])
         if 'attrs' not in node:
@@ -73,11 +81,13 @@ def _dump_heads(cli_obj, heads_list):
 
     Parameters
     ----------
+
     cli_obj: obj
         The CLI object
 
     heads_list : List
        The list of outputs from the json node
+
     """
     for output in heads_list:
         cli_obj.set_ouputs(cli_obj._nodes_list[output[0]]['name'])
@@ -88,6 +98,7 @@ def dump_output(cli_obj, ndarraylist):
 
     Parameters
     ----------
+
     cli_obj: obj
         The CLI object
 
@@ -138,8 +149,10 @@ def create(obj, graph):
     ----------
     obj: Object
         The object being used to store the graph runtime.
+
     graph: str
-        nnvm graph in json format
+        NNVM graph in json format
+
     """
     ctx = str(obj.ctx).upper().replace("(", ":").replace(")", "")
     cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=ctx)
