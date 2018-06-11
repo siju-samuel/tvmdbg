@@ -83,8 +83,7 @@ class GraphRuntime : public ModuleNode {
    */
   void Init(const std::string& graph_json,
             tvm::runtime::Module module,
-            TVMContext ctx,
-            bool debug) {
+            TVMContext ctx) {
 #ifndef _LIBCPP_SGX_NO_IOSTREAMS
     std::istringstream is(graph_json);
 #else
@@ -94,7 +93,6 @@ class GraphRuntime : public ModuleNode {
     this->Load(&reader);
     module_ = module;
     ctx_ = ctx;
-    debug_ = debug;
     this->SetupStorage();
     this->SetupOpExecs();
   }
@@ -177,44 +175,6 @@ class GraphRuntime : public ModuleNode {
     uint32_t eid = this->entry_id(outputs_[index]);
     TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], data_out, nullptr));
   }
-#ifdef TVM_GRAPH_RUNTIME_DEBUG
-  /*!
-   * \brief Get the node index given the name of node.
-   * \param name The name of the node.
-   * \return The index of node.
-   */
-  int GetNodeIndex(const std::string& name) {
-    for (uint32_t nid = 0; nid< nodes_.size(); ++nid) {
-      if (nodes_[nid].name == name) {
-        return static_cast<int>(nid);
-      }
-    }
-    LOG(FATAL) << "cannot find " << name << " among nodex";
-    return -1;
-  }
-
-  /*!
-   * \brief Copy index-th node to data_out.
-   *
-   * This method will do a partial run of the the graph
-   * from begining upto the index-th node and return output of index-th node.
-   * This is costly operation and suggest to use only for debug porpose.
-   *
-   * \param index: The  index of the node.
-   * \param data_out the node data.
-   */
-  void DebugGetNodeOutput(int index, DLTensor* data_out) {
-    CHECK_LT(static_cast<size_t>(index), nodes_.size());
-    uint32_t eid = index;
-
-    for (size_t i = 0; i < op_execs_.size(); ++i) {
-      if (op_execs_[i]) op_execs_[i]();
-      if (static_cast<int>(i) == index) break;
-    }
-
-    TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], data_out, nullptr));
-  }
-#endif
   /*!
    * \brief Load parameters from binary stream
    * \param strm The input stream.
@@ -449,8 +409,6 @@ class GraphRuntime : public ModuleNode {
   std::vector<DLTensor> data_entry_;
   /*! \brief operator on each node */
   std::vector<std::function<void()> > op_execs_;
-  /*! \brief debugging functionality is enabled */
-  bool debug_;
   /*! \brief debug buffer storage pool */
   std::vector<DLTensor*> debug_buffers_;
 };
@@ -671,28 +629,17 @@ PackedFunc GraphRuntime::GetFunction(
           this->GetInput(args[0], args[1]);
         }
       });
-    } else if (name == "set_debug_buffer") {
-      return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-            this->SetDebugBuffer(args[0]);
-        });
-#ifdef TVM_GRAPH_RUNTIME_DEBUG
-  } else if (name == "debug_get_output") {
+  } else if (name == "set_debug_buffer") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-        if (args[0].type_code() == kStr) {
-          this->DebugGetNodeOutput(this->GetNodeIndex(args[0]), args[1]);
-        } else {
-          this->DebugGetNodeOutput(args[0], args[1]);
-        }
+        this->SetDebugBuffer(args[0]);
       });
-#endif
   } else if (name == "run") {
-    if (this->debug_ == true) {
-        return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-            this->DebugRun();
-          });
-    }
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
         this->Run();
+      });
+  } else if (name == "debug_run") {
+    return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
+        this->DebugRun();
       });
   } else if (name == "load_params") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
@@ -706,19 +653,18 @@ PackedFunc GraphRuntime::GetFunction(
 Module GraphRuntimeCreate(std::string sym_json,
                           tvm::runtime::Module m,
                           int device_type,
-                          int device_id,
-                          bool debug = false) {
+                          int device_id) {
   TVMContext ctx;
   ctx.device_type = static_cast<DLDeviceType>(device_type);
   ctx.device_id   = device_id;
   std::shared_ptr<GraphRuntime> exec = std::make_shared<GraphRuntime>();
-  exec->Init(sym_json, m, ctx, debug);
+  exec->Init(sym_json, m, ctx);
   return Module(exec);
 }
 
 TVM_REGISTER_GLOBAL("tvm.graph_runtime.create")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
-    *rv = GraphRuntimeCreate(args[0], args[1], args[2], args[3], args[4]);
+    *rv = GraphRuntimeCreate(args[0], args[1], args[2], args[3]);
   });
 
 TVM_REGISTER_GLOBAL("tvm.graph_runtime.remote_create")
@@ -726,7 +672,7 @@ TVM_REGISTER_GLOBAL("tvm.graph_runtime.remote_create")
     void* mhandle = args[1];
     *rv = GraphRuntimeCreate(args[0],
                              *static_cast<tvm::runtime::Module*>(mhandle),
-                             args[2], args[3], args[4]);
+                             args[2], args[3]);
   });
 }  // namespace runtime
 }  // namespace tvm

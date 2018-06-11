@@ -42,10 +42,10 @@ def create(graph_json_str, libmod, ctx, debug=False):
         hmod = rpc_base._ModuleHandle(libmod)
         fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime.remote_create")
         device_type = device_type % rpc_base.RPC_SESS_MASK
-        func_obj = fcreate(graph_json_str, hmod, device_type, device_id, debug)
+        func_obj = fcreate(graph_json_str, hmod, device_type, device_id)
         return GraphModule(func_obj, ctx, graph_json_str, debug)
     fcreate = get_global_func("tvm.graph_runtime.create")
-    func_obj = fcreate(graph_json_str, libmod, device_type, device_id, debug)
+    func_obj = fcreate(graph_json_str, libmod, device_type, device_id)
     return GraphModule(func_obj, ctx, graph_json_str, debug)
 
 
@@ -79,10 +79,7 @@ class GraphModule(object):
         self._get_output = module["get_output"]
         self._get_input = module["get_input"]
         self._set_debug_buffer = module["set_debug_buffer"]
-        try:
-            self._debug_get_output = module["debug_get_output"]
-        except AttributeError:
-            pass
+        self._debug_run = module["debug_run"]
         self._load_params = module["load_params"]
         self.ctx = ctx
         self.debug = debug
@@ -173,23 +170,6 @@ class GraphModule(object):
             The output array container
         """
         self._get_output(index, out)
-        return out
-
-    def debug_get_output(self, node, out):
-        """Run graph upto node and get the output to out
-
-        Parameters
-        ----------
-        node : int / str
-            The node index or name
-
-        out : NDArray
-            The output array container
-        """
-        if hasattr(self, '_debug_get_output'):
-            self._debug_get_output(node, out)
-        else:
-            raise RuntimeError("Please compile runtime with USE_GRAPH_RUNTIME_DEBUG = 0")
         return out
 
     def load_params(self, params_bytes):
