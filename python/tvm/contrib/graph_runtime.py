@@ -124,7 +124,7 @@ class GraphModule(object):
 
     def debug_run(self):
         self.set_debug_buffer()
-        self._run()
+        self._debug_run()
         debugruntime.dump_output(self.dbgobj, self.ndarraylist)
 
     def run(self, **input_dict):
