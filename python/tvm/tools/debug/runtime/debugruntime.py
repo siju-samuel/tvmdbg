@@ -76,23 +76,55 @@ class DebugGraphModule(object):
                 np.save(file_name, ndbuffer.asnumpy())
                 os.rename(file_name, file_name.rpartition('.')[0])
 
+    def _ensure_dir(self, file_path):
+        """Create a directory if not exists
 
-def _ensure_dir(file_path):
-    """Create a directory if not exists
+        Parameters
+        ----------
 
-    Parameters
-    ----------
+        file_path: str
+            File path to create
 
-    file_path: str
-        File path to create
+        """
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
-    """
-    directory = os.path.dirname(file_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    def _dump_graph_json(self, ctx, new_graph):
+        # save to file
+        graph_dump_file_name = '_tvmdbg_graph_dump.json'
+        folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
+        folder_name = folder_name + ctx.replace(":", "_") + "/"
+        self.cli_obj._dump_folder = folder_name
+        path = self.cli_obj._dump_root + folder_name
+        self._ensure_dir(path)
+        with open((path + graph_dump_file_name), 'w') as outfile:
+            json.dump(new_graph, outfile, indent=2, sort_keys=False)
+
+    def _dump_output_nodes(self, nodes_list, heads_list):
+        """Dump the heads to a list
+
+        Parameters
+        ----------
+
+        cli_obj: obj
+            The CLI object
+
+        heads_list : List
+           The list of outputs from the json node
+
+        """
+        for output in heads_list:
+            self.cli_obj.set_ouputs(nodes_list[output[0]]['name'])
+
+def _make_debug_buffer_list(shapes_list, dltype_list):
+    dbg_out_buffer_list = []
+    for i in range(len(shapes_list[1])):
+        dbg_out_buffer_list.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
+    return dbg_out_buffer_list
 
 
-def _dump_json(ctx, cli_obj, nodes_list, dltype_list, shapes_list):
+def _get_graph_json(nodes_list, dltype_list, shapes_list):
     """Dump the nodes in json format to file
 
     Parameters
@@ -136,38 +168,7 @@ def _dump_json(ctx, cli_obj, nodes_list, dltype_list, shapes_list):
         node['shape'] = shapes_list[1][i]
         new_graph['nodes'].append(node)
 
-    # save to file
-    graph_dump_file_name = '_tvmdbg_graph_dump.json'
-    folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
-    folder_name = folder_name + ctx.replace(":", "_") + "/"
-    cli_obj._dump_folder = folder_name
-    path = cli_obj._dump_root + folder_name
-    _ensure_dir(path)
-    with open((path + graph_dump_file_name), 'w') as outfile:
-        json.dump(new_graph, outfile, indent=2, sort_keys=False)
-
-def _get_debug_buffer_list(shapes_list, dltype_list):
-    dbg_out_buffer_list = []
-    for i in range(len(shapes_list[1])):
-        dbg_out_buffer_list.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
-    return dbg_out_buffer_list
-
-
-def _dump_heads(cli_obj, nodes_list, heads_list):
-    """Dump the heads to a list
-
-    Parameters
-    ----------
-
-    cli_obj: obj
-        The CLI object
-
-    heads_list : List
-       The list of outputs from the json node
-
-    """
-    for output in heads_list:
-        cli_obj.set_ouputs(nodes_list[output[0]]['name'])
+    return new_graph
 
 
 def create(obj, graph, ctx):
@@ -182,17 +183,20 @@ def create(obj, graph, ctx):
         NNVM graph in json format
 
     """
-    ctx = str(ctx).upper().replace("(", ":").replace(")", "")
-    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=ctx)
     json_obj = json.loads(graph)
     nodes_list = json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']
     shapes_list = json_obj['attrs']['shape']
     heads_list = json_obj['heads']
 
-    # dump the json information
-    _dump_json(ctx, cli_obj, nodes_list, dltype_list, shapes_list)
-    _dump_heads(cli_obj, nodes_list, heads_list)
+    new_graph = _get_graph_json(nodes_list, dltype_list, shapes_list)
+    ctx = str(ctx).upper().replace("(", ":").replace(")", "")
+    # make the cli object
+    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, new_graph, ctx=ctx)
     # prepare the debug out buffer list
-    dbg_buff_list = _get_debug_buffer_list(shapes_list, dltype_list)
-    return DebugGraphModule(nodes_list, cli_obj, dbg_buff_list)
+    dbg_buff_list = _make_debug_buffer_list(shapes_list, dltype_list)
+    m = DebugGraphModule(nodes_list, cli_obj, dbg_buff_list)
+    # dump the json information
+    m._dump_graph_json(ctx, new_graph)
+    m._dump_output_nodes(nodes_list, heads_list)
+    return m
