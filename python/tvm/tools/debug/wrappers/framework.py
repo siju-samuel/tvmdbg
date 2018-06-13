@@ -335,7 +335,7 @@ class BaseDebugWrapperSession():
         self._feed_dict.update({name: value})
 
     def run(self,
-            fetches,
+            fetches=None,
             options=None,
             run_metadata=None,
             callable_runner=None,

@@ -84,7 +84,7 @@ class GraphModule(object):
         self.ctx = ctx
         self.debug = debug
         if self.debug:
-            self.dbgobj = debugruntime.create(self, graph_json_str)
+            self.dbgobj = debugruntime.create(self, graph_json_str, ctx)
 
     def set_input(self, key=None, value=None, **params):
         """Set inputs to the module via kwargs
@@ -105,7 +105,7 @@ class GraphModule(object):
         for k, v in params.items():
             self._set_input(k, nd.array(v, ctx=self.ctx))
         if self.debug:
-            debugruntime.set_input(self.dbgobj, key, value, **params)
+            self.dbgobj.set_input(key, value, **params)
         return self
 
     def set_debug_buffer(self):
@@ -116,16 +116,13 @@ class GraphModule(object):
         None
         """
 
-        if not hasattr(self, '_set_debug_buffer'):#TODO Remove later
-            raise RuntimeError("Please compile runtime with USE_GRAPH_RUNTIME_DEBUG = 0")
-
-        for ndbuffer in self.ndarraylist:
-            self._set_debug_buffer(ndbuffer)
+        for eid in range(self.dbgobj.get_debug_buffer_count()):
+            self._set_debug_buffer(self.dbgobj.get_debug_buffer(eid))
 
     def debug_run(self):
         self.set_debug_buffer()
         self._debug_run()
-        debugruntime.dump_output(self.dbgobj, self.ndarraylist)
+        self.dbgobj.dump_output()
 
     def run(self, **input_dict):
         """Run forward execution of the graph
@@ -142,7 +139,7 @@ class GraphModule(object):
             self._run()
         else:
             #call cli debug run and when user execute run command debug_run will be invoked
-            self.dbgobj.run("")
+            self.dbgobj.run()
 
     def get_input(self, index, out):
         """Get index-th input to out

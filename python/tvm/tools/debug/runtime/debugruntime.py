@@ -1,11 +1,80 @@
 # pylint: disable=unused-argument
 """Debug runtime functions."""
 
-import json
 import os
+import json
 import numpy as np
 from tvm import ndarray as nd
 from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
+
+class DebugGraphModule(object):
+    """Wrapper debug runtime module.
+
+    This is a thin wrapper of the debug for TVM runtime.
+
+    Parameters
+    ----------
+    nodes_list : list
+        The list of all the graph nodes.
+
+    cli_obj : Object
+        The context of CLI object
+
+    """
+    def __init__(self, nodes_list, cli_obj, dbg_out_buffer_list):
+        self.nodes_list = nodes_list
+        self.cli_obj = cli_obj
+        self.dbg_out_buffer_list = dbg_out_buffer_list
+
+    def run(self):
+        self.cli_obj.run()
+
+    def get_debug_buffer_count(self):
+        return len(self.dbg_out_buffer_list)
+
+    def get_debug_buffer(self, eid):
+        return self.dbg_out_buffer_list[eid]
+
+    def set_input(self, key=None, value=None, **params):
+        """Set inputs to the module via kwargs
+
+        Parameters
+        ----------
+
+        key : int or str
+           The input key
+
+        value : the input value.
+           The input key
+
+        params : dict of str to NDArray
+           Additonal arguments
+        """
+        if key:
+            self.cli_obj.set_input(key.replace("/", "_"), value)
+
+    def dump_output(self):
+        """Dump the outputs to a temporary folder
+
+        Parameters
+        ----------
+
+        cli_obj: obj
+            The CLI object
+
+        """
+        eid = 0
+        for node in self.nodes_list:
+            num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
+            for j in range(num_outputs):
+                ndbuffer = self.dbg_out_buffer_list[eid]
+                times_tamp = ndbuffer.time_stamp
+                eid += 1
+                key = node['name'] + "_" + str(j) + "__000000" + str(ndbuffer.time_stamp) + ".npy"
+                key = key.replace("/", "_")
+                file_name = str(self.cli_obj._dump_root + self.cli_obj._dump_folder + key)
+                np.save(file_name, ndbuffer.asnumpy())
+                os.rename(file_name, file_name.rpartition('.')[0])
 
 
 def _ensure_dir(file_path):
@@ -23,7 +92,7 @@ def _ensure_dir(file_path):
         os.makedirs(directory)
 
 
-def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
+def _dump_json(ctx, cli_obj, nodes_list, dltype_list, shapes_list):
     """Dump the nodes in json format to file
 
     Parameters
@@ -35,6 +104,9 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     cli_obj: obj
         CLI object where common information is stored
 
+    nodes_list: List
+        List of nodes in the graph
+
     dltype_list: List
         List of datatypes of each node
 
@@ -43,7 +115,6 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
 
     """
 
-    nodes_list = cli_obj._nodes_list
     new_graph = {}
     new_graph['nodes'] = []
     nodes_len = len(nodes_list)
@@ -75,8 +146,14 @@ def _dump_json(ctx, cli_obj, dltype_list, shapes_list):
     with open((path + graph_dump_file_name), 'w') as outfile:
         json.dump(new_graph, outfile, indent=2, sort_keys=False)
 
+def _get_debug_buffer_list(shapes_list, dltype_list):
+    dbg_out_buffer_list = []
+    for i in range(len(shapes_list[1])):
+        dbg_out_buffer_list.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
+    return dbg_out_buffer_list
 
-def _dump_heads(cli_obj, heads_list):
+
+def _dump_heads(cli_obj, nodes_list, heads_list):
     """Dump the heads to a list
 
     Parameters
@@ -90,59 +167,10 @@ def _dump_heads(cli_obj, heads_list):
 
     """
     for output in heads_list:
-        cli_obj.set_ouputs(cli_obj._nodes_list[output[0]]['name'])
+        cli_obj.set_ouputs(nodes_list[output[0]]['name'])
 
 
-def dump_output(cli_obj, ndarraylist):
-    """Dump the outputs to a temporary folder
-
-    Parameters
-    ----------
-
-    cli_obj: obj
-        The CLI object
-
-    ndarraylist : List of tvm.ndarray
-       The list of outputs, for each node in node list
-
-    """
-    order = 1
-    eid = 0
-    for node in cli_obj._nodes_list:
-        num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
-        for j in range(num_outputs):
-            ndbuffer = ndarraylist[eid]
-            eid = eid + 1
-            key = node['name'] + "_" + str(j) + "__000000" + str(order) + ".npy"
-            key = key.replace("/", "_")
-            file_name = str(cli_obj._dump_root + cli_obj._dump_folder + key)
-            np.save(file_name, ndbuffer.asnumpy())
-            os.rename(file_name, file_name.rpartition('.')[0])
-            order = order + 1
-
-
-def set_input(cli_obj, key=None, value=None, **params):
-    """Set inputs to the module via kwargs
-
-    Parameters
-    ----------
-    cli_obj: obj
-        The CLI object
-
-    key : int or str
-       The input key
-
-    value : the input value.
-       The input key
-
-    params : dict of str to NDArray
-       Additonal arguments
-    """
-    if key:
-        cli_obj.set_input(key.replace("/", "_"), value)
-
-
-def create(obj, graph):
+def create(obj, graph, ctx):
     """Create a debug runtime environment and start the CLI
 
     Parameters
@@ -154,19 +182,17 @@ def create(obj, graph):
         NNVM graph in json format
 
     """
-    ctx = str(obj.ctx).upper().replace("(", ":").replace(")", "")
+    ctx = str(ctx).upper().replace("(", ":").replace(")", "")
     cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, graph, ctx=ctx)
     json_obj = json.loads(graph)
-    cli_obj._nodes_list = json_obj['nodes']
+    nodes_list = json_obj['nodes']
     dltype_list = json_obj['attrs']['dltype']
     shapes_list = json_obj['attrs']['shape']
     heads_list = json_obj['heads']
 
     # dump the json information
-    _dump_json(ctx, cli_obj, dltype_list, shapes_list)
-    _dump_heads(cli_obj, heads_list)
-    # prepare the out shape
-    obj.ndarraylist = []
-    for i in range(len(shapes_list[1])):
-        obj.ndarraylist.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
-    return cli_obj
+    _dump_json(ctx, cli_obj, nodes_list, dltype_list, shapes_list)
+    _dump_heads(cli_obj, nodes_list, heads_list)
+    # prepare the debug out buffer list
+    dbg_buff_list = _get_debug_buffer_list(shapes_list, dltype_list)
+    return DebugGraphModule(nodes_list, cli_obj, dbg_buff_list)

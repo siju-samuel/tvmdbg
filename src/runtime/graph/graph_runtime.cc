@@ -2,6 +2,7 @@
  *  Copyright (c) 2017 by Contributors
  * \file graph_runtime.cc
  */
+#include <sys/time.h>
 #include <tvm/runtime/packed_func.h>
 #include <tvm/runtime/registry.h>
 #include <tvm/runtime/serializer.h>
@@ -63,13 +64,17 @@ class GraphRuntime : public ModuleNode {
   }
 
   void DebugRun() {
+    struct timeval tp;
     // Execute each op and copy the outs
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
+      gettimeofday(&tp, NULL);
+      int64_t mstime = int64_t(tp.tv_sec * 1000L + tp.tv_usec / 1000);
       size_t num_outputs = (nodes_[i].op_type == "null") ? 1: nodes_[i].param.num_outputs;
       for (size_t j = 0; j < num_outputs; j++) {
           uint32_t eid = this->entry_id(i, j);
           TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
+          *(int64_t *)(debug_buffers_[eid] + 1) = mstime;
           // CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
       }
     }
