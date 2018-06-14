@@ -7,6 +7,23 @@ import numpy as np
 from tvm import ndarray as nd
 from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
 
+class OnRunStartAction(object):
+    """Enum-like values for possible action to take on start of a run() call."""
+
+    # Run once with debug tensor-watching.
+    DEBUG_RUN = "debug_run"
+
+    # Run once with profiler.
+    PROFILE_RUN = "profile_run"
+
+    # Run without debug tensor-watching.
+    NON_DEBUG_RUN = "non_debug_run"
+
+    # Instead of running the fetches as a whole, as would normally happen, invoke
+    # the (to-be-implemented) debug stepper.
+    # TODO(cais): Remove "to-be-implemented".
+    INVOKE_STEPPER = "invoke_stepper"
+
 class DebugGraphModule(object):
     """Wrapper debug runtime module.
 
@@ -26,8 +43,11 @@ class DebugGraphModule(object):
         self.cli_obj = cli_obj
         self.dbg_out_buffer_list = dbg_out_buffer_list
 
-    def run(self):
-        self.cli_obj.run()
+    def get_run_command(self):
+        return self.cli_obj.get_run_command()
+
+    def run_end(self, run_cli_session, retvals):
+        self.cli_obj.run_end(run_cli_session, retvals)
 
     def get_debug_buffer_count(self):
         return len(self.dbg_out_buffer_list)
@@ -191,7 +211,7 @@ def create(obj, graph, ctx):
     new_graph = _get_graph_json(nodes_list, dltype_list, shapes_list)
     ctx = str(ctx).upper().replace("(", ":").replace(")", "")
     # make the cli object
-    cli_obj = tvmdbg.LocalCLIDebugWrapperSession(obj, new_graph, ctx=ctx)
+    cli_obj = tvmdbg.LocalCLIDebugWrapperModule(obj, new_graph, ctx=ctx)
     # prepare the debug out buffer list
     dbg_buff_list = _make_debug_buffer_list(shapes_list, dltype_list)
     m = DebugGraphModule(nodes_list, cli_obj, dbg_buff_list)

@@ -25,8 +25,8 @@ from tvm.tools.debug.wrappers import framework
 _DUMP_ROOT_PREFIX = "tvmdbg_"
 
 
-class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
-    """Concrete subclass of BaseDebugWrapperSession implementing a local CLI.
+class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
+    """Concrete subclass of BaseDebugWrapperModule implementing a local CLI.
 
     This class has all the methods that a `Graph Runtime` object has, in order
     to support debugging with minimal code changes. Invoking its `run()` method
@@ -41,7 +41,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
                  log_usage=True,
                  ui_type="curses",
                  thread_name_filter=None):
-        """Constructor of LocalCLIDebugWrapperSession.
+        """Constructor of LocalCLIDebugWrapperModule.
 
         Args:
           graph_runtime: The TVM `Graph Runtime` object being wrapped.
@@ -61,7 +61,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
         if log_usage:
             pass  # No logging for open-source.
 
-        framework.BaseDebugWrapperSession.__init__(
+        framework.BaseDebugWrapperModule.__init__(
             self, sess, graph, ctx, thread_name_filter=thread_name_filter)
 
         if not dump_root:
