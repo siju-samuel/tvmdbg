@@ -120,9 +120,19 @@ class GraphModule(object):
             self._set_debug_buffer(self.dbgobj.get_debug_buffer(eid))
 
     def debug_run(self):
-        self.set_debug_buffer()
-        self._debug_run()
-        self.dbgobj.dump_output()
+            #call cli debug run and when user execute run command debug_run will be invoked
+            run_cli_session = self.dbgobj.get_run_command()
+            run_start_resp = run_cli_session.get_run_start_resp()
+            retvals = True
+            if run_start_resp.action == debugruntime.OnRunStartAction.DEBUG_RUN:
+                self.set_debug_buffer()
+                retvals = self._debug_run()
+                self.dbgobj.dump_output()
+                self.dbgobj.run_end(run_cli_session, retvals)
+
+            elif run_start_resp.action == debugruntime.OnRunStartAction.NON_DEBUG_RUN:
+                retvals = self._run()
+                self.dbgobj.run_end(run_cli_session, retvals) 
 
     def run(self, **input_dict):
         """Run forward execution of the graph
@@ -138,8 +148,7 @@ class GraphModule(object):
         if not self.debug:
             self._run()
         else:
-            #call cli debug run and when user execute run command debug_run will be invoked
-            self.dbgobj.run()
+            self.debug_run()
 
     def get_input(self, index, out):
         """Get index-th input to out

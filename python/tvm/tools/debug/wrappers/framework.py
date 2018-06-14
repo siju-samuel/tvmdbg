@@ -207,8 +207,18 @@ class OnRunEndResponse(object):
         # Currently only a placeholder.
         pass
 
+class CLIRunCommand(object):
+    def __init__(self, run_start_resp, metadata):
+        self._run_metadata = metadata
+        self._run_start_resp = run_start_resp
 
-class BaseDebugWrapperSession():
+    def get_run_metadata(self):
+        return self._run_metadata
+
+    def get_run_start_resp(self):
+        return self._run_start_resp
+
+class BaseDebugWrapperModule():
     """Base class of debug-wrapper session classes.
 
     Concrete classes that inherit from this class need to implement the abstract
@@ -220,7 +230,7 @@ class BaseDebugWrapperSession():
 
     def __init__(self, sess, graph, ctx=None, thread_name_filter=None,
                  pass_through_operrors=False):
-        """Constructor of `BaseDebugWrapperSession`.
+        """Constructor of `BaseDebugWrapperModule`.
 
         Args:
           sess: An (unwrapped) TVM session instance. It should be a subtype
@@ -331,7 +341,23 @@ class BaseDebugWrapperSession():
             self._dump_folder = folder_name
         return self._dump_folder
 
-    def run(self,
+    def run_end(self, run_cli_session, retvals):
+        run_start_resp = run_cli_session.get_run_start_resp()
+        if run_start_resp.action == OnRunStartAction.DEBUG_RUN:
+
+            run_metadata = run_cli_session.get_run_metadata()
+            run_end_req = OnRunEndRequest(
+                run_start_resp.action,
+                run_metadata=run_metadata)
+
+            # Invoke on-run-end callback and obtain response.
+            run_end_resp = self.on_run_end(run_end_req)
+            _check_type(run_end_resp, OnRunEndResponse)
+            # Currently run_end_resp is only a placeholder. No action is taken on it.
+        if run_start_resp.action == OnRunStartAction.NON_DEBUG_RUN:
+            run_end_req = OnRunEndRequest(run_start_resp.action)
+        return retvals
+    def get_run_command(self,
             outputs=None,
             options=None,
             run_metadata=None,
@@ -354,7 +380,7 @@ class BaseDebugWrapperSession():
           ValueError: On invalid `OnRunStartAction` value. Or if `callable_runner`
             is not `None` and either or both of `outputs` and `input_dict` is `None`.
         """
-
+        retvals = True
         outputs = self._outputs
 
         if not callable_runner:
@@ -379,96 +405,14 @@ class BaseDebugWrapperSession():
                               is_callable_runner=bool(callable_runner)))
         _check_type(run_start_resp, OnRunStartResponse)
 
-        if run_start_resp.action == OnRunStartAction.DEBUG_RUN:
-            retvals = True
-            # Decorate RunOption to fill in debugger tensor watch specifications.
-            decorated_run_options = options  # or config_pb2.RunOptions()
-            run_metadata = run_metadata  # or config_pb2.RunMetadata()
+        run_command = CLIRunCommand(run_start_resp, run_metadata)
 
-#            self._decorate_run_options_for_debug(
-#                decorated_run_options,
-#                run_start_resp.debug_urls,
-#                debug_ops=run_start_resp.debug_ops,
-#                node_name_regex_whitelist=run_start_resp.node_name_regex_whitelist,
-#                op_type_regex_whitelist=run_start_resp.op_type_regex_whitelist,
-#                tensor_dtype_regex_whitelist=(
-#                    run_start_resp.tensor_dtype_regex_whitelist),
-#                tolerate_debug_op_creation_failures=(
-#                    run_start_resp.tolerate_debug_op_creation_failures))
-#
-#            # Invoke the run() method of the wrapped Session. Catch any TVM
-#            # runtime errors.
-#            tvm_error = None
-#            try:
-#                if callable_runner:
-#                    retvals = callable_runner(*callable_runner_args,
-#                                              options=decorated_run_options,
-#                                              run_metadata=run_metadata)
-#                else:
-#                    retvals = self._sess.debug_run()
-#            except errors.OpError as op_error:
-#                if self._pass_through_operrors:
-#                    raise op_error
-#                tvm_error = op_error
-#                retvals = op_error
-            tvm_error = None
-            retvals = self._sess.debug_run()
-
-            run_end_req = OnRunEndRequest(
-                run_start_resp.action,
-                run_metadata=run_metadata,
-                tvm_error=tvm_error)
-
-        elif run_start_resp.action == OnRunStartAction.PROFILE_RUN:
-            decorated_run_options = options  # or config_pb2.RunOptions()
-            run_metadata = run_metadata  # or config_pb2.RunMetadata()
-#            self._decorate_run_options_for_profile(decorated_run_options)
-            if callable_runner:
-                retvals = callable_runner(*callable_runner_args,
-                                          options=decorated_run_options,
-                                          run_metadata=run_metadata)
-            else:
-                retvals = False
-                # retvals = self._sess.run(outputs,
-                #                         input_dict=input_dict,
-                #                         options=decorated_run_options,
-                #                         run_metadata=run_metadata)
-            run_end_req = OnRunEndRequest(
-                run_start_resp.action,
-                run_metadata=run_metadata)
-        elif (run_start_resp.action == OnRunStartAction.NON_DEBUG_RUN or
-              run_start_resp.action == OnRunStartAction.INVOKE_STEPPER):
-            if callable_runner:
-                raise NotImplementedError(
-                    "Stepper mode is not implemented for callables created by "
-                    "Session.make_callable().")
-
-            if run_start_resp.action == OnRunStartAction.INVOKE_STEPPER:
-                with stepper.NodeStepper(
-                    self._sess, outputs, self._input_dict, self._ctx) as node_stepper:
-                    retvals = self.invoke_node_stepper(
-                        node_stepper, restore_variable_values_on_exit=True)
-
-            # Invoke run() method of the wrapped session.
-            self._sess.debug_run()
-            retvals = True
-            # retvals = self._sess.run(
-            #    outputs,
-            #    input_dict=input_dict,
-            #    options=options,
-            #    run_metadata=run_metadata)
-
-            # Prepare arg for the on-run-end callback.
-            run_end_req = OnRunEndRequest(run_start_resp.action)
+        if run_start_resp.action == OnRunStartAction.DEBUG_RUN or \
+               run_start_resp.action == OnRunStartAction.NON_DEBUG_RUN:
+            return run_command
         else:
             raise ValueError(
                 "Invalid OnRunStartAction value: %s" % run_start_resp.action)
-
-        # Invoke on-run-end callback and obtain response.
-        run_end_resp = self.on_run_end(run_end_req)
-        _check_type(run_end_resp, OnRunEndResponse)
-        # Currently run_end_resp is only a placeholder. No action is taken on it.
-
         return retvals
 
     def _is_disabled_thread(self):
@@ -735,7 +679,7 @@ class WatchOptions(object):
                     self.tolerate_debug_op_creation_failures))
 
 
-class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
+class NonInteractiveDebugWrapperSession(BaseDebugWrapperModule):
     """Base class for non-interactive (i.e., non-CLI) debug wrapper sessions."""
 
     def __init__(self, sess, watch_fn=None, thread_name_filter=None,
@@ -756,7 +700,7 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
                types to watch, etc. See the documentation of `tf_debug.WatchOptions`
                for more details.
           thread_name_filter: Regular-expression white list for threads on which the
-            wrapper session will be active. See doc of `BaseDebugWrapperSession` for
+            wrapper session will be active. See doc of `BaseDebugWrapperModule` for
             more details.
           pass_through_operrors: If true, all captured OpErrors will be
             propagated.  By default this captures all OpErrors.
@@ -764,7 +708,7 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
            TypeError: If a non-None `watch_fn` is specified and it is not callable.
         """
 
-        BaseDebugWrapperSession.__init__(
+        BaseDebugWrapperModule.__init__(
             self, sess, thread_name_filter=thread_name_filter,
             pass_through_operrors=pass_through_operrors)
 
@@ -775,7 +719,7 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
             self._watch_fn = watch_fn
 
     def on_session_init(self, request):
-        """See doc of BaseDebugWrapperSession.on_run_start."""
+        """See doc of BaseDebugWrapperModule.on_run_start."""
 
         return OnSessionInitResponse(OnSessionInitAction.PROCEED)
 
@@ -795,7 +739,7 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
         """
 
     def on_run_start(self, request):
-        """See doc of BaseDebugWrapperSession.on_run_start."""
+        """See doc of BaseDebugWrapperModule.on_run_start."""
 
         debug_urls, watch_opts = self._prepare_run_watch_config(
             request.outputs, request.input_dict)
@@ -836,14 +780,14 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
         return debug_urls, watch_options
 
     def on_run_end(self, request):
-        """See doc of BaseDebugWrapperSession.on_run_end."""
+        """See doc of BaseDebugWrapperModule.on_run_end."""
 
         return OnRunEndResponse()
 
     def invoke_node_stepper(self,
                             node_stepper,
                             restore_variable_values_on_exit=True):
-        """See doc of BaseDebugWrapperSession.invoke_node_stepper."""
+        """See doc of BaseDebugWrapperModule.invoke_node_stepper."""
 
         raise NotImplementedError(
             "NonInteractiveDebugWrapperSession does not support node-stepper mode.")
