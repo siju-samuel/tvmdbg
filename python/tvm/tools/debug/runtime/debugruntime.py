@@ -68,11 +68,10 @@ class DebugGraphModule(object):
             num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
             for j in range(num_outputs):
                 ndbuffer = self.dbg_out_buffer_list[eid]
-                times_tamp = ndbuffer.time_stamp
                 eid += 1
                 key = node['name'] + "_" + str(j) + "__000000" + str(ndbuffer.time_stamp) + ".npy"
                 key = key.replace("/", "_")
-                file_name = str(self.cli_obj._dump_root + self.cli_obj._dump_folder + key)
+                file_name = str(self.cli_obj._dump_root + self.cli_obj.dump_folder() + key)
                 np.save(file_name, ndbuffer.asnumpy())
                 os.rename(file_name, file_name.rpartition('.')[0])
 
@@ -95,7 +94,7 @@ class DebugGraphModule(object):
         graph_dump_file_name = '_tvmdbg_graph_dump.json'
         folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
         folder_name = folder_name + ctx.replace(":", "_") + "/"
-        self.cli_obj._dump_folder = folder_name
+        self.cli_obj.dump_folder(folder_name)
         path = self.cli_obj._dump_root + folder_name
         self._ensure_dir(path)
         with open((path + graph_dump_file_name), 'w') as outfile:

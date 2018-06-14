@@ -73,8 +73,10 @@ class GraphRuntime : public ModuleNode {
       size_t num_outputs = (nodes_[i].op_type == "null") ? 1: nodes_[i].param.num_outputs;
       for (size_t j = 0; j < num_outputs; j++) {
           uint32_t eid = this->entry_id(i, j);
-          TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid], debug_buffers_[eid], nullptr));
-          *(int64_t *)(debug_buffers_[eid] + 1) = mstime;
+          TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid],
+                                       &debug_buffers_[eid]->out_tensor,
+                                       nullptr));
+          debug_buffers_[eid]->time_stamp = mstime;
           // CheckNanOrInf(debug_buffers_[i], (CHECK_NAN | CHECK_INF ));
       }
     }
@@ -166,8 +168,8 @@ class GraphRuntime : public ModuleNode {
    * \brief Set the debug buffer to copy the output of each operation.
    * \param data The data pointer.
    */
-  void SetDebugBuffer(DLTensor* data) {
-      debug_buffers_.push_back(data);
+  void SetDebugBuffer(void* data) {
+      debug_buffers_.push_back(reinterpret_cast<TVMDbgTensor*>(data));
   }
 
   /*!
@@ -415,7 +417,7 @@ class GraphRuntime : public ModuleNode {
   /*! \brief operator on each node */
   std::vector<std::function<void()> > op_execs_;
   /*! \brief debug buffer storage pool */
-  std::vector<DLTensor*> debug_buffers_;
+  std::vector<TVMDbgTensor*> debug_buffers_;
 };
 
 

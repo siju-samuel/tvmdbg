@@ -334,6 +334,17 @@ class BaseDebugWrapperSession():
         """
         self._feed_dict.update({name: value})
 
+    def dump_folder(self, folder_name=None):
+        """Sets and returns the folder to dump the outputs and graph.
+
+        Args:
+          folder_name : String the name of folder
+
+        """
+        if folder_name:
+            self._dump_folder = folder_name
+        return self._dump_folder
+
     def run(self,
             fetches=None,
             options=None,

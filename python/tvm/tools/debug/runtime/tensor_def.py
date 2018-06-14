@@ -34,7 +34,7 @@ class TensorDef(object):
         return self._content
 
 
-    def getJsonString(self):
+    def get_json_string(self):
         """Convert the class to json dictionary and return"""
         values = {'dtype':self._dtype,
                   'shape':self._shape,
@@ -42,7 +42,7 @@ class TensorDef(object):
         return json.dumps(values)
 
 
-    def parseJsonString(self, json_str):
+    def parse_json_string(self, json_str):
         """Parse the json content and returns as a class"""
         values = json.loads(json_str)
         self._dtype = values['dtype']
