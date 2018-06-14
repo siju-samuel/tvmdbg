@@ -47,18 +47,18 @@ class NodeStepper(object):
     """TVM Debugger (tvmdbg) stepper.
 
     The stepper provides ability to perform "continue to" actions on a graph,
-    given output and feeds. The stepper calculates the transitive closure of the
+    given output and inputs. The stepper calculates the transitive closure of the
     output. cont() (continue to) calls can only be performed on members of the
     transitive closure.
 
     On a cont() call, the stepper performs depth-first tracing of the input
     tree of the target. When it reaches an input where one of the following is
-    available, it will supply the available value to the feed_dict of the cont()
+    available, it will supply the available value to the input_dict of the cont()
     call:
       (1) Overriding (injected) values from the client.
       (2) TensorHandles from previous cont() calls.
       (3) Dumped intermediate Tensors from previous cont() calls.
-      (4) Feeds supplied during the construction of the stepper instance.
+      (4) Inputs supplied during the construction of the stepper instance.
 
     During the cont() call, intermediate Tensors are dumped to temporary
     directories. The dumped Tensor values will be used in subsequent cont() calls
@@ -68,7 +68,7 @@ class NodeStepper(object):
     instance exits as a context manager.
 
     Once the tracing is complete, it will issue a run() call on the
-    underlying session, using the aforementioned feed_dict prepared by the input
+    underlying session, using the aforementioned input_dict prepared by the input
     tracing, to achieve the "continue-to" action. The above process takes into
     account whether the transitive closure of an input contains Variables that
     are updated during previous cont() calls on this stepper instance. If such
@@ -77,19 +77,19 @@ class NodeStepper(object):
     TensorHandle.
     """
 
-    # Possible types of feed used during cont() calls.
-    FEED_TYPE_CLIENT = "client"
-    FEED_TYPE_HANDLE = "handle"
-    FEED_TYPE_OVERRIDE = "override"
-    FEED_TYPE_DUMPED_INTERMEDIATE = "dumped_intermediate"
+    # Possible types of input used during cont() calls.
+    INPUT_TYPE_CLIENT = "client"
+    INPUT_TYPE_HANDLE = "handle"
+    INPUT_TYPE_OVERRIDE = "override"
+    INPUT_TYPE_DUMPED_INTERMEDIATE = "dumped_intermediate"
 
-    def __init__(self, sess, outputs, feed_dict=None, ctx=None):
+    def __init__(self, sess, outputs, input_dict=None, ctx=None):
         """Constructor for Debugger.
 
         Args:
           sess: (Session) the TVM Session to step in.
           outputs: Same as the outputs input argument to `Session.run()`.
-          feed_dict: Same as the feed_dict input argument to `Session.run()`.
+          input_dict: Same as the input_dict input argument to `Session.run()`.
         """
 
         self._sess = sess
@@ -141,20 +141,20 @@ class NodeStepper(object):
         self._dumped_intermediate_tensors = {}
         self._dump_session_root = tempfile.mkdtemp(prefix="tvmdbg_stepper_")
 
-        # Feed dict from the client.
-        self._client_feed_dict = {}
-        if feed_dict:
-            for key in feed_dict:
+        # Input dict from the client.
+        self._client_input_dict = {}
+        if input_dict:
+            for key in input_dict:
                 if hasattr(key, "name"):  # isinstance(key, ops.Tensor):
-                    self._client_feed_dict[key.name] = feed_dict[key]
+                    self._client_input_dict[key.name] = input_dict[key]
                 else:
-                    self._client_feed_dict[key] = feed_dict[key]
+                    self._client_input_dict[key] = input_dict[key]
 
         # Overriding tensor values.
         self._override_tensors = {}
 
-        # What the feed types were used by the last cont() call.
-        self._last_feed_types = {}
+        # What the input types were used by the last cont() call.
+        self._last_input_types = {}
 
     def __enter__(self):
         return self
@@ -326,21 +326,21 @@ class NodeStepper(object):
 
         return tensor_slots
 
-    def is_feedable(self, name):
-        """Determine if a graph element if feedable.
+    def is_inputable(self, name):
+        """Determine if a graph element if inputable.
 
         Args:
           name: (str) name of the graph element (Tensor or Operation)
 
         Returns:
-          (bool) whether the graph element is feedable.
+          (bool) whether the graph element is inputable.
         """
 
         if not isinstance(name, six.string_types):
             raise TypeError("Expected type str; got type %s" % type(name))
 
         elem = self._sess.graph.as_graph_element(name)
-        return self._sess.graph.is_feedable(elem)
+        return self._sess.graph.is_inputable(elem)
 
     def override_tensor(self, tensor_name, overriding_val):
         """Override the value of a tensor.
@@ -389,14 +389,14 @@ class NodeStepper(object):
         # Invalidate cache by tracing outputs.
         self._invalidate_transitively_outgoing_cache(tensor_name)
 
-    def last_feed_types(self):
-        """Obtain information about the feed in the last cont() call.
+    def last_input_types(self):
+        """Obtain information about the input in the last cont() call.
 
         Returns:
-          (dict) A dict mapping tensor names to feed types.
+          (dict) A dict mapping tensor names to input types.
         """
 
-        return self._last_feed_types
+        return self._last_input_types
 
     def cont(self,
              target,
@@ -435,7 +435,7 @@ class NodeStepper(object):
             Or if target is a Placeholder.
         """
 
-        self._last_feed_types = {}
+        self._last_input_types = {}
 
         if isinstance(target, six.string_types):
             # Output target is a string. Assume it is the name of the Tensor or Op and
@@ -451,14 +451,14 @@ class NodeStepper(object):
         # """isinstance(graph_element, ops.Tensor)"""
         if (False and
                 graph_element.op.type == "Placeholder"):
-            self._last_feed_types[graph_element.name] = self.FEED_TYPE_CLIENT
-            return self._client_feed_dict[graph_element.name]
+            self._last_input_types[graph_element.name] = self.INPUT_TYPE_CLIENT
+            return self._client_input_dict[graph_element.name]
         # """isinstance(graph_element, ops.Operation)"""
         elif (False and
               graph_element.type == "Placeholder"):
             tensor_name = graph_element.name + ":0"
-            self._last_feed_types[tensor_name] = self.FEED_TYPE_CLIENT
-            return self._client_feed_dict[tensor_name]
+            self._last_input_types[tensor_name] = self.INPUT_TYPE_CLIENT
+            return self._client_input_dict[tensor_name]
 
         # """isinstance(graph_element, ops.Operation)"""
         if False and graph_element.outputs:
@@ -487,19 +487,19 @@ class NodeStepper(object):
 
         # Check if a cached tensor handle can be used on the output directly.
         if use_tensor_handles and target_name in self._tensor_handles:
-            self._last_feed_types[target_name] = self.FEED_TYPE_HANDLE
+            self._last_input_types[target_name] = self.INPUT_TYPE_HANDLE
             return self._tensor_handles[target_name].eval()
 
         # Check if a dumped intermediate tensor can be used on the output directly.
         if (use_dumped_intermediates and
                 target_name in self._dumped_intermediate_tensors):
-            self._last_feed_types[target_name] = self.FEED_TYPE_DUMPED_INTERMEDIATE
+            self._last_input_types[target_name] = self.INPUT_TYPE_DUMPED_INTERMEDIATE
             return self._dumped_intermediate_tensors[target_name].get_tensor()
 
         # Check if an overriding tensor value can be used directly.
         if use_overrides and target_name in self._override_tensors:
             # Override is available. Return the value right away.
-            self._last_feed_types[target_name] = self.FEED_TYPE_OVERRIDE
+            self._last_input_types[target_name] = self.INPUT_TYPE_OVERRIDE
             return self._override_tensors[target_name]
 
         # Keep track of which variables are restored in this cont() call.
@@ -511,8 +511,8 @@ class NodeStepper(object):
 
         # =========================================================================
         # Use a non-recursive method to trace the inputs from the node and set up
-        # the feeds.
-        feeds = {}  # The feeds to be used in the Session.run() call.
+        # the inputs.
+        inputs = {}  # The inputs to be used in the Session.run() call.
         output = self._sess.graph.as_graph_element(target_name)
         elem_stack = [output]
         done = set()
@@ -529,15 +529,15 @@ class NodeStepper(object):
 
             # Iterate through the (non-control) inputs.
             for inp in all_inputs:
-                # Determine whether the input is feedable. Reference-type tensors,
+                # Determine whether the input is inputable. Reference-type tensors,
                 # e.g., Variables, should not be fed, because they can change.
                 # """isinstance(inp, ops.Tensor)"""
                 if isinstance(inp, "ops.Tensor"):
                     is_inp_ref = inp.dtype._is_ref_dtype  # pylint: disable=protected-access
-                    can_feed = self._sess.graph.is_feedable(inp) and not is_inp_ref
+                    can_input = self._sess.graph.is_inputable(inp) and not is_inp_ref
                 else:
                     is_inp_ref = False
-                    can_feed = False
+                    can_input = False
 
                 if (restore_variable_values and inp.name in self._dirty_variables and
                         inp.name not in restored_variables and
@@ -547,7 +547,7 @@ class NodeStepper(object):
                     initializer_op = self._variable_initializers[inp.name]
                     initial_value_tensor = self._variable_initial_values[inp.name]
                     self._sess.run(initializer_op,
-                                   feed_dict={
+                                   input_dict={
                                        initial_value_tensor:
                                            self._cached_variable_values[inp.name]
                                    })
@@ -570,31 +570,31 @@ class NodeStepper(object):
                         self._cached_variable_values[inp.name] = old_value
 
                 # N.B.: The order of the logical branches matters. For example,
-                # _client_feed_dict comes after _tensor_handles, so that tensor
+                # _client_input_dict comes after _tensor_handles, so that tensor
                 # handles stored in cont() calls can override the original client
-                # feeds. Also for example, _override_tensors comes the first, so
+                # inputs. Also for example, _override_tensors comes the first, so
                 # the manual overriding, if exists, can always take effect.
-                if use_overrides and can_feed and inp.name in self._override_tensors:
+                if use_overrides and can_input and inp.name in self._override_tensors:
                     # Use client-supplied overriding tensor value.
-                    feeds[inp] = self._override_tensors[inp.name]
-                    self._last_feed_types[inp.name] = self.FEED_TYPE_OVERRIDE
-                elif (can_feed and inp not in feeds and
+                    inputs[inp] = self._override_tensors[inp.name]
+                    self._last_input_types[inp.name] = self.INPUT_TYPE_OVERRIDE
+                elif (can_input and inp not in inputs and
                       use_tensor_handles and inp.name in self._tensor_handles):
                     # Tensor handle found in cache.
-                    feeds[inp] = self._tensor_handles[inp.name]
-                    self._last_feed_types[inp.name] = self.FEED_TYPE_HANDLE
-                elif (can_feed and inp not in feeds and
+                    inputs[inp] = self._tensor_handles[inp.name]
+                    self._last_input_types[inp.name] = self.INPUT_TYPE_HANDLE
+                elif (can_input and inp not in inputs and
                       use_dumped_intermediates and
                       inp.name in self._dumped_intermediate_tensors):
                     # Dumped intermediate Tensor found.
-                    feeds[inp] = self._dumped_intermediate_tensors[inp.name].get_tensor()
-                    self._last_feed_types[inp.name] = self.FEED_TYPE_DUMPED_INTERMEDIATE
-                elif inp.name in self._client_feed_dict:
-                    # This input is available in the client feed_dict.
-                    feeds[inp] = self._client_feed_dict[inp.name]
-                    self._last_feed_types[inp.name] = self.FEED_TYPE_CLIENT
+                    inputs[inp] = self._dumped_intermediate_tensors[inp.name].get_tensor()
+                    self._last_input_types[inp.name] = self.INPUT_TYPE_DUMPED_INTERMEDIATE
+                elif inp.name in self._client_input_dict:
+                    # This input is available in the client input_dict.
+                    inputs[inp] = self._client_input_dict[inp.name]
+                    self._last_input_types[inp.name] = self.INPUT_TYPE_CLIENT
                 else:
-                    # There is no feed available for this input. So keep tracing its
+                    # There is no input available for this input. So keep tracing its
                     # input(s).
                     inp_node = self._get_node(inp)
                     if inp_node.name in done:
@@ -617,7 +617,7 @@ class NodeStepper(object):
         # """isinstance(output, ops.Operation)"""
         if isinstance(output, "ops.Operation"):
             # The output is an Operation: Will not get tensor handle.
-            self._sess.run(output, feed_dict=feeds, options=run_options)
+            self._sess.run(output, input_dict=inputs, options=run_options)
             return_value = None
         else:
             # This is a Tensor: Will get tensor handle and cache it.
@@ -634,7 +634,7 @@ class NodeStepper(object):
 #            handles = self._sess.run(
 #                [session_ops.get_session_handle(tensor) for tensor in
 #                 tensors_to_get_handles_for],
-#                feed_dict=feeds,
+#                input_dict=inputs,
 #                options=run_options)
 #            for handle_name, handle in zip(handle_names, handles):
 #              self._tensor_handles[handle_name] = handle
@@ -760,7 +760,7 @@ class NodeStepper(object):
         """
 
         self.restore_variable_values()
-        return self._sess.run(self._outputs, feed_dict=self._client_feed_dict)
+        return self._sess.run(self._outputs, input_dict=self._client_input_dict)
 
     def restore_variable_values(self):
         """Restore variables to the initial values.
@@ -771,7 +771,7 @@ class NodeStepper(object):
 
         for var_name in self._dirty_variables:
             self._sess.run(self._variable_initializers[var_name],
-                           feed_dict={
+                           input_dict={
                                self._variable_initial_values[var_name]:
                                    self._cached_variable_values[var_name]
                            })
@@ -887,7 +887,7 @@ class NodeStepper(object):
         if self.is_placeholder(tensor_name):
             if ":" not in tensor_name:
                 tensor_name += ":0"
-            return self._client_feed_dict[tensor_name]
+            return self._client_input_dict[tensor_name]
         elif tensor_name in self._override_tensors:
             return self._override_tensors[tensor_name]
         elif tensor_name in self._tensor_handles:

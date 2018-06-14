@@ -83,13 +83,13 @@ class OnRunStartRequest(object):
     session, immediately after the run() call counter is incremented.
     """
 
-    def __init__(self, outputs, feed_dict, run_options, run_metadata,
+    def __init__(self, outputs, input_dict, run_options, run_metadata,
                  run_call_count, is_callable_runner=False):
         """Constructor of `OnRunStartRequest`.
 
         Args:
           outputs: Output targets of the run() call.
-          feed_dict: The feed dictionary to the run() call.
+          input_dict: The input dictionary to the run() call.
           run_options: RunOptions input to the run() call.
           run_metadata: RunMetadata input to the run() call.
             The above four arguments are identical to the input arguments to the
@@ -100,7 +100,7 @@ class OnRunStartRequest(object):
             Session.make_callable is being run.
         """
         self.outputs = outputs
-        self.feed_dict = feed_dict
+        self.input_dict = input_dict
         self.run_options = run_options
         self.run_metadata = run_metadata
         self.run_call_count = run_call_count
@@ -239,7 +239,7 @@ class BaseDebugWrapperSession():
           NotImplementedError: If a non-DirectSession sess object is received.
         """
         self._outputs = []
-        self._feed_dict = {}
+        self._input_dict = {}
         self._graph = graph
         self._ctx = ctx
 
@@ -315,10 +315,10 @@ class BaseDebugWrapperSession():
         """Set the input with Name and Numpy/Tvm.NdArray Value.
 
         Args:
-          name : Name of the input by which used to feed to runtime.
-          value : Numpy/Tvm.NdArray instance which used to feed to runtime.
+          name : Name of the input by which used to input to runtime.
+          value : Numpy/Tvm.NdArray instance which used to input to runtime.
         """
-        self._feed_dict.update({name: value})
+        self._input_dict.update({name: value})
 
     def dump_folder(self, folder_name=None):
         """Sets and returns the folder to dump the outputs and graph.
@@ -344,7 +344,7 @@ class BaseDebugWrapperSession():
           options: Same as the `options` arg to regular `Session.run()`.
           run_metadata: Same as the `run_metadata` arg to regular `Session.run()`.
           callable_runner: A `callable` returned by `Session.make_callable()`.
-            If not `None`, `outputs` and `feed_dict` must both be `None`.
+            If not `None`, `outputs` and `input_dict` must both be `None`.
           callable_runner_args: An optional list of arguments to `callable_runner`.
 
         Returns:
@@ -352,7 +352,7 @@ class BaseDebugWrapperSession():
 
         Raises:
           ValueError: On invalid `OnRunStartAction` value. Or if `callable_runner`
-            is not `None` and either or both of `outputs` and `feed_dict` is `None`.
+            is not `None` and either or both of `outputs` and `input_dict` is `None`.
         """
 
         outputs = self._outputs
@@ -360,9 +360,9 @@ class BaseDebugWrapperSession():
         if not callable_runner:
             self.increment_run_call_count()
         else:
-            if outputs or self._feed_dict:
+            if outputs or self._input_dict:
                 raise ValueError(
-                    "callable_runner and outputs/feed_dict are mutually exclusive, but "
+                    "callable_runner and outputs/input_dict are mutually exclusive, but "
                     "are used simultaneously.")
 
         if self._is_disabled_thread():
@@ -374,7 +374,7 @@ class BaseDebugWrapperSession():
 
         # Invoke on-run-start callback and obtain response.
         run_start_resp = self.on_run_start(
-            OnRunStartRequest(self._outputs, self._feed_dict, options, run_metadata,
+            OnRunStartRequest(self._outputs, self._input_dict, options, run_metadata,
                               self._run_call_count,
                               is_callable_runner=bool(callable_runner)))
         _check_type(run_start_resp, OnRunStartResponse)
@@ -430,7 +430,7 @@ class BaseDebugWrapperSession():
             else:
                 retvals = False
                 # retvals = self._sess.run(outputs,
-                #                         feed_dict=feed_dict,
+                #                         input_dict=input_dict,
                 #                         options=decorated_run_options,
                 #                         run_metadata=run_metadata)
             run_end_req = OnRunEndRequest(
@@ -445,7 +445,7 @@ class BaseDebugWrapperSession():
 
             if run_start_resp.action == OnRunStartAction.INVOKE_STEPPER:
                 with stepper.NodeStepper(
-                    self._sess, outputs, self._feed_dict, self._ctx) as node_stepper:
+                    self._sess, outputs, self._input_dict, self._ctx) as node_stepper:
                     retvals = self.invoke_node_stepper(
                         node_stepper, restore_variable_values_on_exit=True)
 
@@ -454,7 +454,7 @@ class BaseDebugWrapperSession():
             retvals = True
             # retvals = self._sess.run(
             #    outputs,
-            #    feed_dict=feed_dict,
+            #    input_dict=input_dict,
             #    options=options,
             #    run_metadata=run_metadata)
 
@@ -482,12 +482,12 @@ class BaseDebugWrapperSession():
 #        raise NotImplementedError(
 #            "step_fn is not implemented for debug-wrapper sessions.")
 #
-#    def partial_run_setup(self, outputs, feeds=None):
-#        """Sets up the feeds and outputs for partial runs in the session."""
+#    def partial_run_setup(self, outputs, inputs=None):
+#        """Sets up the inputs and outputs for partial runs in the session."""
 #        raise NotImplementedError(
 #            "partial_run_setup is not implemented for debug-wrapper sessions.")
 #
-#    def partial_run(self, handle, outputs, feed_dict=None):
+#    def partial_run(self, handle, outputs, input_dict=None):
 #        raise NotImplementedError(
 #            "partial_run is not implemented for debug-wrapper sessions.")
 #
@@ -499,13 +499,13 @@ class BaseDebugWrapperSession():
 #
 #    def make_callable(self,
 #                      outputs,
-#                      feed_list=None,
+#                      input_list=None,
 #                      accept_options=False):
 #         runner = self._sess.make_callable(
-#            outputs, feed_list=feed_list, accept_options=True)
+#            outputs, input_list=input_list, accept_options=True)
 #         def wrapped_runner(*runner_args, **kwargs):
 #          return self.run(None,
-#                          feed_dict=None,
+#                          input_dict=None,
 #                          options=kwargs.get("options", None),
 #                          run_metadata=kwargs.get("run_metadata", None),
 #                          callable_runner=runner,
@@ -600,7 +600,7 @@ class BaseDebugWrapperSession():
 
         Args:
           request: (`OnRunStartRequest`) callback request object carrying
-            information about the run call such as the outputs, feed dict, run
+            information about the run call such as the outputs, input dict, run
             options, run metadata, and how many `run()` calls to this wrapper
             session have occurred.
 
@@ -744,11 +744,11 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
 
         Args:
           sess: The TVM `Session` object being wrapped.
-          watch_fn: (`Callable`) A Callable that maps the outputs and feeds of a
+          watch_fn: (`Callable`) A Callable that maps the outputs and inputs of a
             debugged `Session.run()` call to `WatchOptions.`
             * Args:
               * `outputs`: the outputs to the `Session.run()` call.
-              * `feeds`: the feeds to the `Session.run()` call.
+              * `inputs`: the inputs to the `Session.run()` call.
 
             * Returns:
              (`tf_debug.WatchOptions`) An object containing debug options including
@@ -780,14 +780,14 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
         return OnSessionInitResponse(OnSessionInitAction.PROCEED)
 
     @abc.abstractmethod
-    def prepare_run_debug_urls(self, outputs, feed_dict):
+    def prepare_run_debug_urls(self, outputs, input_dict):
         """Abstract method to be implemented by concrete subclasses.
 
         This method prepares the run-specific debug URL(s).
 
         Args:
           outputs: Same as the `outputs` argument to `Session.run()`
-          feed_dict: Same as the `feed_dict` argument to `Session.run()`
+          input_dict: Same as the `input_dict` argument to `Session.run()`
 
         Returns:
           debug_urls: (`str` or `list` of `str`) Debug URLs to be used in
@@ -798,7 +798,7 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
         """See doc of BaseDebugWrapperSession.on_run_start."""
 
         debug_urls, watch_opts = self._prepare_run_watch_config(
-            request.outputs, request.feed_dict)
+            request.outputs, request.input_dict)
 
         return OnRunStartResponse(
             OnRunStartAction.DEBUG_RUN,
@@ -810,12 +810,12 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
             tolerate_debug_op_creation_failures=(
                 watch_opts.tolerate_debug_op_creation_failures))
 
-    def _prepare_run_watch_config(self, outputs, feed_dict):
+    def _prepare_run_watch_config(self, outputs, input_dict):
         """Get the debug_urls, and node/op whitelists for the current run() call.
 
         Args:
           outputs: Same as the `outputs` argument to `Session.run()`.
-          feed_dict: Same as the `feed_dict argument` to `Session.run()`.
+          input_dict: Same as the `input_dict argument` to `Session.run()`.
 
         Returns:
           debug_urls: (str or list of str) Debug URLs for the current run() call.
@@ -824,11 +824,11 @@ class NonInteractiveDebugWrapperSession(BaseDebugWrapperSession):
             options including debug_ops, and whitelists.
         """
 
-        debug_urls = self.prepare_run_debug_urls(outputs, feed_dict)
+        debug_urls = self.prepare_run_debug_urls(outputs, input_dict)
         if self._watch_fn is None:
             watch_options = WatchOptions()
         else:
-            watch_options = self._watch_fn(outputs, feed_dict)
+            watch_options = self._watch_fn(outputs, input_dict)
             if isinstance(watch_options, tuple):
                 # For legacy return type (tuples).
                 watch_options = WatchOptions(*watch_options)

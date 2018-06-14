@@ -498,7 +498,7 @@ def evaluate_tensor_slice(tensor, tensor_slicing):
 def get_print_tensor_argparser(description):
     """Get an ArgumentParser for a command that prints tensor values.
 
-    Examples of such commands include print_tensor and print_feed.
+    Examples of such commands include print_tensor and print_input.
 
     Args:
       description: Description of the ArgumentParser.

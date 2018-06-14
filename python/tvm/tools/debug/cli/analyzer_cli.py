@@ -817,7 +817,7 @@ class DebugAnalyzer(object):
         # term "partition graph" means and how it is related to TF graph objects
         # in Python. The information can be along the line of:
         # "A nnvm graph defined in Python is stripped of unused ops
-        # according to the feeds and outputs and divided into a number of
+        # according to the inputs and outputs and divided into a number of
         # partition graphs that may be distributed among multiple devices and
         # hosts. The partition graphs are what's actually executed by the C++
         # runtime during a run() call."

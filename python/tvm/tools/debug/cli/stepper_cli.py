@@ -41,7 +41,7 @@ class NodeStepperCLI(object):
     # this NodeStepperCLI instance.
     STATE_DIRTY_VARIABLE = "D"
 
-    STATE_UNFEEDABLE = "U"
+    STATE_CANT_INPUT = "U"
 
     NEXT_NODE_POINTER_STR = "-->"
 
@@ -61,14 +61,14 @@ class NodeStepperCLI(object):
         STATE_DUMPED_INTERMEDIATE: cli_shared.COLOR_BLUE,
         STATE_OVERRIDDEN: cli_shared.COLOR_YELLOW,
         STATE_IS_PLACEHOLDER: cli_shared.COLOR_CYAN,
-        STATE_UNFEEDABLE: cli_shared.COLOR_RED,
+        STATE_CANT_INPUT: cli_shared.COLOR_RED,
     }
 
-    _FEED_COLORS = {
-        stepper.NodeStepper.FEED_TYPE_CLIENT: cli_shared.COLOR_WHITE,
-        stepper.NodeStepper.FEED_TYPE_HANDLE: cli_shared.COLOR_GREEN,
-        stepper.NodeStepper.FEED_TYPE_OVERRIDE: cli_shared.COLOR_YELLOW,
-        stepper.NodeStepper.FEED_TYPE_DUMPED_INTERMEDIATE: cli_shared.COLOR_BLUE,
+    _INPUT_COLORS = {
+        stepper.NodeStepper.INPUT_TYPE_CLIENT: cli_shared.COLOR_WHITE,
+        stepper.NodeStepper.INPUT_TYPE_HANDLE: cli_shared.COLOR_GREEN,
+        stepper.NodeStepper.INPUT_TYPE_OVERRIDE: cli_shared.COLOR_YELLOW,
+        stepper.NodeStepper.INPUT_TYPE_DUMPED_INTERMEDIATE: cli_shared.COLOR_BLUE,
     }
 
     def __init__(self, node_stepper):
@@ -303,9 +303,9 @@ class NodeStepperCLI(object):
         status += (RL(self.STATE_IS_PLACEHOLDER,
                       self._STATE_COLORS[self.STATE_IS_PLACEHOLDER])
                    if node_name in self._placeholders else " ")
-        status += (RL(self.STATE_UNFEEDABLE,
-                      self._STATE_COLORS[self.STATE_UNFEEDABLE])
-                   if not self._node_stepper.is_feedable(str(element_name))
+        status += (RL(self.STATE_CANT_INPUT,
+                      self._STATE_COLORS[self.STATE_CANT_INPUT])
+                   if not self._node_stepper.is_inputable(str(element_name))
                    else " ")
         status += (RL(self.STATE_CONT, self._STATE_COLORS[self.STATE_CONT])
                    if element_name in handle_node_names else " ")
@@ -343,9 +343,9 @@ class NodeStepperCLI(object):
                 self._STATE_COLORS[self.STATE_IS_PLACEHOLDER]) +
              " - Placeholder"),
             (RL("  ") +
-             RL(self.STATE_UNFEEDABLE,
-                self._STATE_COLORS[self.STATE_UNFEEDABLE]) +
-             " - Unfeedable"),
+             RL(self.STATE_CANT_INPUT,
+                self._STATE_COLORS[self.STATE_CANT_INPUT]) +
+             " - Uninputable"),
             (RL("  ") +
              RL(self.STATE_CONT,
                 self._STATE_COLORS[self.STATE_CONT]) +
@@ -354,7 +354,7 @@ class NodeStepperCLI(object):
             (RL("  ") +
              RL(self.STATE_DUMPED_INTERMEDIATE,
                 self._STATE_COLORS[self.STATE_DUMPED_INTERMEDIATE]) +
-             " - Unfeedable"),
+             " - Uninputable"),
             (RL("  ") +
              RL(self.STATE_OVERRIDDEN,
                 self._STATE_COLORS[self.STATE_OVERRIDDEN]) +
@@ -388,7 +388,7 @@ class NodeStepperCLI(object):
 
         screen_output = debugger_cli_common.RichTextLines(
             ["Continued to %s:" % parsed.target_name, ""])
-        screen_output.extend(self._report_last_feed_types())
+        screen_output.extend(self._report_last_input_types())
         screen_output.extend(self._report_last_updated())
         screen_output.extend(
             tensor_format.format_tensor(
@@ -409,24 +409,24 @@ class NodeStepperCLI(object):
 
         return final_output
 
-    def _report_last_feed_types(self):
-        """Generate a report of the feed types used in the cont/step call.
+    def _report_last_input_types(self):
+        """Generate a report of the input types used in the cont/step call.
 
         Returns:
           (debugger_cli_common.RichTextLines) A RichTextLines representation of the
-            feeds used in the last cont/step call.
+            inputs used in the last cont/step call.
         """
-        feed_types = self._node_stepper.last_feed_types()
+        input_types = self._node_stepper.last_input_types()
 
-        out = ["Stepper used feeds:"]
-        if feed_types:
-            for feed_name in feed_types:
-                feed_info = RL("  %s : " % feed_name)
-                feed_info += RL(feed_types[feed_name],
-                                self._FEED_COLORS[feed_types[feed_name]])
-                out.append(feed_info)
+        out = ["Stepper used inputs:"]
+        if input_types:
+            for input_name in input_types:
+                input_info = RL("  %s : " % input_name)
+                input_info += RL(input_types[input_name],
+                                self._INPUT_COLORS[input_types[input_name]])
+                out.append(input_info)
         else:
-            out.append("  (No feeds)")
+            out.append("  (No inputs)")
         out.append("")
 
         return debugger_cli_common.rich_text_lines_from_rich_line_list(out)

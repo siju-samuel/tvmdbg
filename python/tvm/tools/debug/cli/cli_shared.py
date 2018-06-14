@@ -281,7 +281,7 @@ _HORIZONTAL_BAR = " ======================================"
 
 def get_run_start_intro(run_call_count,
                         outputs,
-                        feed_dict,
+                        input_dict,
                         tensor_filters,
                         is_callable_runner=False):
     """Generate formatted intro for run-start UI.
@@ -290,7 +290,7 @@ def get_run_start_intro(run_call_count,
       run_call_count: (int) Run call counter.
       outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
-      feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
+      input_dict: Inputs to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       tensor_filters: (dict) A dict from tensor-filter name to tensor-filter
         callable.
@@ -303,21 +303,21 @@ def get_run_start_intro(run_call_count,
 
     output_lines = common.get_flattened_names(outputs)
 
-    if not feed_dict:
-        feed_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
+    if not input_dict:
+        input_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
     else:
-        feed_dict_lines = []
-        for feed_key in feed_dict:
-            feed_key_name = common.get_graph_element_name(feed_key)
-            feed_dict_line = debugger_cli_common.RichLine("  ")
-            feed_dict_line += debugger_cli_common.RichLine(
-                feed_key_name,
-                debugger_cli_common.MenuItem(None, "pf '%s'" % feed_key_name))
-            # Surround the name string with quotes, because feed_key_name may contain
+        input_dict_lines = []
+        for input_key in input_dict:
+            input_key_name = common.get_graph_element_name(input_key)
+            input_dict_line = debugger_cli_common.RichLine("  ")
+            input_dict_line += debugger_cli_common.RichLine(
+                input_key_name,
+                debugger_cli_common.MenuItem(None, "pf '%s'" % input_key_name))
+            # Surround the name string with quotes, because input_key_name may contain
             # spaces in some cases, e.g., SparseTensors.
-            feed_dict_lines.append(feed_dict_line)
-    feed_dict_lines = debugger_cli_common.rich_text_lines_from_rich_line_list(
-        feed_dict_lines)
+            input_dict_lines.append(input_dict_line)
+    input_dict_lines = debugger_cli_common.rich_text_lines_from_rich_line_list(
+        input_dict_lines)
 
     out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
     if is_callable_runner:
@@ -330,7 +330,7 @@ def get_run_start_intro(run_call_count,
             ["   " + line for line in output_lines]))
         out.append("")
         out.append(" Inputs:")
-        out.extend(feed_dict_lines)
+        out.extend(input_dict_lines)
     out.append(_HORIZONTAL_BAR)
     out.append("")
     out.append(" Select one of the following commands to proceed ---->")
@@ -399,7 +399,7 @@ def get_run_start_intro(run_call_count,
 
 def get_run_short_description(run_call_count,
                               outputs,
-                              feed_dict,
+                              input_dict,
                               is_callable_runner=False):
     """Get a short description of the run() call.
 
@@ -407,14 +407,14 @@ def get_run_short_description(run_call_count,
       run_call_count: (int) Run call counter.
       outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
-      feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
+      input_dict: Inputs to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       is_callable_runner: (bool) whether a runner returned by
           GraphRuntime.make_callable is being run.
 
     Returns:
       (str) A short description of the run() call, including information about
-        the output(s) and feed(s).
+        the output(s) and input(s).
     """
     if is_callable_runner:
         return "runner from make_callable()"
@@ -431,16 +431,16 @@ def get_run_short_description(run_call_count,
         else:
             description += "%d output; " % num_outputs
 
-    if not feed_dict:
+    if not input_dict:
         description += "0 inputs"
     else:
-        if len(feed_dict) == 1:
-            for key in feed_dict:
+        if len(input_dict) == 1:
+            for key in input_dict:
                 description += "1 input (%s)" % (
                     key if isinstance(key, six.string_types) or not hasattr(key, "name")
                     else key.name)
         else:
-            description += "%d inputs" % len(feed_dict)
+            description += "%d inputs" % len(input_dict)
 
     return description
 

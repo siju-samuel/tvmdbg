@@ -26,7 +26,7 @@ DEVICE_TAG = "device_"
 HASH_TAG = "hash"
 
 OUTPUTS_INFO_FILE_TAG = "outputs_info_"
-FEED_KEYS_INFO_FILE_TAG = "feed_keys_info_"
+INPUT_KEYS_INFO_FILE_TAG = "input_keys_info_"
 
 
 def _glob(glob_pattern):
@@ -97,8 +97,8 @@ def _is_run_outputs_info_file(file_name):
     return file_name == METADATA_FILE_PREFIX + OUTPUTS_INFO_FILE_TAG
 
 
-def _is_run_feed_keys_info_file(file_name):
-    return file_name == METADATA_FILE_PREFIX + FEED_KEYS_INFO_FILE_TAG
+def _is_run_input_keys_info_file(file_name):
+    return file_name == METADATA_FILE_PREFIX + INPUT_KEYS_INFO_FILE_TAG
 
 
 def _get_tensor_name(node_name, output_slot):
@@ -452,7 +452,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._ctx = ctx
         self._load_core_metadata()
         self._load_outputs_info()
-        self._load_feeds_info()
+        self._load_inputs_info()
         self._load_all_device_dumps(partition_graphs, validate)
 
         self._python_graph = None
@@ -558,13 +558,13 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             self._run_outputs_info.append(
                 _load_log_message_from_event_file(outputs_info_file))
 
-    def _load_feeds_info(self):
-        feeds_info_files = _glob(os.path.join(
-            self._dump_root, METADATA_FILE_PREFIX + FEED_KEYS_INFO_FILE_TAG + "*"))
-        self._run_feed_keys_info = []
-        for feeds_info_file in feeds_info_files:
-            self._run_feed_keys_info.append(
-                _load_log_message_from_event_file(feeds_info_file))
+    def _load_inputs_info(self):
+        inputs_info_files = _glob(os.path.join(
+            self._dump_root, METADATA_FILE_PREFIX + INPUT_KEYS_INFO_FILE_TAG + "*"))
+        self._run_input_keys_info = []
+        for inputs_info_file in inputs_info_files:
+            self._run_input_keys_info.append(
+                _load_log_message_from_event_file(inputs_info_file))
 
     def _dump_file_name_to_datum(self, dir_name, file_name):
         """Obtain a DebugTensorDatum from the directory and file name.
@@ -650,10 +650,10 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         Of the three counters available in the return value, `global_step` is
         supplied by the caller of the debugged `Session.run()`, while
         `session_run_index` and `executor_step_index` are determined by the state
-        of the core runtime, automatically. For the same output list, feed keys and
+        of the core runtime, automatically. For the same output list, input keys and
         debug tensor watch options, the same executor will be used and
         `executor_step_index` should increase by one at a time. However, runs with
-        different output lists, feed keys and debug_tensor watch options that all
+        different output lists, input keys and debug_tensor watch options that all
         share the same `Session` object can lead to gaps in `session_run_index`.
 
         Returns:
@@ -665,8 +665,8 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
               TVM `Session` object.
             `executor_step_index`: A counter for invocations of a given runtime
               executor. The same executor is re-used for the same output tensors,
-              target nodes, input feed keys and debug tensor watch options.
-            `input_names`: Names of the input (feed) Tensors.
+              target nodes, input input keys and debug tensor watch options.
+            `input_names`: Names of the input (input) Tensors.
             `output_names`: Names of the output (output) Tensors.
             `target_nodes`: Names of the target nodes.
           If the core metadata have not been loaded, `None`.
@@ -927,18 +927,18 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         return output[0] if len(output) == 1 else output
 
     @property
-    def run_feed_keys_info(self):
-        """Get a str representation of the feed_dict used in the Session.run() call.
+    def run_input_keys_info(self):
+        """Get a str representation of the input_dict used in the Session.run() call.
 
         Returns:
           If the information is available from one `Session.run` call, a `str`
-            obtained from `repr(feed_dict)`.
+            obtained from `repr(input_dict)`.
           If the information is available from multiple `Session.run` calls, a
-            `list` of `str` obtained from `repr(feed_dict)`.
+            `list` of `str` obtained from `repr(input_dict)`.
           If the information is not available, `None`.
         """
 
-        output = self._run_feed_keys_info
+        output = self._run_input_keys_info
         return output[0] if len(output) == 1 else output
 
     def _infer_device_name(self, device_name, node_name):
