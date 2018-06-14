@@ -1,19 +1,5 @@
 # coding: utf-8
 # pylint: disable=fixme, invalid-name, protected-access, too-many-arguments, too-many-lines, consider-using-enumerate, too-many-locals, too-many-branches, too-many-statements
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """CLI Backend for the Analyzer Part of the Debugger.
 
 The analyzer performs post hoc analysis of dumped intermediate tensors and
@@ -830,7 +816,7 @@ class DebugAnalyzer(object):
         # TODO(cais): Provide UI glossary feature to explain to users what the
         # term "partition graph" means and how it is related to TF graph objects
         # in Python. The information can be along the line of:
-        # "A tensorflow graph defined in Python is stripped of unused ops
+        # "A nnvm graph defined in Python is stripped of unused ops
         # according to the feeds and fetches and divided into a number of
         # partition graphs that may be distributed among multiple devices and
         # hosts. The partition graphs are what's actually executed by the C++

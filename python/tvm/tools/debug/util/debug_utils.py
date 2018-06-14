@@ -1,19 +1,5 @@
 # coding: utf-8
 # pylint: disable=invalid-name, too-many-arguments, too-many-locals
-# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 """TVM Debugger (tfdbg) Utilities."""
 from __future__ import absolute_import
 from __future__ import division
@@ -89,7 +75,7 @@ def watch_graph(run_options,
                 tensor_dtype_regex_whitelist=None,
                 tolerate_debug_op_creation_failures=False,
                 global_step=-1):
-    """Add debug watches to `RunOptions` for a TensorFlow graph.
+    """Add debug watches to `RunOptions` for a nnvm graph.
 
     To watch all `Tensor`s on the graph, let both `node_name_regex_whitelist`
     and `op_type_regex_whitelist` be the default (`None`).
