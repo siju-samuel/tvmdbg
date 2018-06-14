@@ -23,7 +23,7 @@ class NodeStepperCLI(object):
     """Command-line-interface backend of Node Stepper."""
 
     # Possible states of an element in the transitive closure of the stepper's
-    # fetch(es).
+    # output(s).
     # State where the element is already continued-to and a TensorHandle is
     # available for the tensor.
     STATE_CONT = "H"
@@ -127,7 +127,7 @@ class NodeStepperCLI(object):
         # Parser for "step".
         argument_parser = argparse.ArgumentParser(
             description="Step to the next tensor or op in the sorted transitive "
-                        "closure of the stepper's fetch(es).",
+                        "closure of the stepper's output(s).",
             usage=argparse.SUPPRESS)
         argument_parser.add_argument(
             "-t",
@@ -209,7 +209,7 @@ class NodeStepperCLI(object):
         self._next = next_i
 
     def list_sorted_nodes(self, args, screen_info=None):
-        """List the sorted transitive closure of the stepper's fetches."""
+        """List the sorted transitive closure of the stepper's outputs."""
 
         # TODO(cais): Use pattern such as del args, del screen_info python/debug.
         _ = args
@@ -238,7 +238,7 @@ class NodeStepperCLI(object):
         lines = []
         if verbose:
             lines.extend(
-                ["Topologically-sorted transitive input(s) and fetch(es):", ""])
+                ["Topologically-sorted transitive input(s) and output(s):", ""])
 
         for i, element_name in enumerate(self._sorted_nodes):
             if i < index_range[0] or i >= index_range[1]:

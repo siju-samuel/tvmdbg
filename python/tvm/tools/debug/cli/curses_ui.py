@@ -898,7 +898,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                         self._scroll_output(scroll_command)
                     return x
                 else:
-                    command = self._fetch_hyperlink_command(mouse_x, mouse_y)
+                    command = self._output_hyperlink_command(mouse_x, mouse_y)
                     if command:
                         self._screen_create_command_textbox()
                         exit_token = self._dispatch_command(command)
@@ -917,7 +917,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             self._display_main_menu(self._curr_unwrapped_output)
             self._display_output(self._curr_unwrapped_output, is_refresh=True)
 
-    def _fetch_hyperlink_command(self, mouse_x, mouse_y):
+    def _output_hyperlink_command(self, mouse_x, mouse_y):
         output_top = self._output_top_row
         if self._main_menu_pad:
             output_top += 1

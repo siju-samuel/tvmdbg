@@ -280,7 +280,7 @@ _HORIZONTAL_BAR = " ======================================"
 
 
 def get_run_start_intro(run_call_count,
-                        fetches,
+                        outputs,
                         feed_dict,
                         tensor_filters,
                         is_callable_runner=False):
@@ -288,7 +288,7 @@ def get_run_start_intro(run_call_count,
 
     Args:
       run_call_count: (int) Run call counter.
-      fetches: Fetches of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
+      outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
@@ -301,7 +301,7 @@ def get_run_start_intro(run_call_count,
       (RichTextLines) Formatted intro message about the `GraphRuntime.run()` call.
     """
 
-    fetch_lines = common.get_flattened_names(fetches)
+    output_lines = common.get_flattened_names(outputs)
 
     if not feed_dict:
         feed_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
@@ -327,7 +327,7 @@ def get_run_start_intro(run_call_count,
         out.append("")
         out.append(" Output:")
         out.extend(debugger_cli_common.RichTextLines(
-            ["   " + line for line in fetch_lines]))
+            ["   " + line for line in output_lines]))
         out.append("")
         out.append(" Inputs:")
         out.extend(feed_dict_lines)
@@ -398,14 +398,14 @@ def get_run_start_intro(run_call_count,
 
 
 def get_run_short_description(run_call_count,
-                              fetches,
+                              outputs,
                               feed_dict,
                               is_callable_runner=False):
     """Get a short description of the run() call.
 
     Args:
       run_call_count: (int) Run call counter.
-      fetches: Fetches of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
+      outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
       feed_dict: Feeds to the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
@@ -414,22 +414,22 @@ def get_run_short_description(run_call_count,
 
     Returns:
       (str) A short description of the run() call, including information about
-        the fetche(s) and feed(s).
+        the output(s) and feed(s).
     """
     if is_callable_runner:
         return "runner from make_callable()"
 
     description = "run #%d: " % run_call_count
 
-    if ';' not in fetches:
-        description += "1 input (%s); " % common.get_graph_element_name(fetches)
+    if ';' not in outputs:
+        description += "1 input (%s); " % common.get_graph_element_name(outputs)
     else:
         # Could be (nested) list, tuple, dict or namedtuple.
-        num_fetches = len(common.get_flattened_names(fetches))
-        if num_fetches > 1:
-            description += "%d outputs; " % num_fetches
+        num_outputs = len(common.get_flattened_names(outputs))
+        if num_outputs > 1:
+            description += "%d outputs; " % num_outputs
         else:
-            description += "%d output; " % num_fetches
+            description += "%d output; " % num_outputs
 
     if not feed_dict:
         description += "0 inputs"

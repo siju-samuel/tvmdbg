@@ -25,7 +25,7 @@ GRAPH_FILE_TAG = "graph_"
 DEVICE_TAG = "device_"
 HASH_TAG = "hash"
 
-FETCHES_INFO_FILE_TAG = "fetches_info_"
+OUTPUTS_INFO_FILE_TAG = "outputs_info_"
 FEED_KEYS_INFO_FILE_TAG = "feed_keys_info_"
 
 
@@ -93,8 +93,8 @@ def _is_graph_file(file_name):
     return file_name.startswith(METADATA_FILE_PREFIX + GRAPH_FILE_TAG)
 
 
-def _is_run_fetches_info_file(file_name):
-    return file_name == METADATA_FILE_PREFIX + FETCHES_INFO_FILE_TAG
+def _is_run_outputs_info_file(file_name):
+    return file_name == METADATA_FILE_PREFIX + OUTPUTS_INFO_FILE_TAG
 
 
 def _is_run_feed_keys_info_file(file_name):
@@ -451,7 +451,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._dump_root = dump_root
         self._ctx = ctx
         self._load_core_metadata()
-        self._load_fetches_info()
+        self._load_outputs_info()
         self._load_feeds_info()
         self._load_all_device_dumps(partition_graphs, validate)
 
@@ -550,13 +550,13 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             self._core_metadata.append(
                 _extract_core_metadata_from_event_proto(event))"""
 
-    def _load_fetches_info(self):
-        fetches_info_files = _glob(os.path.join(
-            self._dump_root, METADATA_FILE_PREFIX + FETCHES_INFO_FILE_TAG + "*"))
-        self._run_fetches_info = []
-        for fetches_info_file in fetches_info_files:
-            self._run_fetches_info.append(
-                _load_log_message_from_event_file(fetches_info_file))
+    def _load_outputs_info(self):
+        outputs_info_files = _glob(os.path.join(
+            self._dump_root, METADATA_FILE_PREFIX + OUTPUTS_INFO_FILE_TAG + "*"))
+        self._run_outputs_info = []
+        for outputs_info_file in outputs_info_files:
+            self._run_outputs_info.append(
+                _load_log_message_from_event_file(outputs_info_file))
 
     def _load_feeds_info(self):
         feeds_info_files = _glob(os.path.join(
@@ -650,10 +650,10 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         Of the three counters available in the return value, `global_step` is
         supplied by the caller of the debugged `Session.run()`, while
         `session_run_index` and `executor_step_index` are determined by the state
-        of the core runtime, automatically. For the same fetch list, feed keys and
+        of the core runtime, automatically. For the same output list, feed keys and
         debug tensor watch options, the same executor will be used and
         `executor_step_index` should increase by one at a time. However, runs with
-        different fetch lists, feed keys and debug_tensor watch options that all
+        different output lists, feed keys and debug_tensor watch options that all
         share the same `Session` object can lead to gaps in `session_run_index`.
 
         Returns:
@@ -664,10 +664,10 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             `session_run_index`: A sorted index for Run() calls to the underlying
               TVM `Session` object.
             `executor_step_index`: A counter for invocations of a given runtime
-              executor. The same executor is re-used for the same fetched tensors,
+              executor. The same executor is re-used for the same output tensors,
               target nodes, input feed keys and debug tensor watch options.
             `input_names`: Names of the input (feed) Tensors.
-            `output_names`: Names of the output (fetched) Tensors.
+            `output_names`: Names of the output (output) Tensors.
             `target_nodes`: Names of the target nodes.
           If the core metadata have not been loaded, `None`.
           If more than one core metadata files exist, return a list of the
@@ -912,18 +912,18 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
 #        return non_debug_graphs
 
     @property
-    def run_fetches_info(self):
-        """Get a str representation of the fetches used in the Session.run() call.
+    def run_outputs_info(self):
+        """Get a str representation of the outputs used in the Session.run() call.
 
         Returns:
           If the information is available from one `Session.run` call, a `str`
-            obtained from `repr(fetches)`.
+            obtained from `repr(outputs)`.
           If the information is available from multiple `Session.run` calls, a
-            `list` of `str` from `repr(fetches)`.
+            `list` of `str` from `repr(outputs)`.
           If the information is not available, `None`.
         """
 
-        output = self._run_fetches_info
+        output = self._run_outputs_info
         return output[0] if len(output) == 1 else output
 
     @property

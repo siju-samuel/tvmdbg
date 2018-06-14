@@ -214,7 +214,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
         """
         self._is_run_start = True
         self._update_run_calls_state(
-            request.run_call_count, request.fetches, request.feed_dict,
+            request.run_call_count, request.outputs, request.feed_dict,
             is_callable_runner=request.is_callable_runner)
 
         if self._active_tensor_filter:
@@ -582,15 +582,15 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
 
     def _update_run_calls_state(self,
                                 run_call_count,
-                                fetches,
+                                outputs,
                                 feed_dict,
                                 is_callable_runner=False):
         """Update the internal state with regard to run() call history.
 
         Args:
           run_call_count: (int) Number of run() calls that have occurred.
-          fetches: a node/tensor or a list of node/tensor that are the fetches of
-            the run() call. This is the same as the fetches argument to the run()
+          outputs: a node/tensor or a list of node/tensor that are the outputs of
+            the run() call. This is the same as the outputs argument to the run()
             call.
           feed_dict: None of a dict. This is the feed_dict argument to the run()
             call.
@@ -602,14 +602,14 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
         self._feed_dict = feed_dict
         self._run_description = cli_shared.get_run_short_description(
             run_call_count,
-            fetches,
+            outputs,
             feed_dict,
             is_callable_runner=is_callable_runner)
         self._run_through_times -= 1
 
         self._run_info = cli_shared.get_run_start_intro(
             run_call_count,
-            fetches,
+            outputs,
             feed_dict,
             self._tensor_filters,
             is_callable_runner=is_callable_runner)
@@ -627,7 +627,7 @@ class LocalCLIDebugWrapperSession(framework.BaseDebugWrapperSession):
             restored to their old values when this invocation ends.
 
         Returns:
-          The same return values as the `Session.run()` call on the same fetches as
+          The same return values as the `Session.run()` call on the same outputs as
             the NodeStepper.
         """
 
