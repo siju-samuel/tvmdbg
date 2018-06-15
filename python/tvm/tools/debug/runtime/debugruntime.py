@@ -7,23 +7,6 @@ import numpy as np
 from tvm import ndarray as nd
 from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
 
-class OnRunStartAction(object):
-    """Enum-like values for possible action to take on start of a run() call."""
-
-    # Run once with debug tensor-watching.
-    DEBUG_RUN = "debug_run"
-
-    # Run once with profiler.
-    PROFILE_RUN = "profile_run"
-
-    # Run without debug tensor-watching.
-    NON_DEBUG_RUN = "non_debug_run"
-
-    # Instead of running the fetches as a whole, as would normally happen, invoke
-    # the (to-be-implemented) debug stepper.
-    # TODO(cais): Remove "to-be-implemented".
-    INVOKE_STEPPER = "invoke_stepper"
-
 class DebugGraphModule(object):
     """Wrapper debug runtime module.
 

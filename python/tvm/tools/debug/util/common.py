@@ -56,6 +56,23 @@ def get_flattened_names(inputs_or_outputs):
 
     return lines
 
+class CLIRunStartAction(object):
+    """Enum-like values for possible action to take on start of a run() call."""
+
+    # Run once with debug tensor-watching.
+    DEBUG_RUN = "debug_run"
+
+    # Run once with profiler.
+    PROFILE_RUN = "profile_run"
+
+    # Run without debug tensor-watching.
+    NON_DEBUG_RUN = "non_debug_run"
+
+    # Instead of running the fetches as a whole, as would normally happen, invoke
+    # the (to-be-implemented) debug stepper.
+    # TODO(cais): Remove "to-be-implemented".
+    INVOKE_STEPPER = "invoke_stepper"
+
 # def get_flattened_names(inputs_or_outputs):
 #  """Get a flattened list of the names in run() call inputs or outputs.
 #
