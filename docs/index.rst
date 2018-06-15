@@ -1,19 +1,37 @@
-NNVM Documentation
-==================
-This is a document about NNVM and NNVM compiler.
+TVM Documentation
+=================
 
-Contents
---------
-
+Get Started
+-----------
 .. toctree::
    :maxdepth: 1
 
-   self
-   how_to/install
+   install/index
    tutorials/index
-   top
-   json_spec
-   how_to/contribute
-   how_to/deploy
+   deploy/index
+   contribute/index
+   faq
+
+API Reference
+-------------
+.. toctree::
+   :maxdepth: 2
+
    api/python/index
+   api_links
+
+Developer Guide
+---------------
+.. toctree::
+   :maxdepth: 2
+
    dev/index
+   nnvm_top
+
+
+Index
+-----
+.. toctree::
+   :maxdepth: 1
+
+   genindex

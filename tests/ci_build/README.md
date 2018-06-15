@@ -20,17 +20,17 @@ using (`ci_build.sh`)[./ci_build.sh]. For example
 - build codes with CUDA supports
 
   ```bash
-  ./ci_build.sh gpu tests/scripts/task_build.sh
+  ./ci_build.sh gpu make -j$(nproc)
   ```
 
 - do the python unittest
 
   ```bash
-  ./ci_build.sh gpu tests/scripts/task_python_test.sh
+  ./ci_build.sh gpu PYTHONPATH=./python/ nosetests --with-timer --verbose tests/python/unittest'
   ```
 
 - build the documents. The results will be available at `docs/_build/html`
 
   ```bash
-  tests/ci_build/ci_build.sh gpu tests/scripts/task_python_docs.sh
+  tests/ci_build/ci_build.sh gpu make -C docs html
   ```

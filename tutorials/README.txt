@@ -1,3 +1,3 @@
 Tutorials
 =========
-This page contains the tutorials about NNVM.
+This page contains the tutorials about TVM.

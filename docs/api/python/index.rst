@@ -1,15 +1,23 @@
 Python API
 ==========
 
-This document contains the python API to NNVM compiler toolchain.
-For user
-
-
 .. toctree::
    :maxdepth: 2
 
-   compiler
-   frontend
-   symbol
-   graph
-   top
+   tvm
+   intrin
+   tensor
+   schedule
+   target
+   build
+   module
+   ndarray
+   container
+   function
+   graph_runtime
+   rpc
+   bridge
+   contrib
+   dev
+   topi
+   nnvm/index

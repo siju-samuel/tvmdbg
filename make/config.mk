@@ -1,8 +1,8 @@
 #-------------------------------------------------------------------------------
-#  Template configuration for compiling nnvm
+#  Template configuration for compiling
 #
 #  If you want to change the configuration, please use the following
-#  steps. Assume you are on the root directory of nnvm. First copy the this
+#  steps. Assume you are on the root directory. First copy the this
 #  file so that any local changes will be ignored by git
 #
 #  $ cp make/config.mk .
@@ -16,31 +16,80 @@
 #  $ make -j8
 #-------------------------------------------------------------------------------
 
-#---------------------
-# choice of compiler
-#--------------------
-
-export NVCC = nvcc
-
-# choice of archiver
-export AR = ar
+# whether compile with debug
+DEBUG = 0
 
 # the additional link flags you want to add
-ADD_LDFLAGS=
+ADD_LDFLAGS =
 
 # the additional compile flags you want to add
-ADD_CFLAGS=
+ADD_CFLAGS =
 
-# path to dmlc-core module 
-#DMLC_CORE_PATH=
+#---------------------------------------------
+# Backend runtimes.
+#---------------------------------------------
+# whether enable CUDA during compile
+USE_CUDA = 0
 
-#----------------------------
-# plugins
-#----------------------------
+# add the path to CUDA library to link and compile flag
+# if you have already add them to environment variable.
+# CUDA_PATH = /usr/local/cuda
 
-# whether to use fusion integration. This requires installing cuda.
-# ifndef CUDA_PATH
-# 	CUDA_PATH = /usr/local/cuda
-# endif
-# NNVM_FUSION_PATH = plugin/nnvm-fusion
-# NNVM_PLUGINS += $(NNVM_FUSION_PATH)/nnvm-fusion.mk
+# ROCM
+USE_ROCM = 0
+
+# whether enable OpenCL during compile
+USE_OPENCL = 0
+
+# whether enable Metal during compile
+USE_METAL = 0
+
+# whether enable SGX during compile
+USE_SGX = 0
+SGX_SDK = /opt/sgxsdk
+
+# Whether enable RPC during compile
+USE_RPC = 1
+
+# Whether enable tiny embedded graph runtime.
+USE_GRAPH_RUNTIME = 1
+
+#  Whether enable additional graph debug functions
+USE_GRAPH_RUNTIME_DEBUG = 0
+
+# whether build with LLVM support
+# Requires LLVM version >= 4.0
+# Set LLVM_CONFIG to your version, uncomment to build with llvm support
+#
+LLVM_CONFIG = llvm-config
+
+#---------------------------------------------
+# Contrib optional libraries.
+#---------------------------------------------
+# Whether use BLAS, choices: openblas, atlas, blas, apple
+USE_BLAS = none
+
+# Whether use contrib.random in runtime
+USE_RANDOM = 0
+
+# Whether use NNPack
+USE_NNPACK = 0
+# NNPACK_PATH = none
+
+# Whether use CuDNN
+USE_CUDNN = 0
+
+# Whether use MIOpen
+USE_MIOPEN = 0
+
+# Whether use MPS
+USE_MPS = 0
+
+# Whether use cuBLAS
+USE_CUBLAS = 0
+
+# Whether use rocBlas
+USE_ROCBLAS = 0
+
+# Whether use contrib sort
+USE_SORT = 0

@@ -1,13 +1,16 @@
-Project Structure
-=================
+# Code Organization
 
-The following components are operator invariant.
+Header files in include are public APIs that share across modules.
+There can be internal header files within each module that sit in src.
 
-- c_api: NNVM C API
-- core: NNVM core data structure
-- pass: NNVM pass
-
-The following components are generic NNVM compiler and defines tensor operator set
-
-- top: NNVM core tensor operators
-- compiler: NNVM compiler toolchain
+## Modules
+- common: Internal common utilities.
+- api: API function registration
+- lang: The definition of DSL related data structure
+- arithmetic: Arithmetic expression and set simplification
+- op: The detail implementations about each operation(compute, scan, placeholder)
+- schedule: The operations on the schedule graph before converting to IR.
+- pass: The optimization pass on the IR structure
+- codegen: The code generator.
+- runtime: Minimum runtime related codes
+- contrib: Contrib extension libraries

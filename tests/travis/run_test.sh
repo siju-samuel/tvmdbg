@@ -1,58 +1,46 @@
 #!/bin/bash
 
-
-if [ ${TASK} == "lint" ]; then
-    make lint || exit -1
-    echo "Check documentations of c++ code..."
-    make doc 2>log.txt
-    (cat log.txt| grep -v ENABLE_PREPROCESSING |grep -v "unsupported tag") > logclean.txt
-    echo "---------Error Log----------"
-    cat logclean.txt
-    echo "----------------------------"
-    (cat logclean.txt|grep warning) && exit -1
-    (cat logclean.txt|grep error) && exit -1
-    exit 0
+if [ ${TASK} == "lint" ] || [ ${TASK} == "all_test" ]; then
+    if [ ! ${TRAVIS_OS_NAME} == "osx" ]; then
+        ./tests/scripts/task_lint.sh || exit -1
+    fi
 fi
 
+cp make/config.mk config.mk
+echo "USE_CUDA=0" >> config.mk
+echo "USE_RPC=1" >> config.mk
 
-if [ ! ${TRAVIS_OS_NAME} == "osx" ]; then
+if [ ${TRAVIS_OS_NAME} == "osx" ]; then
+    echo "USE_OPENCL=1" >> config.mk
+    echo "USE_METAL=1" >> config.mk
+else
     # use g++-4.8 for linux
     if [ ${CXX} == "g++" ]; then
         export CXX=g++-4.8
     fi
+    echo "USE_OPENCL=0" >> config.mk
 fi
 
-if [ ${TASK} == "cpp_test" ]; then
+if [ ${TASK} == "verilog_test" ] || [ ${TASK} == "all_test" ]; then
+    if [ ! ${TRAVIS_OS_NAME} == "osx" ]; then
+        make -f tests/scripts/packages.mk iverilog
+        make all || exit -1
+        ./tests/scripts/task_verilog_test.sh || exit -1
+    fi
+fi
+
+if [ ${TASK} == "cpp_test" ] || [ ${TASK} == "all_test" ]; then
     make -f dmlc-core/scripts/packages.mk gtest
-    echo "GTEST_PATH="${CACHE_PREFIX} >> config.mk
-    make test || exit -1
-    for test in tests/cpp/*_test; do
-        ./$test || exit -1
-    done
-    exit 0
+    ./tests/scripts/task_cpp_unittest.sh || exit -1
+    ./tests/scripts/task_cpp_topi.sh || exit -1
 fi
 
-# run two test one for cython, one for ctypes
-if [ ${TASK} == "python_test" ]; then
-    make clean
-    make -j all || exit -1
+if [ ${TASK} == "python_test" ] || [ ${TASK} == "all_test" ]; then
+    make all || exit -1
     if [ ${TRAVIS_OS_NAME} == "osx" ]; then
-        python -m nose tests/python/unittest/ || exit -1
-        python3 -m nose tests/python/unittest/ || exit -1
+        ./tests/scripts/task_python_unittest.sh || exit -1
     else
-        nosetests tests/python/unittest/ || exit -1
-        nosetests3 tests/python/unittest/ || exit -1
+        nosetests -v tests/python/unittest || exit -1
+        nosetests3 -v tests/python/unittest || exit -1
     fi
-
-    make cython || exit -1
-    make cython3 || exit -1
-
-    if [ ${TRAVIS_OS_NAME} == "osx" ]; then
-        python -m nose tests/python/unittest/ || exit -1
-        python3 -m nose tests/python/unittest/ || exit -1
-    else
-        nosetests tests/python/unittest/ || exit -1
-        nosetests3 tests/python/unittest/ || exit -1
-    fi
-    exit 0
 fi

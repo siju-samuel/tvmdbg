@@ -1,7 +1,7 @@
 {% set version = "0.1.dev" %}
 
 package:
-  name: nnvm
+  name: tvm
   version: {{ version }}
 
 source:
@@ -10,9 +10,12 @@ source:
 build:
   number: 1
   skip: True  # [win]
+  script_env:
+    - CONDA_CUDA_HOME
 
 requirements:
   build:
+    - llvmdev ==4.0.0
     - cmake
     - python >=3
     - numpy
@@ -20,13 +23,11 @@ requirements:
     - nose
     - decorator
   run:
-    - tvm
-    - topi
     - python >=3
     - numpy
     - decorator
 
 about:
-  home: https://github.com/dmlc/nnvm
+  home: https://github.com/dmlc/tvm
   license: Apache2
-  summary: Bring deep learning to bare metal
+  summary: a low level domain specific language for compiling tensor computation pipelines

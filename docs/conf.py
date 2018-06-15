@@ -16,7 +16,6 @@ import os, subprocess
 import shlex
 import recommonmark
 import sphinx_gallery
-from tvm.contrib import rpc, graph_runtime
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
@@ -25,25 +24,28 @@ from recommonmark.transform import AutoStructify
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.insert(0, os.path.join(curr_path, '../python/'))
+sys.path.insert(0, os.path.join(curr_path, '../topi/python'))
+sys.path.insert(0, os.path.join(curr_path, '../nnvm/python'))
 
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = u'nnvm'
+project = u'tvm'
 author = u'%s developers' % project
 copyright = u'2017, %s' % author
-github_doc_root = 'https://github.com/dmlc/nnvm/tree/master/docs/'
+github_doc_root = 'https://github.com/tqchen/tvm/tree/master/docs/'
 
 # add markdown parser
 CommonMarkParser.github_doc_root = github_doc_root
 source_parsers = {
     '.md': CommonMarkParser
 }
+os.environ['TVM_BUILD_DOC'] = '1'
 os.environ['NNVM_BUILD_DOC'] = '1'
 # Version information.
-import nnvm
-version = nnvm.__version__
-release = nnvm.__version__
+import tvm
+version = tvm.__version__
+release = tvm.__version__
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones
@@ -55,6 +57,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
 ]
+
+breathe_projects = {'tvm' : 'doxygen/xml/'}
+breathe_default_project = 'tvm'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -120,7 +125,7 @@ todo_include_todos = False
 # -- Options for HTML output ----------------------------------------------
 
 # The theme is set by the make target
-html_theme = os.environ.get('NNVM_THEME', 'rtd')
+html_theme = os.environ.get('TVM_THEME', 'rtd')
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # only import rtd theme and set it if want to build docs locally
@@ -132,7 +137,15 @@ if not on_rtd and html_theme == 'rtd':
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
+
+html_theme_options = {
+    'analytics_id': 'UA-75982049-2',
+    'logo_only': True,
+}
+
+html_logo = "_static/img/tvm-logo-small.png"
+
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + 'doc'
@@ -167,16 +180,19 @@ intersphinx_mapping = {
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('http://matplotlib.org/', None),
-    'tvm': ('http://docs.tvmlang.org/', None),
 }
-
 
 from sphinx_gallery.sorting import ExplicitOrder
 
 examples_dirs = ['../tutorials/']
 gallery_dirs = ['tutorials']
+subsection_order = ExplicitOrder(
+    ['../tutorials/language',
+     '../tutorials/optimize',
+     '../tutorials/topi',
+     '../tutorials/deployment',
+     '../tutorials/nnvm'])
 
-subsection_order = ExplicitOrder([])
 
 def generate_doxygen_xml(app):
     """Run the doxygen make commands if we're on the ReadTheDocs server"""
@@ -186,6 +202,7 @@ def setup(app):
     # Add hook for building doxygen xml when needed
     # no c++ API for now
     app.connect("builder-inited", generate_doxygen_xml)
+    app.add_stylesheet('css/tvm_theme.css')
     app.add_config_value('recommonmark_config', {
         'url_resolver': lambda url: github_doc_root + url,
         'auto_doc_ref': True
@@ -195,10 +212,10 @@ def setup(app):
 
 sphinx_gallery_conf = {
     'backreferences_dir': 'gen_modules/backreferences',
-    'doc_module': ('tvm', 'nnvm', 'numpy'),
+    'doc_module': ('tvm', 'numpy'),
 'reference_url': {
-    'nnvm': None,
-    'tvm': 'http://docs.tvmlang.org',
+    'tvm': None,
+    'matplotlib': 'http://matplotlib.org',
     'numpy': 'http://docs.scipy.org/doc/numpy-1.9.1'},
     'examples_dirs': examples_dirs,
     'gallery_dirs': gallery_dirs,

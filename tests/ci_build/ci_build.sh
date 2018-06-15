@@ -72,7 +72,7 @@ function upsearch () {
 # Set up WORKSPACE and BUILD_TAG. Jenkins will set them for you or we pick
 # reasonable defaults if you run it outside of Jenkins.
 WORKSPACE="${WORKSPACE:-${SCRIPT_DIR}/../../}"
-BUILD_TAG="${BUILD_TAG:-nnvm-ci}"
+BUILD_TAG="${BUILD_TAG:-tvm-ci}"
 
 # Determine the docker image name
 DOCKER_IMG_NAME="${BUILD_TAG}.${CONTAINER_TYPE}"
