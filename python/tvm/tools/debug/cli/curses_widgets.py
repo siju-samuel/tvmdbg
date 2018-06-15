@@ -31,6 +31,9 @@ class CursesNavigationHistory(object):
 
     BACK_ARROW_TEXT = "<--"
     FORWARD_ARROW_TEXT = "-->"
+    EXIT_TEXT = "exit"
+    HOME_TEXT = "home"
+    HELP_TEXT = "help"
 
     def __init__(self, capacity):
         """Constructor of CursesNavigationHistory.
@@ -149,10 +152,39 @@ class CursesNavigationHistory(object):
         """
         return self._pointer + 1 < len(self._items)
 
+    def can_go_home(self):
+        """Test whether client can go home place.
+
+        Returns:
+          (`bool`) Whether going back home place is possible.
+        """
+        if (self._pointer >= 0):
+            if self._items[self._pointer].command == "home":
+                return False
+            return True
+        else:
+            return False
+
+    def can_go_help(self):
+        """Test whether client can go help place.
+
+        Returns:
+          (`bool`) Whether going back help place is possible.
+        """
+        if (self._pointer >= 0):
+            if self._items[self._pointer].command == "help":
+                return False
+            return True
+        else:
+            return False
+
     def render(self,
                max_length,
                backward_command,
                forward_command,
+               home_command,
+               help_command,
+               exit_command,
                latest_command_attribute="black_on_white",
                old_command_attribute="magenta_on_white"):
         """Render the rich text content of the single-line navigation bar.
@@ -182,18 +214,38 @@ class CursesNavigationHistory(object):
             (debugger_cli_common.MenuItem(None, forward_command)
              if self.can_go_forward() else None))
 
+        output += RL(" | ")
+        output += RL(self.HOME_TEXT,
+            (debugger_cli_common.MenuItem(None, home_command)
+             if self.can_go_home() else None))
+
         if self._items:
             command_attribute = (latest_command_attribute
                                  if (self._pointer == (len(self._items) - 1))
                                  else old_command_attribute)
+
+            output_end = RL("| ")
+            output_end += RL(self.HELP_TEXT,
+                (debugger_cli_common.MenuItem(None, help_command)
+                 if self.can_go_help() else None))
+            output_end += RL(" | ")
+            output_end += RL(self.EXIT_TEXT, debugger_cli_common.MenuItem(None, exit_command))
+            output_end += RL(" |")
+
             output += RL(" | ")
+            output_cmd = RL("")
             if self._pointer != len(self._items) - 1:
-                output += RL("(-%d) " % (len(self._items) - 1 - self._pointer),
+                output_cmd += RL("(-%d) " % (len(self._items) - 1 - self._pointer),
                              command_attribute)
 
-            if len(output) < max_length:
-                maybe_truncated_command = self._items[self._pointer].command[
-                    :(max_length - len(output))]
-                output += RL(maybe_truncated_command, command_attribute)
+            if (len(output)+len(output_cmd)+len(output_end)) < max_length:
+                #maybe_truncated_command = self._items[self._pointer].command[
+                #    :(max_length - (len(output)+len(output_end)+1))]
+                #output_cmd += RL(maybe_truncated_command, command_attribute)
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list([output])
+                space_need_size = max_length - (len(output)+len(output_cmd)+len(output_end) + 1)
+                if space_need_size:
+                    empty_line = " " * space_need_size
+                    output_cmd += RL(empty_line)
+
+        return debugger_cli_common.rich_text_lines_from_rich_line_list([output + output_cmd + output_end])
