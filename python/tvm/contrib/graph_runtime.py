@@ -4,6 +4,7 @@ from .._ffi.function import get_global_func
 from .rpc import base as rpc_base
 from .. import ndarray as nd
 from ..tools.debug.runtime import debugruntime
+from ..tools.debug.util import common
 
 def create(graph_json_str, libmod, ctx, debug=False):
     """Create a runtime executor module given a graph and module.
@@ -124,13 +125,13 @@ class GraphModule(object):
             run_cli_session = self.dbgobj.get_run_command()
             run_start_resp = run_cli_session.get_run_start_resp()
             retvals = True
-            if run_start_resp.action == debugruntime.OnRunStartAction.DEBUG_RUN:
+            if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
                 self.set_debug_buffer()
                 retvals = self._debug_run()
                 self.dbgobj.dump_output()
                 self.dbgobj.run_end(run_cli_session, retvals)
 
-            elif run_start_resp.action == debugruntime.OnRunStartAction.NON_DEBUG_RUN:
+            elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
                 retvals = self._run()
                 self.dbgobj.run_end(run_cli_session, retvals) 
 
