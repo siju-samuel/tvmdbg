@@ -48,67 +48,67 @@ SORT_TENSORS_BY_TENSOR_NAME = "tensor_name"
 
 def _add_main_menu(output,
                    node_name=None,
-                   enable_list_tensors=True,
-                   enable_node_info=True,
-                   enable_print_tensor=True,
-                   enable_list_inputs=True,
-                   enable_list_outputs=True):
+                   enable_list_graphnodes=True,
+                   enable_node_details=True,
+                   enable_view_tensor=True,
+                   enable_graphnode_inputs=True,
+                   enable_graphnode_outputs=True):
     """Generate main menu for the screen output from a command.
 
     Args:
       output: (debugger_cli_common.RichTextLines) the output object to modify.
       node_name: (str or None) name of the node involved (if any). If None,
-        the menu items node_info, list_inputs and list_outputs will be
+        the menu items node_details, graphnode_inputs and graphnode_outputs will be
         automatically disabled, overriding the values of arguments
-        enable_node_info, enable_list_inputs and enable_list_outputs.
-      enable_list_tensors: (bool) whether the list_tensor menu item will be
+        enable_node_details, enable_graphnode_inputs and enable_graphnode_outputs.
+      enable_list_graphnodes: (bool) whether the list_tensor menu item will be
         enabled.
-      enable_node_info: (bool) whether the node_info item will be enabled.
-      enable_print_tensor: (bool) whether the print_tensor item will be enabled.
-      enable_list_inputs: (bool) whether the item list_inputs will be enabled.
-      enable_list_outputs: (bool) whether the item list_outputs will be enabled.
+      enable_node_details: (bool) whether the node_details item will be enabled.
+      enable_view_tensor: (bool) whether the view_tensor item will be enabled.
+      enable_graphnode_inputs: (bool) whether the item graphnode_inputs will be enabled.
+      enable_graphnode_outputs: (bool) whether the item graphnode_outputs will be enabled.
     """
 
     menu = debugger_cli_common.Menu()
 
     menu.append(
         debugger_cli_common.MenuItem(
-            "list_tensors", "list_tensors", enabled=enable_list_tensors))
+            "list_graphnodes", "list_graphnodes", enabled=enable_list_graphnodes))
 
     if node_name:
         menu.append(
             debugger_cli_common.MenuItem(
-                "node_info",
-                "node_info -a -d -t %s" % node_name,
-                enabled=enable_node_info))
+                "node_details",
+                "node_details -a -d -t %s" % node_name,
+                enabled=enable_node_details))
         menu.append(
             debugger_cli_common.MenuItem(
-                "print_tensor",
-                "print_tensor %s" % node_name,
-                enabled=enable_print_tensor))
+                "view_tensor",
+                "view_tensor %s" % node_name,
+                enabled=enable_view_tensor))
         menu.append(
             debugger_cli_common.MenuItem(
-                "list_inputs",
-                "list_inputs -c -r %s" % node_name,
-                enabled=enable_list_inputs))
+                "graphnode_inputs",
+                "graphnode_inputs -c -r %s" % node_name,
+                enabled=enable_graphnode_inputs))
         menu.append(
             debugger_cli_common.MenuItem(
-                "list_outputs",
-                "list_outputs -c -r %s" % node_name,
-                enabled=enable_list_outputs))
+                "graphnode_outputs",
+                "graphnode_outputs -c -r %s" % node_name,
+                enabled=enable_graphnode_outputs))
     else:
         menu.append(
             debugger_cli_common.MenuItem(
-                "node_info", None, enabled=False))
+                "node_details", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("print_tensor", None, enabled=False))
+            debugger_cli_common.MenuItem("view_tensor", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("list_inputs", None, enabled=False))
+            debugger_cli_common.MenuItem("graphnode_inputs", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("list_outputs", None, enabled=False))
+            debugger_cli_common.MenuItem("graphnode_outputs", None, enabled=False))
 
     menu.append(
-        debugger_cli_common.MenuItem("run_info", "run_info"))
+        debugger_cli_common.MenuItem("HOME", "HOME"))
     menu.append(
         debugger_cli_common.MenuItem("help", "help"))
 
@@ -237,7 +237,7 @@ class DebugAnalyzer(object):
         # Argument parsers for command handlers.
         self._arg_parsers = {}
 
-        # Parser for list_tensors.
+        # Parser for list_graphnodes.
         arg_p = argparse.ArgumentParser(
             description="List dumped intermediate tensors.",
             usage=argparse.SUPPRESS)
@@ -277,9 +277,9 @@ class DebugAnalyzer(object):
             dest="reverse",
             action="store_true",
             help="sort the data in reverse (descending) order")
-        self._arg_parsers["list_tensors"] = arg_p
+        self._arg_parsers["list_graphnodes"] = arg_p
 
-        # Parser for node_info.
+        # Parser for node_details.
         arg_p = argparse.ArgumentParser(
             description="Show information about a node.", usage=argparse.SUPPRESS)
         arg_p.add_argument(
@@ -305,9 +305,9 @@ class DebugAnalyzer(object):
             action="store_true",
             help="Also include the traceback of the node's creation "
                  "(if available in Python).")
-        self._arg_parsers["node_info"] = arg_p
+        self._arg_parsers["node_details"] = arg_p
 
-        # Parser for list_inputs.
+        # Parser for graphnode_inputs.
         arg_p = argparse.ArgumentParser(
             description="Show inputs to a node.", usage=argparse.SUPPRESS)
         arg_p.add_argument(
@@ -334,9 +334,9 @@ class DebugAnalyzer(object):
             "--op_type",
             action="store_true",
             help="Show op types of input nodes.")
-        self._arg_parsers["list_inputs"] = arg_p
+        self._arg_parsers["graphnode_inputs"] = arg_p
 
-        # Parser for list_outputs.
+        # Parser for graphnode_outputs.
         arg_p = argparse.ArgumentParser(
             description="Show the nodes that receive the outputs of given node.",
             usage=argparse.SUPPRESS)
@@ -365,11 +365,11 @@ class DebugAnalyzer(object):
             "--op_type",
             action="store_true",
             help="Show op types of recipient nodes.")
-        self._arg_parsers["list_outputs"] = arg_p
+        self._arg_parsers["graphnode_outputs"] = arg_p
 
-        # Parser for print_tensor.
-        self._arg_parsers["print_tensor"] = (
-            command_parser.get_print_tensor_argparser(
+        # Parser for view_tensor.
+        self._arg_parsers["view_tensor"] = (
+            command_parser.get_view_tensor_argparser(
                 "Print the value of a dumped tensor."))
 
         # Parser for print_source.
@@ -525,8 +525,8 @@ class DebugAnalyzer(object):
         """
         return self._arg_parsers[handler_name].format_help()
 
-    def list_tensors(self, args, screen_info=None):
-        """Command handler for list_tensors.
+    def list_graphnodes(self, args, screen_info=None):
+        """Command handler for list_graphnodes.
 
         List tensors dumped during debugged Session.run() call.
 
@@ -544,7 +544,7 @@ class DebugAnalyzer(object):
         # facilitate on-screen highlighting/selection of node names.
         _ = screen_info
 
-        parsed = self._arg_parsers["list_tensors"].parse_args(args)
+        parsed = self._arg_parsers["list_graphnodes"].parse_args(args)
 
         output = []
 
@@ -571,7 +571,7 @@ class DebugAnalyzer(object):
             except ValueError:
                 output = cli_shared.error("There is no tensor filter named \"%s\"." %
                                           parsed.tensor_filter)
-                _add_main_menu(output, node_name=None, enable_list_tensors=False)
+                _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
                 return output
 
             data_to_show = self._debug_dump.find(filter_callable)
@@ -630,7 +630,7 @@ class DebugAnalyzer(object):
         else:
             output.prepend(["%d dumped tensor(s):" % dump_count])
 
-        _add_main_menu(output, node_name=None, enable_list_tensors=False)
+        _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
         return output
 
     def _measure_tensor_lst_col_width(self, data):
@@ -714,7 +714,7 @@ class DebugAnalyzer(object):
         """Generate a line containing the column heads of the tensor list.
 
         Args:
-          parsed: Parsed arguments (by argparse) of the list_tensors command.
+          parsed: Parsed arguments (by argparse) of the list_graphnodes command.
           max_timestamp_width: (int) maximum width of the timestamp column.
           max_dump_size_width: (int) maximum width of the dump size column.
           max_op_type_width: (int) maximum width of the op type column.
@@ -723,7 +723,7 @@ class DebugAnalyzer(object):
           A RichTextLines object.
         """
 
-        base_command = "list_tensors"
+        base_command = "list_graphnodes"
         if parsed.tensor_filter:
             base_command += " -f %s" % parsed.tensor_filter
         if parsed.op_type_filter:
@@ -773,8 +773,8 @@ class DebugAnalyzer(object):
 
         return debugger_cli_common.RichTextLines([row], font_attr_segs=attr_segs)
 
-    def node_info(self, args, screen_info=None):
-        """Command handler for node_info.
+    def node_details(self, args, screen_info=None):
+        """Command handler for node_details.
 
         Query information about a given node.
 
@@ -792,7 +792,7 @@ class DebugAnalyzer(object):
         # on-screen highlighting/selection of node names.
         _ = screen_info
 
-        parsed = self._arg_parsers["node_info"].parse_args(args)
+        parsed = self._arg_parsers["node_details"].parse_args(args)
 
         # Get a node name, regardless of whether the input is a node name (without
         # output slot attached) or a tensor name (with output slot attached).
@@ -805,10 +805,10 @@ class DebugAnalyzer(object):
             _add_main_menu(
                 output,
                 node_name=None,
-                enable_list_tensors=True,
-                enable_node_info=False,
-                enable_list_inputs=False,
-                enable_list_outputs=False)
+                enable_list_graphnodes=True,
+                enable_node_details=False,
+                enable_graphnode_inputs=False,
+                enable_graphnode_outputs=False)
             return output
 
         # TODO(cais): Provide UI glossary feature to explain to users what the
@@ -852,7 +852,7 @@ class DebugAnalyzer(object):
         #if hasattr(parsed, "traceback") and parsed.traceback:
         #    output.extend(self._render_node_traceback(node_name))
 
-        _add_main_menu(output, node_name=node_name, enable_node_info=False)
+        _add_main_menu(output, node_name=node_name, enable_node_details=False)
         return output
 
     def _render_node_traceback(self, node_name):
@@ -890,7 +890,7 @@ class DebugAnalyzer(object):
 
         return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
-    def list_inputs(self, args, screen_info=None):
+    def graphnode_inputs(self, args, screen_info=None):
         """Command handler for inputs.
 
         Show inputs to a given node.
@@ -910,9 +910,9 @@ class DebugAnalyzer(object):
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
 
-        parsed = self._arg_parsers["list_inputs"].parse_args(args)
+        parsed = self._arg_parsers["graphnode_inputs"].parse_args(args)
 
-        output = self._list_inputs_or_outputs(
+        output = self._graphnode_inputs_or_outputs(
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
@@ -921,12 +921,12 @@ class DebugAnalyzer(object):
             do_outputs=False)
 
         node_name = debug_graphs.get_node_name(parsed.node_name)
-        _add_main_menu(output, node_name=node_name, enable_list_inputs=False)
+        _add_main_menu(output, node_name=node_name, enable_graphnode_inputs=False)
 
         return output
 
-    def print_tensor(self, args, screen_info=None):
-        """Command handler for print_tensor.
+    def view_tensor(self, args, screen_info=None):
+        """Command handler for view_tensor.
 
         Print value of a given dumped tensor.
 
@@ -940,7 +940,7 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        parsed = self._arg_parsers["print_tensor"].parse_args(args)
+        parsed = self._arg_parsers["view_tensor"].parse_args(args)
 
         np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
@@ -959,8 +959,8 @@ class DebugAnalyzer(object):
             _add_main_menu(
                 output,
                 node_name=None,
-                enable_list_tensors=True,
-                enable_print_tensor=False)
+                enable_list_graphnodes=True,
+                enable_view_tensor=False)
             return output
 
         watch_keys = self._debug_dump.debug_watch_keys(node_name)
@@ -987,8 +987,8 @@ class DebugAnalyzer(object):
                 _add_main_menu(
                     output,
                     node_name=node_name,
-                    enable_list_tensors=True,
-                    enable_print_tensor=False)
+                    enable_list_graphnodes=True,
+                    enable_view_tensor=False)
                 return output
 
         # Find debug dump data that match the tensor name (node name + output
@@ -1021,7 +1021,7 @@ class DebugAnalyzer(object):
                     "Invalid number (%d) for tensor %s, which generated one dump." %
                     (parsed.number, parsed.tensor_name))
 
-            _add_main_menu(output, node_name=node_name, enable_print_tensor=False)
+            _add_main_menu(output, node_name=node_name, enable_view_tensor=False)
         else:
             # There are more than one dumps for this tensor.
             if parsed.number < 0:
@@ -1034,7 +1034,7 @@ class DebugAnalyzer(object):
                 for i, datum in enumerate(matching_data):
                     rel_time = (datum.timestamp - self._debug_dump.t0) / 1000.0
                     lines.append("#%d [%.3f ms] %s" % (i, rel_time, datum.watch_key))
-                    command = "print_tensor %s -n %d" % (parsed.tensor_name, i)
+                    command = "view_tensor %s -n %d" % (parsed.tensor_name, i)
                     font_attr_segs[len(lines) - 1] = [(
                         len(lines[-1]) - len(datum.watch_key), len(lines[-1]),
                         debugger_cli_common.MenuItem(None, command))]
@@ -1044,7 +1044,7 @@ class DebugAnalyzer(object):
                     "You can use the -n (--number) flag to specify which dump to "
                     "print.")
                 lines.append("For example:")
-                lines.append("  print_tensor %s -n 0" % parsed.tensor_name)
+                lines.append("  view_tensor %s -n 0" % parsed.tensor_name)
 
                 output = debugger_cli_common.RichTextLines(
                     lines, font_attr_segs=font_attr_segs)
@@ -1063,11 +1063,11 @@ class DebugAnalyzer(object):
                     tensor_slicing=tensor_slicing,
                     highlight_options=highlight_options,
                     write_path=parsed.write_path)
-            _add_main_menu(output, node_name=node_name, enable_print_tensor=False)
+            _add_main_menu(output, node_name=node_name, enable_view_tensor=False)
 
         return output
 
-    def list_outputs(self, args, screen_info=None):
+    def graphnode_outputs(self, args, screen_info=None):
         """Command handler for inputs.
 
         Show inputs to a given node.
@@ -1087,9 +1087,9 @@ class DebugAnalyzer(object):
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
 
-        parsed = self._arg_parsers["list_outputs"].parse_args(args)
+        parsed = self._arg_parsers["graphnode_outputs"].parse_args(args)
 
-        output = self._list_inputs_or_outputs(
+        output = self._graphnode_inputs_or_outputs(
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
@@ -1098,7 +1098,7 @@ class DebugAnalyzer(object):
             do_outputs=True)
 
         node_name = debug_graphs.get_node_name(parsed.node_name)
-        _add_main_menu(output, node_name=node_name, enable_list_outputs=False)
+        _add_main_menu(output, node_name=node_name, enable_graphnode_outputs=False)
 
         return output
 
@@ -1217,14 +1217,14 @@ class DebugAnalyzer(object):
         _add_main_menu(output, node_name=None)
         return output
 
-    def _list_inputs_or_outputs(self,
+    def _graphnode_inputs_or_outputs(self,
                                 recursive,
                                 node_name,
                                 depth,
                                 control,
                                 op_type,
                                 do_outputs=False):
-        """Helper function used by list_inputs and list_outputs.
+        """Helper function used by graphnode_inputs and graphnode_outputs.
 
         Format a list of lines to display the inputs or output recipients of a
         given node.
@@ -1563,29 +1563,29 @@ def create_analyzer_ui(debug_dump,
 
     cli = ui_factory.get_ui(ui_type, on_ui_exit=on_ui_exit, config=config)
     cli.register_command_handler(
-        "list_tensors",
-        analyzer.list_tensors,
-        analyzer.get_help("list_tensors"),
+        "list_graphnodes",
+        analyzer.list_graphnodes,
+        analyzer.get_help("list_graphnodes"),
         prefix_aliases=["lt"])
     cli.register_command_handler(
-        "node_info",
-        analyzer.node_info,
-        analyzer.get_help("node_info"),
+        "node_details",
+        analyzer.node_details,
+        analyzer.get_help("node_details"),
         prefix_aliases=["ni"])
     cli.register_command_handler(
-        "list_inputs",
-        analyzer.list_inputs,
-        analyzer.get_help("list_inputs"),
+        "graphnode_inputs",
+        analyzer.graphnode_inputs,
+        analyzer.get_help("graphnode_inputs"),
         prefix_aliases=["li"])
     cli.register_command_handler(
-        "list_outputs",
-        analyzer.list_outputs,
-        analyzer.get_help("list_outputs"),
+        "graphnode_outputs",
+        analyzer.graphnode_outputs,
+        analyzer.get_help("graphnode_outputs"),
         prefix_aliases=["lo"])
     cli.register_command_handler(
-        "print_tensor",
-        analyzer.print_tensor,
-        analyzer.get_help("print_tensor"),
+        "view_tensor",
+        analyzer.view_tensor,
+        analyzer.get_help("view_tensor"),
         prefix_aliases=["pt"])
     cli.register_command_handler(
         "print_source",
@@ -1607,7 +1607,7 @@ def create_analyzer_ui(debug_dump,
     for datum in debug_dump.dumped_tensor_data:
         dumped_tensor_names.append("%s:%d" % (datum.node_name, datum.output_slot))
 
-    # Tab completions for command "print_tensors".
-    cli.register_tab_comp_context(["print_tensor", "pt"], dumped_tensor_names)
+    # Tab completions for command "view_tensors".
+    cli.register_tab_comp_context(["view_tensor", "pt"], dumped_tensor_names)
 
     return cli

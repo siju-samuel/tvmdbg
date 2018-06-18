@@ -100,7 +100,7 @@ def parse_ranges_highlight(ranges_string):
 
     Args:
       ranges_string: (str) A string representing a numerical range of a list of
-        numerical ranges. See the help info of the -r flag of the print_tensor
+        numerical ranges. See the help info of the -r flag of the view_tensor
         command for more details.
 
     Returns:

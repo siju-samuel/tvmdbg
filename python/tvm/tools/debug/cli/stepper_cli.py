@@ -133,7 +133,7 @@ class NodeStepperCLI(object):
             help="Number of times to step (>=1)")
         self.arg_parsers["step"] = argument_parser
 
-        # Parser for "print_tensor".
+        # Parser for "view_tensor".
         argument_parser = argparse.ArgumentParser(
             description="Print the value of a tensor, from cached TensorHandle or "
                         "client-provided overrides.",
@@ -159,7 +159,7 @@ class NodeStepperCLI(object):
             dest="print_all",
             action="store_true",
             help="Print the tensor in its entirety, i.e., do not use ellipses.")
-        self.arg_parsers["print_tensor"] = argument_parser
+        self.arg_parsers["view_tensor"] = argument_parser
 
         # Parser for inject_value.
         argument_parser = argparse.ArgumentParser(
@@ -472,10 +472,10 @@ class NodeStepperCLI(object):
 
         return screen_output
 
-    def print_tensor(self, args, screen_info=None):
+    def view_tensor(self, args, screen_info=None):
         """Print the value of a tensor that the stepper has access to."""
 
-        parsed = self.arg_parsers["print_tensor"].parse_args(args)
+        parsed = self.arg_parsers["view_tensor"].parse_args(args)
 
         if screen_info and "cols" in screen_info:
             np_printoptions = {"linewidth": screen_info["cols"]}
@@ -564,9 +564,9 @@ class NodeStepperCLI(object):
 
         return debugger_cli_common.RichTextLines(lines)
 
-    # TODO(cais): Implement list_inputs
-    # TODO(cais): Implement list_outputs
-    # TODO(cais): Implement node_info
+    # TODO(cais): Implement graphnode_inputs
+    # TODO(cais): Implement graphnode_outputs
+    # TODO(cais): Implement node_details
 
     def _resolve_tensor_names(self, element_name):
         """Resolve tensor name from graph element name.

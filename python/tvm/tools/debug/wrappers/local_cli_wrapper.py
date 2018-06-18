@@ -154,9 +154,9 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         ap = argparse.ArgumentParser(
             description="Display information about this Session.run() call.",
             usage=argparse.SUPPRESS)
-        self._argparsers["run_info"] = ap
+        self._argparsers["HOME"] = ap
 
-        self._argparsers["print_input"] = command_parser.get_print_tensor_argparser(
+        self._argparsers["print_input"] = command_parser.get_view_tensor_argparser(
             "Print the value of a input in input_dict.")
 
     def add_tensor_filter(self, filter_name, tensor_filter):
@@ -256,7 +256,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         # Create initial screen output detailing the run.
         self._title = "run-start: " + self._run_description
-        self._init_command = "run_info"
+        self._init_command = "HOME"
         self._title_color = "blue_on_white"
 
     def on_run_end(self, request):
@@ -355,15 +355,15 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             dumped_tensor_names.append("%s:%d" %
                                        (datum.node_name, datum.output_slot))
 
-        # Tab completions for command "print_tensors".
-        self._run_cli.register_tab_comp_context(["print_tensor", "pt"],
+        # Tab completions for command "view_tensors".
+        self._run_cli.register_tab_comp_context(["view_tensor", "pt"],
                                                 dumped_tensor_names)
 
-        # Tab completion for commands "node_info", "list_inputs" and
-        # "list_outputs". The list comprehension is used below because nodes()
+        # Tab completion for commands "node_details", "graphnode_inputs" and
+        # "graphnode_outputs". The list comprehension is used below because nodes()
         # output can be unicodes and they need to be converted to strs.
         self._run_cli.register_tab_comp_context(
-            ["node_info", "ni", "list_inputs", "li", "list_outputs", "lo"],
+            ["node_details", "ni", "graphnode_inputs", "li", "graphnode_outputs", "lo"],
             [str(node_name) for node_name in debug_dump.nodes()])
         # TODO(cais): Reduce API surface area for aliases vis-a-vis tab
         #    completion contexts and registered command handlers.
@@ -400,9 +400,9 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         if (not self._is_run_start and
                 debugger_cli_common.MAIN_MENU_KEY in output.annotations):
             menu = output.annotations[debugger_cli_common.MAIN_MENU_KEY]
-            if "list_tensors" not in menu.captions():
+            if "list_graphnodes" not in menu.captions():
                 menu.insert(
-                    0, debugger_cli_common.MenuItem("list_tensors", "list_tensors"))
+                    0, debugger_cli_common.MenuItem("list_graphnodes", "list_graphnodes"))
 
         return output
 
@@ -491,9 +491,9 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             self._argparsers["run"].format_help(),
             prefix_aliases=["r"])
         curses_cli.register_command_handler(
-            "run_info",
+            "HOME",
             self._run_info_handler,
-            self._argparsers["run_info"].format_help(),
+            self._argparsers["HOME"].format_help(),
             prefix_aliases=["ri"])
         curses_cli.register_command_handler(
             "print_input",
