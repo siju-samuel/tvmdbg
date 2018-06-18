@@ -1218,12 +1218,12 @@ class DebugAnalyzer(object):
         return output
 
     def _graphnode_inputs_or_outputs(self,
-                                recursive,
-                                node_name,
-                                depth,
-                                control,
-                                op_type,
-                                do_outputs=False):
+                                     recursive,
+                                     node_name,
+                                     depth,
+                                     control,
+                                     op_type,
+                                     do_outputs=False):
         """Helper function used by graphnode_inputs and graphnode_outputs.
 
         Format a list of lines to display the inputs or output recipients of a
