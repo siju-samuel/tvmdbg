@@ -101,8 +101,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._skip_debug = False
         self._run_start_response = None
         self._is_run_start = True
-
         self._ui_type = ui_type
+        self._graph_node_count = len(graph['nodes'])
 
     def _initialize_argparsers(self):
         self._argparsers = {}
@@ -550,6 +550,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         self._run_info = cli_shared.get_run_start_intro(
             run_call_count,
+            self._graph_node_count,
             outputs,
             input_dict,
             self._tensor_filters,

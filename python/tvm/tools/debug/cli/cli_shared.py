@@ -261,15 +261,7 @@ def _recommend_command(command, description, indent=2, create_link=False):
 def get_tvmdbg_logo():
     """Make an ASCII representation of the tvmdbg logo."""
 
-    lines = [
-        "",
-        " TTTTTTTT V     V MM   MM DDDD  BBBB   GGGG ",
-        "    TT    V     V M M M M D   D B   B G    ",
-        "    TT     V   V  M  M  M D   D BBBB  G   GG",
-        "    TT      V V   M     M D   D B   B G    G",
-        "    TT       V    M     M DDDD  BBBB   GGGG ",
-        "",
-    ]
+    lines = []
     return debugger_cli_common.RichTextLines(lines)
 
 
@@ -277,6 +269,7 @@ _HORIZONTAL_BAR = " ======================================"
 
 
 def get_run_start_intro(run_call_count,
+                        graph_node_count,
                         outputs,
                         input_dict,
                         tensor_filters,
@@ -317,20 +310,10 @@ def get_run_start_intro(run_call_count,
         input_dict_lines)
 
     out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
-    if is_callable_runner:
-        out.append(" Running a runner returned by GraphRuntime.make_callable()")
-    else:
-        out.append(" GraphRuntime.run() call #%d:" % run_call_count)
-        out.append("")
-        out.append(" Output:")
-        out.extend(debugger_cli_common.RichTextLines(
-            ["   " + line for line in output_lines]))
-        out.append("")
-        out.append(" Inputs:")
-        out.extend(input_dict_lines)
-    out.append(_HORIZONTAL_BAR)
+    out.append("")
     out.append("")
     out.append(" Choose any of the below option to continue...")
+    out.append(" ---------------------------------------------")
 
     out.extend(
         _recommend_command(
@@ -342,44 +325,27 @@ def get_run_start_intro(run_call_count,
             "run -nodebug",
             "Run the NNVM graph without debug",
             create_link=True))
-    out.extend(
-        _recommend_command(
-            "run -times <T>",
-            "Run graph (T - 1) times without debugging, then run once more with debugging"))
-    out.extend(
-        _recommend_command(
-            "run -filter <filter_name>",
-            "Keep executing run() calls until a dumped tensor passes a given, "
-            "registered filter (conditional breakpoint mode)"))
-
-    more_lines = ["    Registered filter(s):"]
-    if tensor_filters:
-        filter_names = []
-        for filter_name in tensor_filters:
-            filter_names.append(filter_name)
-            command_menu_node = debugger_cli_common.MenuItem(
-                "", "run -f %s" % filter_name)
-            more_lines.append(RL("        * ") + RL(filter_name, command_menu_node))
-    else:
-        more_lines.append("        (None)")
-
-    out.extend(
-        debugger_cli_common.rich_text_lines_frm_line_list(more_lines))
-
-    # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-#    out.extend(
-#        _recommend_command(
-#            "invoke_stepper",
-#            "Use the node-stepper interface, which allows you to interactively "
-#            "step through nodes involved in the graph run() call and "
-#            "inspect/modify their values", create_link=True))
 
     out.append("")
-
-#    out.append_rich_line(RL("For more details, see ") +
-#                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
-#                         ".")
-#    out.append("")
+    out.append(_HORIZONTAL_BAR)
+    if is_callable_runner:
+        out.append(" Running a runner returned by GraphRuntime.make_callable()")
+    else:
+        out.append("")
+        out.append(" TVM Graph details")# % run_call_count)
+        out.append(" -----------------")
+        out.append("")
+        out.append(" Node count:")
+        out.append("  " + str(graph_node_count))
+        out.append("")
+        out.append(" Input(s):")
+        out.extend(input_dict_lines)
+        out.append("")
+        out.append(" Output(s):")
+        out.extend(debugger_cli_common.RichTextLines(
+            ["  " + line for line in output_lines]))
+        out.append("")
+    out.append(_HORIZONTAL_BAR)
 
     # Make main menu for the run-start intro.
     menu = debugger_cli_common.Menu()
