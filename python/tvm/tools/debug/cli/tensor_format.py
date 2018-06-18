@@ -21,7 +21,7 @@ OMITTED_INDICES_KEY = "omitted"
 DEFAULT_TENSOR_ELEMENT_HIGHLIGHT_FONT_ATTR = "bold"
 
 
-class HighlightOptions(object):  # pylint: disable=too-few-public-methods
+class HighlightOptions(object):
     """Options for highlighting elements of a tensor."""
 
     def __init__(self,

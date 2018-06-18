@@ -12,7 +12,6 @@ import sre_constants
 import traceback
 
 import six
-from six.moves import xrange  # pylint: disable=redefined-builtin
 
 HELP_INDENT = "  "
 
@@ -44,7 +43,7 @@ class CommandLineExit(Exception):
         return self._exit_token
 
 
-class RichLine(object):  # pylint: disable=too-few-public-methods
+class RichLine(object):
     """Rich single-line text.
 
     Attributes:
@@ -432,6 +431,46 @@ def regex_find(orig_screen_output, regex, font_attr):
     new_screen_output.annotations[REGEX_MATCH_LINES_KEY] = regex_match_lines
     return new_screen_output
 
+def _do_wrapping(inp, out, i, cols, row_counter):
+    line = inp.lines[i]
+    wlines = []  # Wrapped lines.
+
+    osegs = []
+    if i in inp.font_attr_segs:
+        osegs = inp.font_attr_segs[i]
+
+    idx = 0
+    while idx < len(line):
+        if idx + cols > len(line):
+            rlim = len(line)
+        else:
+            rlim = idx + cols
+
+        wlines.append(line[idx:rlim])
+        for seg in osegs:
+            if (seg[0] < rlim) and (seg[1] >= idx):
+                # Calculate left bound within wrapped line.
+                if seg[0] >= idx:
+                    left_bound = seg[0] - idx
+                else:
+                    left_bound = 0
+
+                # Calculate right bound within wrapped line.
+                if seg[1] < rlim:
+                    right_bound = seg[1] - idx
+                else:
+                    right_bound = rlim - idx
+
+                if right_bound > left_bound:  # Omit zero-length segments.
+                    wseg = (left_bound, right_bound, seg[2])
+                    if row_counter not in out.font_attr_segs:
+                        out.font_attr_segs[row_counter] = [wseg]
+                    else:
+                        out.font_attr_segs[row_counter].append(wseg)
+
+        idx += cols
+        row_counter += 1
+    return wlines
 
 def wrap_rich_text_lines(inp, cols):
     """Wrap RichTextLines according to maximum number of columns.
@@ -466,7 +505,7 @@ def wrap_rich_text_lines(inp, cols):
     out = RichTextLines([])
 
     row_counter = 0  # Counter for new row index
-    for i in xrange(len(inp.lines)):  # pylint: disable=too-many-nested-blocks
+    for i in xrange(len(inp.lines)):
         new_line_indices.append(out.num_lines())
 
         line = inp.lines[i]
@@ -483,44 +522,7 @@ def wrap_rich_text_lines(inp, cols):
             row_counter += 1
         else:
             # Wrap.
-            wlines = []  # Wrapped lines.
-
-            osegs = []
-            if i in inp.font_attr_segs:
-                osegs = inp.font_attr_segs[i]
-
-            idx = 0
-            while idx < len(line):
-                if idx + cols > len(line):
-                    rlim = len(line)
-                else:
-                    rlim = idx + cols
-
-                wlines.append(line[idx:rlim])
-                for seg in osegs:
-                    if (seg[0] < rlim) and (seg[1] >= idx):
-                        # Calculate left bound within wrapped line.
-                        if seg[0] >= idx:
-                            left_bound = seg[0] - idx
-                        else:
-                            left_bound = 0
-
-                        # Calculate right bound within wrapped line.
-                        if seg[1] < rlim:
-                            right_bound = seg[1] - idx
-                        else:
-                            right_bound = rlim - idx
-
-                        if right_bound > left_bound:  # Omit zero-length segments.
-                            wseg = (left_bound, right_bound, seg[2])
-                            if row_counter not in out.font_attr_segs:
-                                out.font_attr_segs[row_counter] = [wseg]
-                            else:
-                                out.font_attr_segs[row_counter].append(wseg)
-
-                idx += cols
-                row_counter += 1
-
+            wlines = _do_wrapping(inp, out, i, cols, row_counter)
             out.lines.extend(wlines)
 
     # Copy over keys of annotation that are not row indices.
@@ -693,7 +695,7 @@ class CommandHandlerRegistry(object):
                      "For help, do \"help %s\"" % prefix]
             output = RichTextLines(lines)
 
-        except BaseException as exception:  # pylint: disable=broad-except
+        except BaseException as exception:
             lines = ["Error occurred during handling of command: %s %s:" %
                      (resolved_prefix, " ".join(argv)),
                      "%s: %s" % (type(exception), str(exception))]

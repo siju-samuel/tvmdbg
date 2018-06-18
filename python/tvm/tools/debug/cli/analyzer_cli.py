@@ -1,5 +1,5 @@
 # coding: utf-8
-# pylint: disable=fixme, invalid-name, protected-access, too-many-arguments, too-many-lines, consider-using-enumerate, too-many-locals, too-many-branches, too-many-statements
+# pylint: disable=too-many-lines
 """CLI Backend for the Analyzer Part of the Debugger.
 
 The analyzer performs post hoc analysis of dumped intermediate tensors and
@@ -14,8 +14,6 @@ from __future__ import print_function
 import argparse
 import copy
 import re
-
-from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from tvm.tools.debug.cli import cli_config
 from tvm.tools.debug.cli import cli_shared
@@ -117,9 +115,9 @@ def _add_main_menu(output,
     output.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
 
-def _reconstruct_print_source_command(parsed,
-                                      line_begin,
-                                      max_elements_per_line_increase=0):
+def _reconstruct_print_src_cmd(parsed,
+                               line_begin,
+                               max_elements_per_line_increase=0):
     return "ps %s %s -b %d -m %d" % (
         parsed.source_file_path, "-t" if parsed.tensors else "", line_begin,
         parsed.max_elements_per_line + max_elements_per_line_increase)
@@ -240,31 +238,31 @@ class DebugAnalyzer(object):
         self._arg_parsers = {}
 
         # Parser for list_tensors.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="List dumped intermediate tensors.",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "-f",
             "--tensor_filter",
             dest="tensor_filter",
             type=str,
             default="",
             help="List only Tensors passing the filter of the specified name")
-        ap.add_argument(
+        arg_p.add_argument(
             "-n",
             "--node_name_filter",
             dest="node_name_filter",
             type=str,
             default="",
             help="filter node name by regex.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type_filter",
             dest="op_type_filter",
             type=str,
             default="",
             help="filter op type by regex.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-s",
             "--sort_by",
             dest="sort_by",
@@ -273,101 +271,101 @@ class DebugAnalyzer(object):
             help=("the field to sort the data by: (%s | %s | %s | %s)" %
                   (SORT_TENSORS_BY_TIMESTAMP, SORT_TENSORS_BY_DUMP_SIZE,
                    SORT_TENSORS_BY_OP_TYPE, SORT_TENSORS_BY_TENSOR_NAME)))
-        ap.add_argument(
+        arg_p.add_argument(
             "-r",
             "--reverse",
             dest="reverse",
             action="store_true",
             help="sort the data in reverse (descending) order")
-        self._arg_parsers["list_tensors"] = ap
+        self._arg_parsers["list_tensors"] = arg_p
 
         # Parser for node_info.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="Show information about a node.", usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an associated tensor.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-a",
             "--attributes",
             dest="attributes",
             action="store_true",
             help="Also list attributes of the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--dumps",
             dest="dumps",
             action="store_true",
             help="Also list dumps available from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--traceback",
             dest="traceback",
             action="store_true",
             help="Also include the traceback of the node's creation "
                  "(if available in Python).")
-        self._arg_parsers["node_info"] = ap
+        self._arg_parsers["node_info"] = arg_p
 
         # Parser for list_inputs.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="Show inputs to a node.", usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an output tensor from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-c", "--control", action="store_true", help="Include control inputs.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
             type=int,
             default=config.get("graph_recursion_depth"),
             help="Maximum depth of recursion used when showing the input tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-r",
             "--recursive",
             dest="recursive",
             action="store_true",
             help="Show inputs to the node recursively, i.e., the input tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type",
             action="store_true",
             help="Show op types of input nodes.")
-        self._arg_parsers["list_inputs"] = ap
+        self._arg_parsers["list_inputs"] = arg_p
 
         # Parser for list_outputs.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="Show the nodes that receive the outputs of given node.",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an output tensor from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-c", "--control", action="store_true", help="Include control inputs.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
             type=int,
             default=config.get("graph_recursion_depth"),
             help="Maximum depth of recursion used when showing the output tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-r",
             "--recursive",
             dest="recursive",
             action="store_true",
             help="Show recipients of the node recursively, i.e., the output "
                  "tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type",
             action="store_true",
             help="Show op types of recipient nodes.")
-        self._arg_parsers["list_outputs"] = ap
+        self._arg_parsers["list_outputs"] = arg_p
 
         # Parser for print_tensor.
         self._arg_parsers["print_tensor"] = (
@@ -375,64 +373,64 @@ class DebugAnalyzer(object):
                 "Print the value of a dumped tensor."))
 
         # Parser for print_source.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="Print a Python source file with overlaid debug "
                         "information, including the nodes (ops) or Tensors created at the "
                         "source lines.",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "source_file_path",
             type=str,
             help="Path to the source file.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--tensors",
             dest="tensors",
             action="store_true",
             help="Label lines with dumped Tensors, instead of ops.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-m",
             "--max_elements_per_line",
             type=int,
             default=10,
             help="Maximum number of elements (ops or Tensors) to show per source "
                  "line.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-b",
             "--line_begin",
             type=int,
             default=1,
             help="Print source beginning at line number (1-based.)")
-        self._arg_parsers["print_source"] = ap
+        self._arg_parsers["print_source"] = arg_p
 
         # Parser for list_source.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="List source files responsible for constructing nodes and "
                         "tensors present in the run().",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "-p",
             "--path_filter",
             type=str,
             default="",
             help="Regular expression filter for file path.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-n",
             "--node_name_filter",
             type=str,
             default="",
             help="Regular expression filter for node name.")
-        self._arg_parsers["list_source"] = ap
+        self._arg_parsers["list_source"] = arg_p
 
         # Parser for eval.
-        ap = argparse.ArgumentParser(
+        arg_p = argparse.ArgumentParser(
             description="""Evaluate an arbitrary expression. Can use tensor values
         from the current debug dump. The debug tensor names should be enclosed
         in pairs of backticks. Expressions with spaces should be enclosed in
         a pair of double quotes or a pair of single quotes. By default, numpy
         is imported as np and can be used in the expressions.""",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "expression",
             type=str,
             help="""Expression to be evaluated.
@@ -444,20 +442,20 @@ class DebugAnalyzer(object):
         3) if the tensor is executed multiple times in a given `GraphRuntime.DebugRun`
         call, specify the execution index with a 0-based integer enclose in a
         pair of brackets at the end.""")
-        ap.add_argument(
+        arg_p.add_argument(
             "-a",
             "--all",
             dest="print_all",
             action="store_true",
             help="Print the tensor in its entirety, i.e., do not use ellipses "
                  "(may be slow for large results).")
-        ap.add_argument(
+        arg_p.add_argument(
             "-w",
             "--write_path",
             default="",
             help="Path of the numpy file to write the evaluation result to, "
                  "using numpy.save()")
-        self._arg_parsers["eval"] = ap
+        self._arg_parsers["eval"] = arg_p
 
     def add_tensor_filter(self, filter_name, filter_callable):
         """Add a tensor filter.
@@ -583,7 +581,7 @@ class DebugAnalyzer(object):
         # TODO(cais): Implement filter by lambda on tensor value.
 
         max_timestamp_width, max_dump_size_width, max_op_type_width = (
-            self._measure_tensor_list_column_widths(data_to_show))
+            self._measure_tensor_lst_col_width(data_to_show))
 
         # Sort the data.
         data_to_show = self._sort_dump_data_by(
@@ -635,7 +633,7 @@ class DebugAnalyzer(object):
         _add_main_menu(output, node_name=None, enable_list_tensors=False)
         return output
 
-    def _measure_tensor_list_column_widths(self, data):
+    def _measure_tensor_lst_col_width(self, data):
         """Determine the maximum widths of the timestamp and op-type column.
 
         This method assumes that data is sorted in the default order, i.e.,
@@ -908,7 +906,6 @@ class DebugAnalyzer(object):
         """
 
         # Screen info not currently used by this handler. Include this line to
-        # mute pylint.
         _ = screen_info
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
@@ -1086,7 +1083,6 @@ class DebugAnalyzer(object):
         """
 
         # Screen info not currently used by this handler. Include this line to
-        # mute pylint.
         _ = screen_info
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
@@ -1168,7 +1164,7 @@ class DebugAnalyzer(object):
                             "+5",
                             debugger_cli_common.MenuItem(
                                 None,
-                                _reconstruct_print_source_command(
+                                _reconstruct_print_src_cmd(
                                     parsed, i + 1, max_elements_per_line_increase=5)))
                         labeled_source_lines.append(omitted_info_line)
                         break

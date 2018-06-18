@@ -1,5 +1,4 @@
-# coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, too-many-return-statements, too-many-lines, protected-access
+# pylint: disable=too-many-lines
 """Curses-Based Command-Line Interface of TVM Debugger (tvmdbg)."""
 from __future__ import absolute_import
 from __future__ import division
@@ -12,8 +11,6 @@ import os
 import signal
 import sys
 import threading
-
-from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from tvm.tools.debug.cli import base_ui
 from tvm.tools.debug.cli import cli_shared
@@ -35,7 +32,7 @@ _COLOR_READY_COLORTERMS = ["gnome-terminal", "xfce4-terminal"]
 _COLOR_ENABLED_TERM = "xterm-256color"
 
 
-def _get_command_from_line_attr_segs(mouse_x, attr_segs):
+def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
     """Attempt to extract command from the attribute segments of a line.
 
     Args:
@@ -56,7 +53,7 @@ def _get_command_from_line_attr_segs(mouse_x, attr_segs):
     return None
 
 
-class ScrollBar(object):  # pylint: disable=too-few-public-methods
+class ScrollBar(object):
     """Vertical ScrollBar for Curses-based CLI.
 
     An object of this class has knowledge of the location of the scroll bar
@@ -226,7 +223,7 @@ def _format_indices(indices):
     return repr(indices).replace(" ", "")
 
 
-class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
+class CursesUI(base_ui.BaseUI):
     """Curses-based Command-line UI.
 
     In this class, the methods with the prefix "_screen_" are the methods that
@@ -237,7 +234,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
     CLI_TAB_KEY = ord("\t")
     BACKSPACE_KEY = ord("\b")
     REGEX_SEARCH_PREFIX = "/"
-    TENSOR_INDICES_NAVIGATION_PREFIX = "@"
+    TENSOR_INDICES_NAV_PREFIX = "@"
 
     _NAVIGATION_FORWARD_COMMAND = "next"
     _NAVIGATION_BACK_COMMAND = "prev"
@@ -317,7 +314,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         self._scroll_bar = None
         self._scroll_info = None
         self._textbox_curr_terminator = None
-        self._textbox_pending_command_changed = None
+        self._textbox_pending_cmd_changed = None
         self._title_line = None
         self._unwrapped_regex_match_lines = None
         self._single_instance_lock = threading.Lock()
@@ -603,8 +600,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
             try:
                 command, terminator, pending_command_changed = self._get_user_command()
-            except debugger_cli_common.CommandLineExit as ex:
-                return ex.exit_token
+            except debugger_cli_common.CommandLineExit as exception:
+                return exception.exit_token
 
             if not command and terminator != self.CLI_TAB_KEY:
                 continue
@@ -637,12 +634,12 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         # First, reset textbox state variables.
         self._textbox_curr_terminator = None
-        self._textbox_pending_command_changed = False
+        self._textbox_pending_cmd_changed = False
 
         command = self._screen_get_user_command()
         command = self._strip_terminator(command)
         return (command, self._textbox_curr_terminator,
-                self._textbox_pending_command_changed)
+                self._textbox_pending_cmd_changed)
 
     def _screen_get_user_command(self):
         return self._command_textbox.edit(validate=self._on_textbox_keypress)
@@ -734,7 +731,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             self._command_pointer = 0
             self._pending_command = ""
             return None
-        elif command.startswith(self.TENSOR_INDICES_NAVIGATION_PREFIX):
+        elif command.startswith(self.TENSOR_INDICES_NAV_PREFIX):
             indices_str = command[1:].strip()
             if indices_str:
                 try:
@@ -744,8 +741,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                     if not omitted:
                         self._scroll_output(
                             _SCROLL_TO_LINE_INDEX, line_index=line_index)
-                except Exception as ex:  # pylint: disable=broad-except
-                    self._error_toast(str(ex))
+                except Exception as exception:  # pylint: disable=broad-except
+                    self._error_toast(str(exception))
             else:
                 self._error_toast("Empty indices.")
 
@@ -753,8 +750,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         try:
             prefix, args, output_file_path = base_ui._parse_command(command)
-        except SyntaxError as ex:
-            self._error_toast(str(ex))
+        except SyntaxError as exception:
+            self._error_toast(str(exception))
             return None
 
         if not prefix:
@@ -768,8 +765,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             try:
                 screen_output = self._command_handler_registry.dispatch_command(
                     prefix, args, screen_info=screen_info)
-            except debugger_cli_common.CommandLineExit as ex:
-                exit_token = ex.exit_token
+            except debugger_cli_common.CommandLineExit as exception:
+                exit_token = exception.exit_token
         else:
             screen_output = debugger_cli_common.RichTextLines([
                 self.ERROR_MESSAGE_PREFIX + "Invalid command prefix \"%s\"" % prefix
@@ -905,7 +902,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                         if exit_token is not None:
                             raise debugger_cli_common.CommandLineExit(exit_token=exit_token)
         # Mark the pending command as modified.
-        self._textbox_pending_command_changed = True
+        self._textbox_pending_cmd_changed = True
         # Invalidate active command history.
         self._command_pointer = 0
         self._active_command_history = []
@@ -924,15 +921,15 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         if mouse_y == self._nav_bar_row and self._nav_bar:
             # Click was in the nav bar.
-            return _get_command_from_line_attr_segs(mouse_x,
-                                                    self._nav_bar.font_attr_segs[0])
+            return _get_cmd_from_line_attr_seg(mouse_x,
+                                               self._nav_bar.font_attr_segs[0])
         elif mouse_y == self._output_top_row and self._main_menu_pad:
             # Click was in the menu bar.
-            return _get_command_from_line_attr_segs(mouse_x,
-                                                    self._main_menu.font_attr_segs[0])
+            return _get_cmd_from_line_attr_seg(mouse_x,
+                                               self._main_menu.font_attr_segs[0])
         absolute_mouse_y = mouse_y + self._output_pad_row - output_top
         if absolute_mouse_y in self._curr_wrapped_output.font_attr_segs:
-            return _get_command_from_line_attr_segs(
+            return _get_cmd_from_line_attr_seg(
                 mouse_x, self._curr_wrapped_output.font_attr_segs[absolute_mouse_y])
         return None
 
@@ -1074,8 +1071,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             try:
                 output = debugger_cli_common.regex_find(
                     output, highlight_regex, font_attr=self._SEARCH_HIGHLIGHT_FONT_ATTR)
-            except ValueError as ex:
-                self._error_toast(str(ex))
+            except ValueError as exception:
+                self._error_toast(str(exception))
                 return
 
             if not is_refresh:

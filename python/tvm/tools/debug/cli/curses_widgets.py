@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=too-many-arguments
 """Widgets for Curses-based CLI."""
 from __future__ import absolute_import
 from __future__ import division
@@ -10,7 +8,7 @@ from tvm.tools.debug.cli import debugger_cli_common
 RL = debugger_cli_common.RichLine
 
 
-class NavigationHistoryItem(object):  # pylint: disable=too-few-public-methods
+class NavigationHistoryItem(object):
     """Individual item in navigation history."""
 
     def __init__(self, command, screen_output, scroll_position):

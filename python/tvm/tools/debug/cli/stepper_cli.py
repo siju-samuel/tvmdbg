@@ -5,9 +5,6 @@ from __future__ import print_function
 
 import argparse
 
-import numpy as np  # pylint: disable=unused-import
-from six.moves import xrange  # pylint: disable=redefined-builtin
-
 from tvm.tools.debug.cli import cli_shared
 from tvm.tools.debug.cli import command_parser
 from tvm.tools.debug.cli import debugger_cli_common
