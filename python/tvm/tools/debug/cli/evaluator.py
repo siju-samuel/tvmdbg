@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme
 """Library for arbitrary expression evaluation based on a debugger data dump."""
 from __future__ import absolute_import
 from __future__ import division

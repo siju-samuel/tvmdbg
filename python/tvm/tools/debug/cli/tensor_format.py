@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, no-member,consider-using-enumerate
 """Format tensors (ndarrays) for screen display and navigation."""
 from __future__ import absolute_import
 from __future__ import division
@@ -9,8 +7,6 @@ import copy
 import re
 
 import numpy as np
-from six.moves import xrange  # pylint: disable=redefined-builtin
-
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.util import debug_data
 
@@ -514,7 +510,7 @@ def numeric_summary(tensor):
             key_line += total_key_str + " |"
             val_line += total_val_str + " |"
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(
+        return debugger_cli_common.rich_text_lines_frm_line_list(
             [key_line, val_line])
 
     if not isinstance(tensor, np.ndarray) or not np.size(tensor):
@@ -549,6 +545,5 @@ def numeric_summary(tensor):
             ("False", np.sum(tensor == 0)),
             ("True", np.sum(tensor > 0)), ]
         return _counts_summary(counts, total_count=np.size(tensor))
-    else:
-        return debugger_cli_common.RichTextLines([
-            "No numeric summary available due to tensor dtype: %s." % tensor.dtype])
+    return debugger_cli_common.RichTextLines([
+        "No numeric summary available due to tensor dtype: %s." % tensor.dtype])

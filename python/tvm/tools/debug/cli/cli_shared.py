@@ -1,5 +1,4 @@
 # coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals
 """Shared functions and classes for tvmdbg command-line interface."""
 from __future__ import absolute_import
 from __future__ import division
@@ -134,8 +133,7 @@ def parse_ranges_highlight(ranges_string):
             ranges_filter, description=ranges_string)
     return None
 
-
-def numpy_printoptions_from_screen_info(screen_info):
+def get_np_printoptions_frm_scr(screen_info):
     """Retreive np.set_printoptions() to set the text format for display numpy ndarrays.
 
     Args:
@@ -200,7 +198,7 @@ def format_tensor(tensor,
         line = debugger_cli_common.RichLine("Saved value to: ")
         line += debugger_cli_common.RichLine(write_path, font_attr="bold")
         line += " (%sB)" % bytes_to_readable_str(os.stat(write_path).st_size)
-        auxiliary_message = debugger_cli_common.rich_text_lines_from_rich_line_list(
+        auxiliary_message = debugger_cli_common.rich_text_lines_frm_line_list(
             [line, debugger_cli_common.RichLine("")])
 
     if print_all:
@@ -229,7 +227,7 @@ def error(msg):
         for screen output.
     """
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list([
+    return debugger_cli_common.rich_text_lines_frm_line_list([
         RL("ERROR: " + msg, COLOR_RED)])
 
 
@@ -258,7 +256,7 @@ def _recommend_command(command, description, indent=2, create_link=False):
     lines = [RL(indent_str) + RL(command, font_attr) + ":",
              indent_str + "   " + description]
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
 
 def get_tvmdbg_logo():
@@ -316,7 +314,7 @@ def get_run_start_intro(run_call_count,
             # Surround the name string with quotes, because input_key_name may contain
             # spaces in some cases, e.g., SparseTensors.
             input_dict_lines.append(input_dict_line)
-    input_dict_lines = debugger_cli_common.rich_text_lines_from_rich_line_list(
+    input_dict_lines = debugger_cli_common.rich_text_lines_frm_line_list(
         input_dict_lines)
 
     out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
@@ -368,7 +366,7 @@ def get_run_start_intro(run_call_count,
         more_lines.append("        (None)")
 
     out.extend(
-        debugger_cli_common.rich_text_lines_from_rich_line_list(more_lines))
+        debugger_cli_common.rich_text_lines_frm_line_list(more_lines))
 
     # TODO(Pariksheet): Python invoke_stepper implementation not support now.
 #    out.extend(
@@ -465,7 +463,7 @@ def get_error_intro(tvm_error):
         "You may use the following commands to debug:",
     ]
 
-    out = debugger_cli_common.rich_text_lines_from_rich_line_list(intro_lines)
+    out = debugger_cli_common.rich_text_lines_frm_line_list(intro_lines)
 
     out.extend(
         _recommend_command("ni -a -d -t %s" % op_name,

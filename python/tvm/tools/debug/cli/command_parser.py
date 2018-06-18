@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=too-many-branches, too-few-public-methods
 """Command parsing module for TVM Debugger (tvmdbg)."""
 from __future__ import absolute_import
 from __future__ import division

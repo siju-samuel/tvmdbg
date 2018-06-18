@@ -1,6 +1,6 @@
-# coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, too-many-return-statements, too-many-lines, protected-access
+# pylint: disable=too-many-lines
 """Building Blocks of TVM Debugger Command-Line Interface."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -105,7 +105,7 @@ class RichLine(object):  # pylint: disable=too-few-public-methods
         return len(self.text)
 
 
-def rich_text_lines_from_rich_line_list(rich_text_list, annotations=None):
+def rich_text_lines_frm_line_list(rich_text_list, annotations=None):
     """Convert a list of RichLine objects or strings to a RichTextLines object.
 
     Args:
@@ -371,9 +371,9 @@ class RichTextLines(object):
           file_path: (str) path of the file to write to.
         """
 
-        with open(file_path, "w") as fo:
+        with open(file_path, "w") as file_opened:
             for line in self._lines:
-                fo.write(line + "\n")
+                file_opened.write(line + "\n")
 
     # TODO(cais): Add a method to allow appending to a line in RichTextLines with
     # both text and font_attr_segs.
@@ -685,17 +685,18 @@ class CommandHandlerRegistry(object):
         handler = self._handlers[resolved_prefix]
         try:
             output = handler(argv, screen_info=screen_info)
-        except CommandLineExit as ex:
-            raise ex
-        except SystemExit as ex:
+        except CommandLineExit as exception:
+            raise exception
+        except SystemExit as exception:
             # Special case for syntax errors caught by argparse.
             lines = ["Syntax error for command: %s" % prefix,
                      "For help, do \"help %s\"" % prefix]
             output = RichTextLines(lines)
 
-        except BaseException as ex:  # pylint: disable=broad-except
+        except BaseException as exception:  # pylint: disable=broad-except
             lines = ["Error occurred during handling of command: %s %s:" %
-                     (resolved_prefix, " ".join(argv)), "%s: %s" % (type(ex), str(ex))]
+                     (resolved_prefix, " ".join(argv)),
+                     "%s: %s" % (type(exception), str(exception))]
 
             # Include traceback of the exception.
             lines.append("")

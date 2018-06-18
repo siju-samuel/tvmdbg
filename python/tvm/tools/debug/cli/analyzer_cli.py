@@ -155,7 +155,7 @@ def _make_source_table(source_list, is_tvm_py_library):
     if not source_list:
         lines.append(RL("[No files.]"))
         lines.append(RL())
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
     path_column_width = max(
         max([len(item[0]) for item in source_list]), len(path_head)) + 1
@@ -195,7 +195,7 @@ def _make_source_table(source_list, is_tvm_py_library):
         lines.append(line)
     lines.append(RL())
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
 
 class DebugAnalyzer(object):
@@ -798,7 +798,7 @@ class DebugAnalyzer(object):
 
         # Get a node name, regardless of whether the input is a node name (without
         # output slot attached) or a tensor name (with output slot attached).
-        node_name, unused_slot = debug_graphs.parse_node_or_tensor_name(
+        node_name, _ = debug_graphs.parse_node_or_tensor_name(
             parsed.node_name)
 
         if not self._debug_dump.node_exists(node_name):
@@ -890,7 +890,7 @@ class DebugAnalyzer(object):
         except LookupError:
             lines.append("(Unavailable because no Python graph has been loaded)")
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
     def list_inputs(self, args, screen_info=None):
         """Command handler for inputs.
@@ -945,7 +945,7 @@ class DebugAnalyzer(object):
 
         parsed = self._arg_parsers["print_tensor"].parse_args(args)
 
-        np_printoptions = cli_shared.numpy_printoptions_from_screen_info(
+        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
 
         # Determine if any range-highlighting is required.
@@ -1121,7 +1121,7 @@ class DebugAnalyzer(object):
 
         eval_res = self._evaluator.evaluate(parsed.expression)
 
-        np_printoptions = cli_shared.numpy_printoptions_from_screen_info(
+        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
         return cli_shared.format_tensor(
             eval_res,
@@ -1183,7 +1183,7 @@ class DebugAnalyzer(object):
                     label += RL(element, attribute)
                     labeled_source_lines.append(label)
 
-        output = debugger_cli_common.rich_text_lines_from_rich_line_list(
+        output = debugger_cli_common.rich_text_lines_frm_line_list(
             labeled_source_lines,
             annotations={debugger_cli_common.INIT_SCROLL_POS_KEY:
                              actual_initial_scroll_target})
@@ -1209,7 +1209,7 @@ class DebugAnalyzer(object):
             top_lines.append(
                 RL("Node name regex filter: \"%s\"" % parsed.node_name_filter))
         top_lines.append(RL())
-        output = debugger_cli_common.rich_text_lines_from_rich_line_list(top_lines)
+        output = debugger_cli_common.rich_text_lines_frm_line_list(top_lines)
         if not source_list:
             output.append("[No source file information.]")
             return output

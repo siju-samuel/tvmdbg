@@ -196,4 +196,4 @@ class CursesNavigationHistory(object):
                     :(max_length - len(output))]
                 output += RL(maybe_truncated_command, command_attribute)
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list([output])
+        return debugger_cli_common.rich_text_lines_frm_line_list([output])

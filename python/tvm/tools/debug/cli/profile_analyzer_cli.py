@@ -627,7 +627,7 @@ class ProfileAnalyzer(object):
                 output_annotations[
                     debugger_cli_common.INIT_SCROLL_POS_KEY] = len(lines) - 1
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(
+        return debugger_cli_common.rich_text_lines_frm_line_list(
             lines, annotations=output_annotations)
 
     def _render_normalized_cost_bar(self, cost, max_cost, length):
@@ -797,7 +797,7 @@ def _get_list_profile_lines(
         row_str += ("{:<%d}" % column_widths[i]).format(row)
     output.append(RL())
     output.append(RL(row_str))
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(output)
+    return debugger_cli_common.rich_text_lines_frm_line_list(output)
 
 
 # def _measure_list_profile_column_widths(profile_data):

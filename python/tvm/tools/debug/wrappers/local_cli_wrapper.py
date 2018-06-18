@@ -440,7 +440,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         return output
 
     def _print_input_handler(self, args, screen_info=None):
-        np_printoptions = cli_shared.numpy_printoptions_from_screen_info(
+        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
 
         if not self._input_dict:
@@ -552,7 +552,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         if self._input_dict:
             # Register tab completion for input_dict keys.
             input_keys = [common.get_graph_element_name(key)
-                         for key in self._input_dict.keys()]
+                          for key in self._input_dict.keys()]
             curses_cli.register_tab_comp_context(["print_input", "pf"], input_keys)
 
     def _on_run_start_step_handler(self, args, screen_info=None):

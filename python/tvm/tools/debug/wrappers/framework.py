@@ -311,11 +311,11 @@ class BaseDebugWrapperModule():
         return retvals
 
     def get_run_command(self,
-            outputs=None,
-            options=None,
-            run_metadata=None,
-            callable_runner=None,
-            callable_runner_args=None):
+                        outputs=None,
+                        options=None,
+                        run_metadata=None,
+                        callable_runner=None,
+                        callable_runner_args=None):
         """Wrapper around Session.run() that inserts tensor watch options.
 
         Args:

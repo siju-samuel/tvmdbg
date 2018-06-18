@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, too-many-locals, too-many-arguments
 """CLI Backend for the Node Stepper Part of the Debugger."""
 from __future__ import absolute_import
 from __future__ import division
@@ -260,7 +258,7 @@ class NodeStepperCLI(object):
 
             lines.append(node_prefix + "] " + element_name)
 
-        output = debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        output = debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
         if verbose:
             output.extend(self._node_status_label_legend())
@@ -335,7 +333,7 @@ class NodeStepperCLI(object):
           (debugger_cli_common.RichTextLines) Legend text.
         """
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list([
+        return debugger_cli_common.rich_text_lines_frm_line_list([
             "",
             "Legend:",
             (RL("  ") +
@@ -423,13 +421,13 @@ class NodeStepperCLI(object):
             for input_name in input_types:
                 input_info = RL("  %s : " % input_name)
                 input_info += RL(input_types[input_name],
-                                self._INPUT_COLORS[input_types[input_name]])
+                                 self._INPUT_COLORS[input_types[input_name]])
                 out.append(input_info)
         else:
             out.append("  (No inputs)")
         out.append("")
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(out)
+        return debugger_cli_common.rich_text_lines_frm_line_list(out)
 
     def _report_last_updated(self):
         """Generate a report of the variables updated in the last cont/step call.
@@ -448,7 +446,7 @@ class NodeStepperCLI(object):
         for updated in sorted_last_updated:
             rich_lines.append("  %s" % updated)
         rich_lines.append("")
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(rich_lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(rich_lines)
 
     def step(self, args, screen_info=None):
         """Step once.
@@ -505,8 +503,8 @@ class NodeStepperCLI(object):
 
         try:
             tensor_value = self._node_stepper.get_tensor_value(tensor_name)
-        except ValueError as ex:
-            return debugger_cli_common.RichTextLines([str(ex)])
+        except ValueError as exception:
+            return debugger_cli_common.RichTextLines([str(exception)])
 
         return cli_shared.format_tensor(
             tensor_value,
