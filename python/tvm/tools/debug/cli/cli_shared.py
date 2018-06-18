@@ -330,26 +330,25 @@ def get_run_start_intro(run_call_count,
         out.extend(input_dict_lines)
     out.append(_HORIZONTAL_BAR)
     out.append("")
-    out.append(" Select one of the following commands to proceed ---->")
+    out.append(" Choose any of the below option to continue...")
 
     out.extend(
         _recommend_command(
             "run",
-            "Execute the run() call with debug tensor-watching",
+            "Run the NNVM graph with debug",
             create_link=True))
     out.extend(
         _recommend_command(
-            "run -n",
-            "Execute the run() call without debug tensor-watching",
+            "run -nodebug",
+            "Run the NNVM graph without debug",
             create_link=True))
     out.extend(
         _recommend_command(
-            "run -t <T>",
-            "Execute run() calls (T - 1) times without debugging, then "
-            "execute run() once more with debugging and drop back to the CLI"))
+            "run -times <T>",
+            "Run graph (T - 1) times without debugging, then run once more with debugging"))
     out.extend(
         _recommend_command(
-            "run -f <filter_name>",
+            "run -filter <filter_name>",
             "Keep executing run() calls until a dumped tensor passes a given, "
             "registered filter (conditional breakpoint mode)"))
 

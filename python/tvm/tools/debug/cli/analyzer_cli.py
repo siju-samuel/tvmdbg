@@ -628,7 +628,7 @@ class DebugAnalyzer(object):
                 (dump_count, parsed.tensor_filter)
             ])
         else:
-            output.prepend(["%d dumped tensor(s):" % dump_count])
+            output.prepend(["Dumped tensor(s):%d" % dump_count])
 
         _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
         return output
@@ -1528,7 +1528,7 @@ class DebugAnalyzer(object):
         output = debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
         output_with_header = debugger_cli_common.RichTextLines(
-            ["%d dumped tensor(s):" % dump_count, ""])
+            ["Dumped tensor(s):%d" % dump_count, ""])
         output_with_header.extend(output)
         return output_with_header
 
