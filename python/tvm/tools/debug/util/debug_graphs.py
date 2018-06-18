@@ -1,12 +1,7 @@
-# coding: utf-8
-# pylint: disable=too-many-instance-attributes, consider-using-enumerate
 """Classes and methods for processing debugger-decorated graphs."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-from six.moves import xrange  # pylint: disable=redefined-builtin
-
 
 def parse_node_or_tensor_name(name):
     """Get the node name from a string that can be node or tensor name.
@@ -265,9 +260,9 @@ class DebugGraph(object):
         for node in debug_graph_def.node:
             self._process_debug_graph_node(node)
 
-        self._prune_non_control_edges_of_debug_ops()
-        self._prune_control_edges_of_debug_ops()
-        self._prune_nodes_from_input_and_recipient_maps(self._get_copy_nodes())
+        self._prune_nctl_edges_of_dbg_ops()
+        self._prune_ctl_edges_of_dbg_ops()
+        self._prune_nodes_ins_resp_maps(self._get_copy_nodes())
 
         self._populate_recipient_maps()
 
@@ -321,7 +316,7 @@ class DebugGraph(object):
                 copy_nodes.append(node)
         return copy_nodes
 
-    def _prune_non_control_edges_of_debug_ops(self):
+    def _prune_nctl_edges_of_dbg_ops(self):
         """Prune (non-control) edges related to debug ops.
 
         Prune the Copy ops and associated _Send ops inserted by the debugger out
@@ -339,7 +334,7 @@ class DebugGraph(object):
                     orig_inp = self._node_inputs[inp][0]
                     inputs[i] = orig_inp
 
-    def _prune_control_edges_of_debug_ops(self):
+    def _prune_ctl_edges_of_dbg_ops(self):
         """Prune control edges related to the debug ops."""
         for node in self._node_ctrl_inputs:
             ctrl_inputs = self._node_ctrl_inputs[node]
@@ -373,7 +368,7 @@ class DebugGraph(object):
                     self._node_ctrl_recipients[ctrl_inp] = []
                 self._node_ctrl_recipients[ctrl_inp].append(node)
 
-    def _prune_nodes_from_input_and_recipient_maps(self, nodes_to_prune):
+    def _prune_nodes_ins_resp_maps(self, nodes_to_prune):
         """Prune nodes out of input and recipient maps.
 
         Args:
@@ -385,7 +380,7 @@ class DebugGraph(object):
             del self._node_recipients[node]
             del self._node_ctrl_recipients[node]
 
-    def _reconstruct_non_debug_graph_def(self):
+    def _reconstruct_ndbg_graph_def(self):
         """Reconstruct non-debug GraphDef.
 
         Non-debug GraphDef means the original GraphDef without the Copy* and Debug
@@ -428,7 +423,7 @@ class DebugGraph(object):
     @property
     def non_debug_graph_def(self):
         """The GraphDef without the Copy* and Debug* nodes added by the debugger."""
-        self._reconstruct_non_debug_graph_def()
+        self._reconstruct_ndbg_graph_def()
         return self._non_debug_graph_def
 
     @property

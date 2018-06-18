@@ -1,21 +1,16 @@
-# coding: utf-8
-# pylint: disable=invalid-name, too-many-arguments, too-many-locals
-"""TVM Debugger (tfdbg) Utilities."""
+"""TVM Debugger (tvmdbg) Utilities."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import re
 
-from six.moves import xrange  # pylint: disable=redefined-builtin
-
-
 def add_debug_tensor_watch(run_options,
                            node_name,
                            output_slot=0,
                            debug_ops="DebugIdentity",
                            debug_urls=None,
-                           tolerate_debug_op_creation_failures=False,
+                           tolerate_dbg_op_failures=False,
                            global_step=-1):
     """Add watch on a `Tensor` to `RunOptions`.
 
@@ -39,7 +34,7 @@ def add_debug_tensor_watch(run_options,
           debug_op_name(attr_name_1=attr_value_1;attr_name_2=attr_value_2;...)
       debug_urls: (`str` or `list` of `str`) URL(s) to send debug values to,
         e.g., `file:///tmp/tfdbg_dump_1`, `grpc://localhost:12345`.
-      tolerate_debug_op_creation_failures: (`bool`) Whether to tolerate debug op
+      tolerate_dbg_op_failures: (`bool`) Whether to tolerate debug op
         creation failures by not throwing exceptions.
       global_step: (`int`) Optional global_step count for this debug tensor
         watch.
@@ -49,8 +44,7 @@ def add_debug_tensor_watch(run_options,
     run_options.debug_options.global_step = global_step
 
     watch = watch_opts.add()
-    watch.tolerate_debug_op_creation_failures = (
-        tolerate_debug_op_creation_failures)
+    watch.tolerate_dbg_op_failures = (tolerate_dbg_op_failures)
     watch.node_name = node_name
     watch.output_slot = output_slot
 
@@ -73,7 +67,7 @@ def watch_graph(run_options,
                 node_name_regex_whitelist=None,
                 op_type_regex_whitelist=None,
                 tensor_dtype_regex_whitelist=None,
-                tolerate_debug_op_creation_failures=False,
+                tolerate_dbg_op_failures=False,
                 global_step=-1):
     """Add debug watches to `RunOptions` for a nnvm graph.
 
@@ -112,7 +106,7 @@ def watch_graph(run_options,
         data type, e.g., `"^int.*"`.
         This whitelist operates in logical `AND` relations to the two whitelists
         above.
-      tolerate_debug_op_creation_failures: (`bool`) whether debug op creation
+      tolerate_dbg_op_failures: (`bool`) whether debug op creation
         failures (e.g., due to dtype incompatibility) are to be tolerated by not
         throwing exceptions.
       global_step: (`int`) Optional global_step count for this debug tensor
@@ -154,8 +148,7 @@ def watch_graph(run_options,
                 output_slot=slot,
                 debug_ops=debug_ops,
                 debug_urls=debug_urls,
-                tolerate_debug_op_creation_failures=(
-                    tolerate_debug_op_creation_failures),
+                tolerate_dbg_op_failures=(tolerate_dbg_op_failures),
                 global_step=global_step)
 
 
@@ -166,7 +159,7 @@ def watch_graph_with_blacklists(run_options,
                                 node_name_regex_blacklist=None,
                                 op_type_regex_blacklist=None,
                                 tensor_dtype_regex_blacklist=None,
-                                tolerate_debug_op_creation_failures=False,
+                                tolerate_dbg_op_failures=False,
                                 global_step=-1):
     """Add debug tensor watches, blacklisting nodes and op types.
 
@@ -201,7 +194,7 @@ def watch_graph_with_blacklists(run_options,
         data type, e.g., `"^int.*"`.
         This blacklist operates in logical `OR` relations to the two whitelists
         above.
-      tolerate_debug_op_creation_failures: (`bool`) whether debug op creation
+      tolerate_dbg_op_failures: (`bool`) whether debug op creation
         failures (e.g., due to dtype incompatibility) are to be tolerated by not
         throwing exceptions.
       global_step: (`int`) Optional global_step count for this debug tensor
@@ -243,6 +236,5 @@ def watch_graph_with_blacklists(run_options,
                 output_slot=slot,
                 debug_ops=debug_ops,
                 debug_urls=debug_urls,
-                tolerate_debug_op_creation_failures=(
-                    tolerate_debug_op_creation_failures),
+                tolerate_dbg_op_failures=(tolerate_dbg_op_failures),
                 global_step=global_step)

@@ -601,7 +601,7 @@ class DebugAnalyzer(object):
                 if not op_type_regex.match(op_type):
                     continue
 
-            rel_time = (dump.timestamp - self._debug_dump.t0) / 1000.0
+            rel_time = (dump.timestamp - self._debug_dump.ts0) / 1000.0
             dump_size_str = cli_shared.bytes_to_readable_str(dump.dump_size_bytes)
             dumped_tensor_name = "%s:%d" % (dump.node_name, dump.output_slot)
             op_type = self._debug_dump.node_op_type(dump.node_name)
@@ -651,7 +651,7 @@ class DebugAnalyzer(object):
 
         max_timestamp_width = 0
         if data:
-            max_rel_time_ms = (data[-1].timestamp - self._debug_dump.t0) / 1000.0
+            max_rel_time_ms = (data[-1].timestamp - self._debug_dump.ts0) / 1000.0
             max_timestamp_width = len("[%.3f] " % max_rel_time_ms) + 1
         max_timestamp_width = max(max_timestamp_width,
                                   len(self._TIMESTAMP_COLUMN_HEAD) + 1)
@@ -1033,7 +1033,7 @@ class DebugAnalyzer(object):
                 font_attr_segs = {}
 
                 for i, datum in enumerate(matching_data):
-                    rel_time = (datum.timestamp - self._debug_dump.t0) / 1000.0
+                    rel_time = (datum.timestamp - self._debug_dump.ts0) / 1000.0
                     lines.append("#%d [%.3f ms] %s" % (i, rel_time, datum.watch_key))
                     command = "view_tensor %s -n %d" % (parsed.tensor_name, i)
                     font_attr_segs[len(lines) - 1] = [(
@@ -1515,11 +1515,11 @@ class DebugAnalyzer(object):
                 if not datum.debug_op:
                     line = "  Slot %d @ %.3f ms" % (
                         datum.output_slot,
-                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                        (datum.timestamp - self._debug_dump.ts0) / 1000.0)
                 else:
                     line = "  Slot %d @ %s @ %.3f ms" % (
                         datum.output_slot, datum.debug_op,
-                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                        (datum.timestamp - self._debug_dump.ts0) / 1000.0)
                 lines.append(line)
                 command = "pt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
                 font_attr_segs[len(lines) - 1] = [(
