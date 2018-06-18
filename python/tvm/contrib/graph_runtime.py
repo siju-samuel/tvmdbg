@@ -122,18 +122,18 @@ class GraphModule(object):
 
     def _debug_cli_run(self):
         """Invoke cli and when user execute any command get_run_start_resp will return response"""
-        run_cli_session = self.dbgobj.get_run_command()
-        run_start_resp = run_cli_session.get_run_start_resp()
+        cli_command = self.dbgobj.get_run_command()
+        run_start_resp = cli_command.get_run_start_resp()
         retvals = True
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
             self.set_debug_buffer()
             retvals = self._debug_run()
             self.dbgobj.dump_output()
-            self.dbgobj.run_end(run_cli_session, retvals)
+            self.dbgobj.run_end(cli_command, retvals)
 
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
             retvals = self._run()
-            self.dbgobj.run_end(run_cli_session, retvals)
+            self.dbgobj.run_end(cli_command, retvals)
 
     def run(self, **input_dict):
         """Run forward execution of the graph

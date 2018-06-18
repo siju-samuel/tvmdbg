@@ -1,4 +1,4 @@
-"""Public Python API of TVM Debugger (yvmdbg)."""
+"""Public Python API of TVM Debugger (tvmdbg)."""
 
 from __future__ import absolute_import
 from __future__ import division
