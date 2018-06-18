@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=invalid-name, too-many-arguments, too-many-branches, too-many-locals
 """Classes and functions that help to inspect Python source w.r.t. TVM graphs."""
 
 from __future__ import absolute_import
@@ -26,17 +24,17 @@ def _norm_abs_path(file_path):
     return os.path.normpath(os.path.abspath(file_path))
 
 
-def _is_extension_uncompiled_python_source(file_path):
+def _is_extension_uncompiled(file_path):
     _, extension = os.path.splitext(file_path)
     return extension.lower() in UNCOMPILED_SOURCE_SUFFIXES
 
 
-def _is_extension_compiled_python_source(file_path):
+def _is_extension_compiled(file_path):
     _, extension = os.path.splitext(file_path)
     return extension.lower() in COMPILED_SOURCE_SUFFIXES
 
 
-def _convert_watch_key_to_tensor_name(watch_key):
+def _cvrt_watch_key_to_tensor(watch_key):
     return watch_key[:watch_key.rfind(":")]
 
 
@@ -57,8 +55,8 @@ def guess_is_tvm_py_library(py_file_path):
       ValueError: if the extension name of py_file_path does not indicate a Python
         source file (compiled or uncomplied).
     """
-    if (not _is_extension_uncompiled_python_source(py_file_path) and
-            not _is_extension_compiled_python_source(py_file_path)):
+    if (not _is_extension_uncompiled(py_file_path) and
+            not _is_extension_compiled(py_file_path)):
         raise ValueError(
             "Input file path (%s) is not a Python source file." % py_file_path)
     py_file_path = _norm_abs_path(py_file_path)
@@ -79,8 +77,8 @@ def load_source(source_file_path):
       1. Content of source file splitted by line.
       2. Source content line width
     """
-    with open(source_file_path, "rU") as fo:
-        source_text = fo.read()
+    with open(source_file_path, "rU") as fopen:
+        source_text = fopen.read()
     source_lines = source_text.split("\n")
     line_num_width = int(np.ceil(np.log10(len(source_lines)))) + 3
     return source_lines, line_num_width
@@ -138,7 +136,7 @@ def annotate_source(dump,
                 watch_keys = dump.debug_watch_keys(op.name)
                 # Convert watch keys to unique Tensor names.
                 items_to_append = list(
-                    set(map(_convert_watch_key_to_tensor_name, watch_keys)))
+                    set(map(_cvrt_watch_key_to_tensor, watch_keys)))
             else:
                 items_to_append = [op.name]
 

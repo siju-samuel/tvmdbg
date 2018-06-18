@@ -112,7 +112,7 @@ class OnRunStartResponse(object):
                  node_name_regex_whitelist=None,
                  op_type_regex_whitelist=None,
                  tensor_dtype_regex_whitelist=None,
-                 tolerate_debug_op_creation_failures=False):
+                 tolerate_dbg_op_failures=False):
         """Constructor of `OnRunStartResponse`.
 
         Args:
@@ -127,7 +127,7 @@ class OnRunStartResponse(object):
           op_type_regex_whitelist: Regular-expression whitelist for op type.
           tensor_dtype_regex_whitelist: Regular-expression whitelist for tensor
             dtype.
-          tolerate_debug_op_creation_failures: Whether debug op creation failures
+          tolerate_dbg_op_failures: Whether debug op creation failures
             are to be tolerated.
         """
 
@@ -142,9 +142,7 @@ class OnRunStartResponse(object):
         self.node_name_regex_whitelist = node_name_regex_whitelist
         self.op_type_regex_whitelist = op_type_regex_whitelist
         self.tensor_dtype_regex_whitelist = tensor_dtype_regex_whitelist
-        self.tolerate_debug_op_creation_failures = (
-            tolerate_debug_op_creation_failures)
-
+        self.tolerate_dbg_op_failures = (tolerate_dbg_op_failures)
 
 class OnRunEndRequest(object):
     """Request to an on-run-end callback.
@@ -206,7 +204,7 @@ class CLIRunCommand(object):
         return self._run_start_resp
 
 
-class BaseDebugWrapperModule():
+class BaseDebugWrapperModule(object):
     """Base class of debug-wrapper session classes.
 
     Concrete classes that inherit from this class need to implement the abstract
@@ -269,8 +267,6 @@ class BaseDebugWrapperModule():
             raise ValueError(
                 "Invalid OnSessionInitAction value: %s" % response.action)
 
-        self._default_session_context_manager = None
-
     def set_ouputs(self, name):
         """Set the output Name which used to access from runtime.
 
@@ -311,6 +307,7 @@ class BaseDebugWrapperModule():
         Returns:
           None
         """
+        retvals = retvals
         run_start_resp = cli_command.get_run_start_resp()
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
             run_metadata = cli_command.get_run_metadata()
@@ -325,10 +322,10 @@ class BaseDebugWrapperModule():
             run_end_req = OnRunEndRequest(run_start_resp.action)
 
     def get_run_command(self,
-            outputs=None,
-            options=None,
-            run_metadata=None,
-            callable_runner=None):
+                        outputs=None,
+                        options=None,
+                        run_metadata=None,
+                        callable_runner=None):
         """Wrapper around Session.run() that inserts tensor watch options.
 
         Args:
