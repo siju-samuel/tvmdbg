@@ -826,7 +826,8 @@ class DebugAnalyzer(object):
         }
         lines.append("")
         lines.append("  Op: %s" % self._debug_dump.node_op_type(node_name))
-        lines.append("  Device: %s" % self._debug_dump.node_device(node_name))
+        node_device_name = self._debug_dump.node_device(node_name).split("device:", 1)[1]
+        lines.append("  Device: %s" % node_device_name)
         output = debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
 
