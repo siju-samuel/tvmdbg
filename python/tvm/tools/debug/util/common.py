@@ -62,9 +62,6 @@ class CLIRunStartAction(object):
     # Run once with debug tensor-watching.
     DEBUG_RUN = "debug_run"
 
-    # Run once with profiler.
-    PROFILE_RUN = "profile_run"
-
     # Run without debug tensor-watching.
     NON_DEBUG_RUN = "non_debug_run"
 
