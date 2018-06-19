@@ -246,7 +246,7 @@ class CursesUI(base_ui.BaseUI):
     _NAVIGATION_BACK_COMMAND = "prev"
     _NAVIGATION_EXIT_COMMAND = "exit"
     _NAVIGATION_HELP_COMMAND = "help"
-    _NAVIGATION_HOME_COMMAND = "home"
+    _NAVIGATION_HOME_COMMAND = "HOME"
 
     # Limit screen width to work around the limitation of the curses library that
     # it may return invalid x coordinates for large values.

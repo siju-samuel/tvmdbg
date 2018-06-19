@@ -617,7 +617,7 @@ class DebugAnalyzer(object):
             line = dumped_tensor_name
             line += " " * (no_tensor_width - len(line))
 
-            line += "[%.3f]" % rel_time
+            line += "%.3f" % rel_time
             line += " " * (no_tensor_width + ts_width - len(line))
             line += dump_size_str
             line += " " * (no_tensor_width + ts_width + dump_size_width - len(line))
