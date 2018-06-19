@@ -273,9 +273,9 @@ class DebugAnalyzer(object):
             type=str,
             default=SORT_TENSORS_BY_TIMESTAMP,
             help=("the field to sort the data by: (%s | %s | %s | %s | %s | %s)" %
-                  (SORT_TENSORS_BY_TIMESTAMP, SORT_TENSORS_BY_DUMP_SIZE,
-                   SORT_TENSORS_BY_OP_TYPE, SORT_TENSORS_BY_INPUT_SIZE,
-                   SORT_TENSORS_BY_OUTPUT_SIZE, SORT_TENSORS_BY_TENSOR_NAME)))
+                  (SORT_TENSORS_BY_TENSOR_NAME, SORT_TENSORS_BY_TIMESTAMP,
+                   SORT_TENSORS_BY_DUMP_SIZE, SORT_TENSORS_BY_OP_TYPE,
+                    SORT_TENSORS_BY_INPUT_SIZE, SORT_TENSORS_BY_OUTPUT_SIZE )))
         arg_p.add_argument(
             "-r",
             "--reverse",
@@ -585,7 +585,7 @@ class DebugAnalyzer(object):
 
         # TODO(cais): Implement filter by lambda on tensor value.
 
-        timestamp_width, dump_size_width, op_type_width, no_ip_width, no_op_width = (
+        ts_width, dump_size_width, op_type_width, no_ip_width, no_op_width, no_tensor_width = (
             self._measure_tensor_lst_col_width(data_to_show))
 
         # Sort the data.
@@ -593,9 +593,9 @@ class DebugAnalyzer(object):
             data_to_show, parsed.sort_by, parsed.reverse)
 
         output.extend(
-            self._tensor_list_column_heads(parsed, timestamp_width,
+            self._tensor_list_column_heads(parsed, ts_width,
                                            dump_size_width, op_type_width,
-                                           no_ip_width, no_op_width))
+                                           no_ip_width, no_op_width, no_tensor_width))
 
         dump_count = 0
         for dump in data_to_show:
@@ -614,28 +614,29 @@ class DebugAnalyzer(object):
             no_ips = str(len(self._debug_dump.node_inputs(dump.node_name)))
             no_ops = str(len(self._debug_dump.node_recipients(dump.node_name)))
 
-            line = "[%.3f]" % rel_time
-            line += " " * (timestamp_width - len(line))
+            line = dumped_tensor_name
+            line += " " * (no_tensor_width - len(line))
+
+            line += "[%.3f]" % rel_time
+            line += " " * (no_tensor_width + ts_width - len(line))
             line += dump_size_str
-            line += " " * (timestamp_width + dump_size_width - len(line))
+            line += " " * (no_tensor_width + ts_width + dump_size_width - len(line))
             line += op_type
-            line += " " * (timestamp_width + dump_size_width +
+            line += " " * (no_tensor_width + ts_width + dump_size_width +
                            op_type_width - len(line))
 
             line += no_ips
-            line += " " * (no_ip_width + timestamp_width +
+            line += " " * (no_tensor_width + no_ip_width + ts_width +
                            dump_size_width + op_type_width - len(line))
 
             line += no_ops
-            line += " " * (no_op_width + no_ip_width + timestamp_width +
+            line += " " * (no_tensor_width + no_op_width + no_ip_width + ts_width +
                            dump_size_width + op_type_width - len(line))
-
-            line += dumped_tensor_name
 
             output.append(
                 line,
                 font_attr_segs=[(
-                    len(line) - len(dumped_tensor_name), len(line),
+                    0, len(dumped_tensor_name),
                     debugger_cli_common.MenuItem("", "pt %s" % dumped_tensor_name))])
             dump_count += 1
 
@@ -705,8 +706,16 @@ class DebugAnalyzer(object):
         max_no_op_width = max(max_no_op_width,
                                 len(self._OP_NUMBER_OUTPUTS_HEAD) + 2)
 
+        max_no_tensorname_width = 0
+        for dump in data:
+            nodename = dump.node_name
+            if len(nodename) + 1 > max_no_tensorname_width:
+                max_no_tensorname_width = len(nodename) + 4
+        max_no_tensorname_width = max(max_no_tensorname_width,
+                                len(self._TENSOR_NAME_COLUMN_HEAD) + 4)
+
         return (max_timestamp_width, max_dump_size_width, max_op_type_width,
-                max_no_ip_width, max_no_op_width)
+                max_no_ip_width, max_no_op_width, max_no_tensorname_width)
 
     def _sort_dump_data_by(self, data, sort_by, reverse):
         """Sort a list of DebugTensorDatum in specified order.
@@ -757,7 +766,7 @@ class DebugAnalyzer(object):
 
     def _tensor_list_column_heads(self, parsed, max_timestamp_width,
                                   max_dump_size_width, max_op_type_width,
-                                  max_no_ip_width, max_no_op_width):
+                                  max_no_ip_width, max_no_op_width, no_tensor_width):
         """Generate a line containing the column heads of the tensor list.
 
         Args:
@@ -779,13 +788,23 @@ class DebugAnalyzer(object):
             base_command += " -n %s" % parsed.node_name_filter
 
         attr_segs = {0: []}
-        row = self._TIMESTAMP_COLUMN_HEAD
+
+        row = self._TENSOR_NAME_COLUMN_HEAD
+        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TENSOR_NAME)
+        if parsed.sort_by == SORT_TENSORS_BY_TENSOR_NAME and not parsed.reverse:
+            command += " -r"
+        attr_segs[0].append((0, len(row),
+                             [debugger_cli_common.MenuItem("", command), "bold"]))
+        row += " " * (no_tensor_width - len(row))
+
+        prev_len = len(row)
+        row += self._TIMESTAMP_COLUMN_HEAD
         command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TIMESTAMP)
         if parsed.sort_by == SORT_TENSORS_BY_TIMESTAMP and not parsed.reverse:
             command += " -r"
         attr_segs[0].append(
-            (0, len(row), [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (max_timestamp_width - len(row))
+            (prev_len, len(row), [debugger_cli_common.MenuItem(None, command), "bold"]))
+        row += " " * (no_tensor_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
         row += self._DUMP_SIZE_COLUMN_HEAD
@@ -794,7 +813,7 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (max_dump_size_width + max_timestamp_width - len(row))
+        row += " " * (no_tensor_width + max_dump_size_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
         row += self._OP_TYPE_COLUMN_HEAD
@@ -803,7 +822,7 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
+        row += " " * (no_tensor_width +
             max_op_type_width + max_dump_size_width + max_timestamp_width - len(row)
         )
 
@@ -814,7 +833,7 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
+        row += " " * (no_tensor_width +
             max_no_ip_width + max_op_type_width + max_dump_size_width +
             max_timestamp_width - len(row)
         )
@@ -826,19 +845,7 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
-            max_no_op_width + max_no_ip_width + max_op_type_width + max_dump_size_width +
-            max_timestamp_width - len(row)
-        )
-
-        prev_len = len(row)
-        row += self._TENSOR_NAME_COLUMN_HEAD
-        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TENSOR_NAME)
-        if parsed.sort_by == SORT_TENSORS_BY_TENSOR_NAME and not parsed.reverse:
-            command += " -r"
-        attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem("", command), "bold"]))
-        row += " " * (
+        row += " " * (no_tensor_width +
             max_no_op_width + max_no_ip_width + max_op_type_width + max_dump_size_width +
             max_timestamp_width - len(row)
         )

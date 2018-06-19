@@ -10,8 +10,6 @@ import re
 
 import numpy as np
 
-from tvm.tools.debug.util import profiling
-
 _TVM_BASEDIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.normpath(os.path.abspath(__file__))))))
