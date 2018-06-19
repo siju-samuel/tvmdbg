@@ -77,10 +77,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._tensor_filters = {}
 
         # Below are the state variables of this wrapper object.
-        # _active_tensor_filter: what (if any) tensor filter is in effect. If such
-        #   a filter is in effect, this object will call run() method of the
-        #   underlying Tvm Session object until the filter passes. This is
-        #   activated by the "-f" flag of the "run" command.
         # _run_through_times: keeps track of how many times the wrapper needs to
         #   run through without stopping at the run-end CLI. It is activated by the
         #   "-t" option of the "run" command.
@@ -92,8 +88,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         #   should return at the next run-start callback. If this information is
         #   unavailable (i.e., is None), the run-start CLI will be launched to ask
         #   the user. This is the case, e.g., right before the first run starts.
-        self._active_tensor_filter = None
-        self._act_tensor_ftr_run_start_res = None
         self._run_through_times = 1
         self._skip_debug = False
         self._run_start_response = None
@@ -107,46 +101,11 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             description="Run through, with or without debug tensor watching.",
             usage=argparse.SUPPRESS)
         args.add_argument(
-            "-t",
-            "--times",
-            dest="times",
-            type=int,
-            default=1,
-            help="How many Session.run() calls to proceed with.")
-        args.add_argument(
-            "-n",
+            "-nodebug",
             "--no_debug",
             dest="no_debug",
             action="store_true",
             help="Run through without debug tensor watching.")
-        args.add_argument(
-            "-f",
-            "--till_filter_pass",
-            dest="till_filter_pass",
-            type=str,
-            default="",
-            help="Run until a tensor in the graph passes the specified filter.")
-        args.add_argument(
-            "--node_name_filter",
-            dest="node_name_filter",
-            type=str,
-            default="",
-            help="Regular-expression filter for node names to be watched in the "
-                 "run, e.g., loss, reshape.*")
-        args.add_argument(
-            "--op_type_filter",
-            dest="op_type_filter",
-            type=str,
-            default="",
-            help="Regular-expression filter for op type to be watched in the run, "
-                 "e.g., (MatMul|Add), Variable.*")
-        args.add_argument(
-            "--tensor_dtype_filter",
-            dest="tensor_dtype_filter",
-            type=str,
-            default="",
-            help="Regular-expression filter for tensor dtype to be watched in the "
-                 "run, e.g., (float32|float64), int.*")
         self._argparsers["run"] = args
         args = argparse.ArgumentParser(
             description="Display information about this Session.run() call.",
@@ -197,11 +156,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             request.run_call_count, request.outputs, request.input_dict,
             is_callable_runner=request.is_callable_runner)
 
-        if self._active_tensor_filter:
-            # If we are running until a filter passes, we just need to keep running
-            # with the previous `OnRunStartResponse`.
-            return self._act_tensor_ftr_run_start_res
-
         self._exit_if_requested_by_user()
 
         if self._run_call_count > 1 and not self._skip_debug:
@@ -221,8 +175,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             self._prep_cli_for_run_start()
 
             self._run_start_response = self._launch_cli()
-            if self._active_tensor_filter:
-                self._act_tensor_ftr_run_start_res = self._run_start_response
             if self._run_through_times > 1:
                 self._run_through_times -= 1
 
@@ -284,18 +236,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                                                  self._dump_root, partition_graphs=partition_graphs)
 
             passed_filter = None
-            if self._active_tensor_filter:
-                if not debug_dump.find(
-                        self._tensor_filters[self._active_tensor_filter], first_n=1):
-                    # No dumped tensor passes the filter in this run. Clean up the dump
-                    # directory and move on.
-                    self._remove_dump_root()
-                    return framework.OnRunEndResponse()
-                else:
-                    # Some dumped tensor(s) from this run passed the filter.
-                    passed_filter = self._active_tensor_filter
-                    self._active_tensor_filter = None
-
             self._prep_debug_cli_for_run_end(
                 debug_dump, request.tvm_error, passed_filter)
 
@@ -443,15 +383,10 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         del screen_info  # Currently unused.
 
         parsed = self._argparsers["run"].parse_args(args)
-        parsed.node_name_filter = parsed.node_name_filter or None
-        parsed.op_type_filter = parsed.op_type_filter or None
-        parsed.tensor_dtype_filter = parsed.tensor_dtype_filter or None
 
         self._skip_debug = parsed.no_debug
-        self._run_through_times = parsed.times
 
-        if parsed.times > 1 or parsed.no_debug:
-            # If requested -t times > 1, the very next run will be a non-debug run.
+        if parsed.no_debug:
             action = common.CLIRunStartAction.NON_DEBUG_RUN
             debug_urls = []
         else:
@@ -459,24 +394,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             debug_urls = self._get_run_debug_urls()
         run_start_response = framework.OnRunStartResponse(
             action,
-            debug_urls,
-            node_name_regex_whitelist=parsed.node_name_filter,
-            op_type_regex_whitelist=parsed.op_type_filter,
-            tensor_dtype_regex_whitelist=parsed.tensor_dtype_filter)
-
-        if parsed.till_filter_pass:
-            # For the run-till-filter-pass (run -f) mode, use the DEBUG_RUN
-            # option to access the intermediate tensors, and set the corresponding
-            # state flag of the class itself to True.
-            if parsed.till_filter_pass in self._tensor_filters:
-                action = common.CLIRunStartAction.DEBUG_RUN
-                self._active_tensor_filter = parsed.till_filter_pass
-                self._act_tensor_ftr_run_start_res = run_start_response
-            else:
-                # Handle invalid filter name.
-                return debugger_cli_common.RichTextLines(
-                    ["ERROR: tensor filter \"%s\" does not exist." %
-                     parsed.till_filter_pass])
+            debug_urls)
 
         # Raise CommandLineExit exception to cause the CLI to exit.
         raise debugger_cli_common.CommandLineExit(exit_token=run_start_response)
