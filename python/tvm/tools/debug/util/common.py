@@ -64,35 +64,3 @@ class CLIRunStartAction(object):
 
     # Run without debug tensor-watching.
     NON_DEBUG_RUN = "non_debug_run"
-
-    # Instead of running the fetches as a whole, as would normally happen, invoke
-    # the (to-be-implemented) debug stepper.
-    # TODO(cais): Remove "to-be-implemented".
-    INVOKE_STEPPER = "invoke_stepper"
-
-# def get_flattened_names(inputs_or_outputs):
-#  """Get a flattened list of the names in run() call inputs or outputs.
-#
-#  Args:
-#    inputs_or_outputs: Inputs or outputs of the `Session.run()` call. It maybe
-#      a Tensor, an Operation or a Variable. It may also be nested lists, tuples
-#      or dicts. See doc of `Session.run()` for more details.
-#
-#  Returns:
-#    (list of str) A flattened list of output names from `inputs_or_outputs`.
-#  """
-#
-#
-#  lines = []
-#  if isinstance(inputs_or_outputs, (list, tuple)):
-#    for item in inputs_or_outputs:
-#      lines.extend(get_flattened_names(item))
-#  elif isinstance(inputs_or_outputs, dict):
-#    for key in inputs_or_outputs:
-#      lines.extend(get_flattened_names(inputs_or_outputs[key]))
-#  else:
-#    # This ought to be a Tensor, an Operation or a Variable, for which the name
-#    # attribute should be available. (Bottom-out condition of the recursion.)
-#    lines.append(get_graph_element_name(inputs_or_outputs))
-#
-#  return lines

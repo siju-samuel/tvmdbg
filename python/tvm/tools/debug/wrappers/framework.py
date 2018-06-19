@@ -211,9 +211,6 @@ class BaseDebugWrapperModule(object):
     methods such as on_session_init, on_run_start and on_run_end.
     """
 
-    # TODO(cais): Add on_cont_start and on_cont_end callbacks once the stepper is
-    # is available.
-
     def __init__(self, sess, graph, ctx=None, thread_name_filter=None,
                  pass_through_operrors=False):
         """Constructor of `BaseDebugWrapperModule`.
@@ -415,7 +412,7 @@ class BaseDebugWrapperModule(object):
         Returns:
           An instance of `OnRunStartResponse`, carrying information to
             1) direct the wrapper session to perform a specified action (e.g., run
-              with or without debug tensor watching, invoking the stepper.)
+              with or without debug tensor watching.)
             2) debug URLs used to watch the tensors.
         """
 

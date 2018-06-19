@@ -1,11 +1,8 @@
-# coding: utf-8
 # pylint: disable=too-many-lines
 """CLI Backend for the Analyzer Part of the Debugger.
 
 The analyzer performs post hoc analysis of dumped intermediate tensors and
 graph structure information from debugged GraphRuntime.debug_run() calls.
-
-The other part of the debugger is the stepper (c.f. stepper_cli.py).
 """
 from __future__ import absolute_import
 from __future__ import division
