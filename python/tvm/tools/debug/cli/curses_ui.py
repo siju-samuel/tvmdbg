@@ -585,7 +585,7 @@ class CursesUI(base_ui.BaseUI):
             after its creation.
         """
 
-        # Display the tfdbg prompt.
+        # Display the tvmdbg prompt.
         self._addstr(self._max_y - self._command_textbox_height, 0,
                      self.CLI_PROMPT, curses.A_BOLD)
         self._stdscr.refresh()

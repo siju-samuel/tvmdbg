@@ -152,5 +152,5 @@ class CLIConfig(object):
                 return config
         except (IOError, ValueError):
             # The reading of the config file may fail due to IO issues or file
-            # corruption. We do not want tfdbg to error out just because of that.
+            # corruption. We do not want tvmdbg to error out just because of that.
             return dict()
