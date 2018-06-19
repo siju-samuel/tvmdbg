@@ -1,3 +1,4 @@
+# coding: utf-8
 # pylint: disable=too-many-lines
 """Curses-Based Command-Line Interface of TVM Debugger (tvmdbg)."""
 from __future__ import absolute_import
@@ -30,6 +31,7 @@ _SCROLL_TO_LINE_INDEX = "scroll_to_line_index"
 
 _COLOR_READY_COLORTERMS = ["gnome-terminal", "xfce4-terminal"]
 _COLOR_ENABLED_TERM = "xterm-256color"
+_TITLE_SIZE_DEFAULT = 2
 
 
 def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
@@ -68,6 +70,7 @@ class ScrollBar(object):
     """
 
     BASE_ATTR = cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE
+    BACKGROUND_BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_GRAY
 
     def __init__(self,
                  min_x,
@@ -145,28 +148,31 @@ class ScrollBar(object):
         width = self._max_x - self._min_x + 1
         empty_line = " " * width
         foreground_font_attr_segs = [(0, width, self.BASE_ATTR)]
+        background_font_attr_segs = [(0, width, self.BACKGROUND_BASE_ATTR)]
 
         if self._output_num_rows > 1:
             block_y = self._block_y()
 
             if width == 1:
-                up_text = "U"
-                down_text = "D"
+                up_text = "^"
+                down_text = "v"
             elif width == 2:
-                up_text = "UP"
-                down_text = "DN"
+                up_text = "^ "
+                down_text = "v "
             elif width == 3:
-                up_text = "UP "
-                down_text = "DN "
+                up_text = " ^ "
+                down_text = " v "
             else:
-                up_text = " UP "
-                down_text = "DOWN"
+                up_text = " ^ "
+                down_text = " v "
 
             layout = debugger_cli_common.RichTextLines(
                 [up_text], font_attr_segs={0: [(0, width, self.BASE_ATTR)]})
             for i in xrange(1, self._scroll_bar_height - 1):
-                font_attr_segs = foreground_font_attr_segs if i == block_y else None
-                layout.append(empty_line, font_attr_segs=font_attr_segs)
+                font_attr_segs = background_font_attr_segs
+                if i == block_y:
+                    font_attr_segs = foreground_font_attr_segs
+                layout.append("  ", font_attr_segs=font_attr_segs)
             layout.append(down_text, font_attr_segs=foreground_font_attr_segs)
         else:
             layout = debugger_cli_common.RichTextLines(
@@ -238,6 +244,9 @@ class CursesUI(base_ui.BaseUI):
 
     _NAVIGATION_FORWARD_COMMAND = "next"
     _NAVIGATION_BACK_COMMAND = "prev"
+    _NAVIGATION_EXIT_COMMAND = "exit"
+    _NAVIGATION_HELP_COMMAND = "help"
+    _NAVIGATION_HOME_COMMAND = "home"
 
     # Limit screen width to work around the limitation of the curses library that
     # it may return invalid x coordinates for large values.
@@ -266,6 +275,7 @@ class CursesUI(base_ui.BaseUI):
         "transparent": -1,
         cli_shared.COLOR_WHITE: curses.COLOR_CYAN,
         cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        cli_shared.COLOR_GRAY: curses.COLOR_BLACK,
     }
 
     # Font attribute for search and highlighting.
@@ -317,6 +327,7 @@ class CursesUI(base_ui.BaseUI):
         self._textbox_pending_cmd_changed = None
         self._title_line = None
         self._unwrapped_regex_match_lines = None
+        self._title_color = "blue_on_gray"
         self._single_instance_lock = threading.Lock()
 
         self._screen_init()
@@ -384,13 +395,13 @@ class CursesUI(base_ui.BaseUI):
 
         # Row index of the Navigation Bar (i.e., the bar that contains forward and
         # backward buttons and displays the current command line).
-        self._nav_bar_row = 1
+        self._nav_bar_row = 1 + _TITLE_SIZE_DEFAULT
 
         # Top row index of the output pad.
         # A "pad" is a curses object that holds lines of text and not limited to
         # screen size. It can be rendered on the screen partially with scroll
         # parameters specified.
-        self._output_top_row = 2
+        self._output_top_row = 2 + _TITLE_SIZE_DEFAULT
 
         # Number of rows that the output pad has.
         self._output_num_rows = (
@@ -406,7 +417,8 @@ class CursesUI(base_ui.BaseUI):
         self._candidates_bottom_row = self._output_scroll_row - 1
 
         # Maximum number of lines the candidates display can have.
-        self._candidates_max_lines = int(self._output_num_rows / 2)
+        # Daya: Review
+        self._candidates_max_lines = int(self._output_num_rows / 2) + 2
 
         self.max_output_lines = 10000
 
@@ -447,8 +459,12 @@ class CursesUI(base_ui.BaseUI):
         for fg_color in self._FOREGROUND_COLORS:
             for bg_color in self._BACKGROUND_COLORS:
                 color_index += 1
-                curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
-                                 self._BACKGROUND_COLORS[bg_color])
+
+                if bg_color==cli_shared.COLOR_GRAY:
+                    curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color], 236)
+                else:
+                    curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
+                                         self._BACKGROUND_COLORS[bg_color])
 
                 color_name = fg_color
                 if bg_color != "transparent":
@@ -536,7 +552,7 @@ class CursesUI(base_ui.BaseUI):
             self._dispatch_command(init_command)
 
         if title is not None:
-            self._title(title, title_color=title_color)
+            self._title(title)
 
         # CLI main loop.
         exit_token = self._ui_loop()
@@ -933,7 +949,7 @@ class CursesUI(base_ui.BaseUI):
                 mouse_x, self._curr_wrapped_output.font_attr_segs[absolute_mouse_y])
         return None
 
-    def _title(self, title, title_color=None):
+    def _title(self, title):
         """Display title.
 
         Args:
@@ -941,13 +957,25 @@ class CursesUI(base_ui.BaseUI):
           title_color: (str) Color of the title, e.g., "yellow".
         """
 
-        # Pad input title str with "-" and space characters to make it pretty.
-        self._title_line = "--- %s " % title
-        if len(self._title_line) < self._max_x:
-            self._title_line += "-" * (self._max_x - len(self._title_line))
+        tvm_dgb_box_top    = "-------------------"
+        tvm_dgb_txt        = "    TVM DEBUG      "
+        tvm_dgb_box_bottom = "-------------------"
+        self._title_line = ("-" * (self._max_x))
+        txt_begin = int((self._max_x - len(tvm_dgb_txt))/2)
+        tvm_dgb_box_top = (" " * txt_begin) + tvm_dgb_box_top + (" " * txt_begin)
+        tvm_dgb_txt = (" " * txt_begin) + tvm_dgb_txt + (" " * txt_begin)
+        tvm_dgb_box_bottom = (" " * txt_begin) + tvm_dgb_box_bottom + (" " * txt_begin)
+        if len(tvm_dgb_txt) < self._max_x:
+            tvm_dgb_box_top += " "
+            tvm_dgb_txt += " "
+            tvm_dgb_box_bottom += " "
 
         self._screen_draw_text_line(
-            self._title_row, self._title_line, color=title_color)
+            self._title_row, tvm_dgb_box_top, color=self._title_color)
+        self._screen_draw_text_line(
+            self._title_row + 1, tvm_dgb_txt, color=self._title_color)
+        self._screen_draw_text_line(
+            self._title_row + 2, tvm_dgb_box_bottom, color=self._title_color)
 
     def _auto_key_in(self, command, erase_existing=False):
         """Automatically key in a command to the command Textbox.
@@ -1158,12 +1186,15 @@ class CursesUI(base_ui.BaseUI):
         return pad, rows, cols
 
     def _display_nav_bar(self):
-        nav_bar_width = self._max_x - 2
+        nav_bar_width = self._max_x
         self._nav_bar_pad = _screen_new_output_pad(1, nav_bar_width)
         self._nav_bar = self._nav_history.render(
             nav_bar_width,
             self._NAVIGATION_BACK_COMMAND,
-            self._NAVIGATION_FORWARD_COMMAND)
+            self._NAVIGATION_FORWARD_COMMAND,
+            self._NAVIGATION_HOME_COMMAND,
+            self._NAVIGATION_HELP_COMMAND,
+            self._NAVIGATION_EXIT_COMMAND)
         self._screen_add_line_to_output_pad(
             self._nav_bar_pad, 0, self._nav_bar.lines[0][:nav_bar_width - 1],
             color_segments=(self._nav_bar.font_attr_segs[0]
@@ -1271,16 +1302,16 @@ class CursesUI(base_ui.BaseUI):
                      screen_location_right)
         self._scroll_bar = ScrollBar(
             self._max_x - 2,
-            3,
+            3 + _TITLE_SIZE_DEFAULT,
             self._max_x - 1,
-            self._output_num_rows + 1,
+            self._output_num_rows + _TITLE_SIZE_DEFAULT + 1,
             self._output_pad_row,
             self._output_pad_height - self._output_pad_screen_height)
 
         (scroll_pad, _, _) = self._display_lines(
-            self._scroll_bar.layout(), self._output_num_rows - 1)
+            self._scroll_bar.layout(), (self._output_num_rows + _TITLE_SIZE_DEFAULT) - 1)
         _refresh_pad(scroll_pad, 0, 0, self._output_top_row + 1,
-                     self._max_x - 2, self._output_num_rows + 1,
+                     self._max_x - 2, (self._output_num_rows + _TITLE_SIZE_DEFAULT) + 1,
                      self._max_x - 1)
 
     def _scroll_output(self, direction, line_index=None):
@@ -1353,6 +1384,7 @@ class CursesUI(base_ui.BaseUI):
                                        self._output_pad_screen_location.right)
         self._screen_render_nav_bar()
         self._screen_render_menu_pad()
+        self._title(None)
 
         self._scroll_info = self._compile_ui_status_summary()
         self._screen_draw_text_line(
@@ -1389,14 +1421,16 @@ class CursesUI(base_ui.BaseUI):
                 float(self._output_pad_row) /
                 (self._output_pad_height - self._output_pad_screen_height - 1)))
             if self._output_pad_row == 0:
-                scroll_directions = " (PgDn)"
+                scroll_directions = "↓"
             elif self._output_pad_row >= (
                     self._output_pad_height - self._output_pad_screen_height - 1):
-                scroll_directions = " (PgUp)"
+                scroll_directions = "↑"
             else:
-                scroll_directions = " (PgDn/PgUp)"
+                scroll_directions = "↕"
 
-            info += "--- Scroll%s: %.2f%% " % (scroll_directions, scroll_percentage)
+            if 10.00 > scroll_percentage:
+                info += " "
+            info += "%.2f%% %s" % (scroll_percentage, scroll_directions)
 
         self._output_array_pointer_indices = self._show_array_indices()
 
@@ -1412,14 +1446,18 @@ class CursesUI(base_ui.BaseUI):
         # Add mouse mode information.
         mouse_mode_str = "Mouse: "
         mouse_mode_str += "ON" if self._mouse_enabled else "OFF"
+        mouse_mode_str = ""
 
         if len(info) + len(mouse_mode_str) + 5 < self._max_x:
-            info += "-" * (self._max_x - len(info) - len(mouse_mode_str) - 4)
-            info += " "
-            info += mouse_mode_str
-            info += " ---"
+            info += " " * (self._max_x - len(info) - len(mouse_mode_str) - 4)
+            if len(mouse_mode_str):
+              info += " "
+              info += mouse_mode_str
+              info += "    "
+            else:
+              info += "    "
         else:
-            info += "-" * (self._max_x - len(info))
+            info += " " * (self._max_x - len(info))
 
         return info
 

@@ -351,9 +351,9 @@ def get_run_start_intro(run_call_count,
     menu = debugger_cli_common.Menu()
     menu.append(debugger_cli_common.MenuItem("run", "run"))
     # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-#    menu.append(debugger_cli_common.MenuItem(
-#        "invoke_stepper", "invoke_stepper"))
-    menu.append(debugger_cli_common.MenuItem("exit", "exit"))
+    #menu.append(debugger_cli_common.MenuItem(
+    #    "invoke_stepper", "invoke_stepper"))
+    #menu.append(debugger_cli_common.MenuItem("exit", "exit"))
     out.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
     return out
