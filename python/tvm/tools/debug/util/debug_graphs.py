@@ -88,129 +88,9 @@ def is_debug_node(node_name):
     """
     return node_name.startswith("__dbg_")
 
-
-def parse_debug_node_name(node_name):
-    """Parse the name of a debug node.
-
-    Args:
-      node_name: Name of the debug node.
-
-    Returns:
-      1. Name of the watched node, as a str.
-      2. Output slot index of the watched tensor, as an int.
-      3. Index of the debug node, as an int.
-      4. Name of the debug op, as a str, e.g, "DebugIdentity".
-
-    Raises:
-      ValueError: If the input node name is not a valid debug node name.
-    """
-    prefix = "__dbg_"
-
-    name = node_name
-    if not name.startswith(prefix):
-        raise ValueError("Invalid prefix in debug node name: '%s'" % node_name)
-
-    name = name[len(prefix):]
-
-    if name.count("_") < 2:
-        raise ValueError("Invalid debug node name: '%s'" % node_name)
-
-    debug_op = name[name.rindex("_") + 1:]
-    name = name[:name.rindex("_")]
-
-    debug_op_index = int(name[name.rindex("_") + 1:])
-    name = name[:name.rindex("_")]
-
-    if name.count(":") != 1:
-        raise ValueError("Invalid tensor name in debug node name: '%s'" % node_name)
-
-    watched_node_name = name[:name.index(":")]
-    watched_output_slot = int(name[name.index(":") + 1:])
-
-    return watched_node_name, watched_output_slot, debug_op_index, debug_op
-
-
 class GraphTracingReachedDestination(Exception):
     """Graph Tracing Reached Destination Exception."""
     pass
-
-
-#class DFSGraphTracer(object):
-#    """Graph input tracer using depth-first search."""
-#
-#    def __init__(self,
-#                 input_lists,
-#                 skip_node_names=None,
-#                 destination_node_name=None):
-#        """Constructor of _DFSGraphTracer.
-#
-#        Args:
-#          input_lists: A list of dicts. Each dict is an adjacency (input) map from
-#            the recipient node name as the key and the list of input node names
-#            as the value.
-#          skip_node_names: Optional: a list of node names to skip tracing.
-#          destination_node_name: Optional: destination node name. If not `None`, it
-#            should be the name of a destination not as a str and the graph tracing
-#            will raise GraphTracingReachedDestination as soon as the node has been
-#            reached.
-#
-#        Raises:
-#          GraphTracingReachedDestination: if stop_at_node_name is not None and
-#            the specified node is reached.
-#        """
-#
-#        self._input_lists = input_lists
-#        self._skip_node_names = skip_node_names
-#
-#        self._inputs = []
-#        self._visited_nodes = []
-#        self._depth_count = 0
-#        self._depth_list = []
-#
-#        self._destination_node_name = destination_node_name
-#
-#    def trace(self, graph_element_name):
-#        """Trace inputs.
-#
-#        Args:
-#          graph_element_name: Name of the node or an output tensor of the node, as a
-#            str.
-#
-#        Raises:
-#          GraphTracingReachedDestination: if destination_node_name of this tracer
-#            object is not None and the specified node is reached.
-#        """
-#        self._depth_count += 1
-#
-#        node_name = get_node_name(graph_element_name)
-#        if node_name == self._destination_node_name:
-#            raise GraphTracingReachedDestination()
-#
-#        if node_name in self._skip_node_names:
-#            return
-#        if node_name in self._visited_nodes:
-#            return
-#
-#        self._visited_nodes.append(node_name)
-#
-#        for input_list in self._input_lists:
-#            if node_name not in input_list:
-#                continue
-#            for inp in input_list[node_name]:
-#                if get_node_name(inp) in self._visited_nodes:
-#                    continue
-#                self._inputs.append(inp)
-#                self._depth_list.append(self._depth_count)
-#                self.trace(inp)
-#
-#        self._depth_count -= 1
-#
-#    def inputs(self):
-#        return self._inputs
-#
-#    def depth_list(self):
-#        return self._depth_list
-
 
 def _infer_device_name(graph_def):
     """Infer device name from a partition GraphDef."""
@@ -388,23 +268,6 @@ class DebugGraph(object):
         """
         if self._non_debug_graph_def:
             return
-
-#        self._non_debug_graph_def = graph_pb2.GraphDef()
-#        for node in self._debug_graph_def.node:
-#          if is_copy_node(node.name) or is_debug_node(node.name):
-#            continue
-#
-#          new_node = self._non_debug_graph_def.node.add()
-#          new_node.CopyFrom(node)
-#
-#          # Redo the list of inputs, because in _debug_graph_def, the list can
-#          # consist of Copy* and Debug* nodes inserted by the debugger. Those will
-#          # be replaced with the original inputs here.
-#          del new_node.input[:]
-#          for inp in self._node_inputs[node.name]:
-#            new_node.input.append(inp)
-#          for ctrl_inp in self._node_ctrl_inputs[node.name]:
-#            new_node.input.append("^" + ctrl_inp)
 
     @property
     def device_name(self):
