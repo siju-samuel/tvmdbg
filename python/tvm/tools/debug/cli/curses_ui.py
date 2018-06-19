@@ -275,7 +275,7 @@ class CursesUI(base_ui.BaseUI):
         "transparent": -1,
         cli_shared.COLOR_WHITE: curses.COLOR_CYAN,
         cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
-        cli_shared.COLOR_GRAY: curses.COLOR_BLACK,
+        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
 
     # Font attribute for search and highlighting.
@@ -327,7 +327,7 @@ class CursesUI(base_ui.BaseUI):
         self._textbox_pending_cmd_changed = None
         self._title_line = None
         self._unwrapped_regex_match_lines = None
-        self._title_color = "blue_on_gray"
+        self._title_color = "white_on_black"
         self._single_instance_lock = threading.Lock()
 
         self._screen_init()
