@@ -199,7 +199,7 @@ def _make_source_table(source_list, is_tvm_py_library):
 class DebugAnalyzer(object):
     """Analyzer for debug data from dump directories."""
 
-    _TIMESTAMP_COLUMN_HEAD = "t (ms)"
+    _TIMESTAMP_COLUMN_HEAD = "TS (us)"
     _DUMP_SIZE_COLUMN_HEAD = "Size (B)"
     _OP_TYPE_COLUMN_HEAD = "Op type"
     _TENSOR_NAME_COLUMN_HEAD = "Tensor name"

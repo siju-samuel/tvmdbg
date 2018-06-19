@@ -253,7 +253,7 @@ class CursesUI(base_ui.BaseUI):
     }
 
     _FOREGROUND_COLORS = {
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        cli_shared.COLOR_WHITE: curses.COLOR_BLUE,
         cli_shared.COLOR_RED: curses.COLOR_RED,
         cli_shared.COLOR_GREEN: curses.COLOR_GREEN,
         cli_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
@@ -264,7 +264,7 @@ class CursesUI(base_ui.BaseUI):
     }
     _BACKGROUND_COLORS = {
         "transparent": -1,
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        cli_shared.COLOR_WHITE: curses.COLOR_CYAN,
         cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
 
@@ -473,7 +473,7 @@ class CursesUI(base_ui.BaseUI):
         self._color_pairs["underline"] = curses.A_UNDERLINE
 
         # Default color pair to use when a specified color pair does not exist.
-        self._default_color_pair = self._color_pairs[cli_shared.COLOR_WHITE]
+        self._default_color_pair = self._color_pairs[cli_shared.COLOR_BLUE]
 
     def _screen_launch(self):
         """Launch the curses screen."""
