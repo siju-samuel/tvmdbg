@@ -1,5 +1,4 @@
-# coding: utf-8
-# pylint: disable=fixme, too-many-locals, no-member, too-many-lines, too-many-instance-attributes, too-many-arguments, invalid-name
+# pylint: disable=too-many-lines
 """Classes and functions to handle debug-dump data of TVM Debugger."""
 
 from __future__ import absolute_import
@@ -33,7 +32,7 @@ def _glob(glob_pattern):
     return glob.glob(glob_pattern)
 
 
-class InconvertibleTensorProto(object):# pylint: disable=too-few-public-methods
+class InconvertibleTensorProto(object):
     """Represents a TensorProto that cannot be converted to np.ndarray."""
 
     def __init__(self, tensor_proto, initialized=True):
@@ -84,7 +83,7 @@ def _load_graph_def_from_event_file(ctx, event_file_path):
         json_data.close()
     return graph_def.GraphDef(ctx, json_nodes)
 
-def _load_log_message_from_event_file(event_file_path):
+def _load_log_msg_from_evt_file(event_file_path):
     with open(event_file_path, "r") as event_file:
         message = event_file.read()
     return message
@@ -131,53 +130,10 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
     """
     return "%s:%s" % (_get_tensor_name(node_name, output_slot), debug_op)
 
-
-def has_inf_or_nan(datum, tensor):
-    """A predicate for whether a tensor consists of any bad numerical values.
-
-    This predicate is common enough to merit definition in this module.
-    Bad numerical values include `nan`s and `inf`s.
-    The signature of this function follows the requirement of the method
-    `DebugDumpDir.find()`.
-
-    Args:
-      datum: (`DebugTensorDatum`) Datum metadata.
-      tensor: (`numpy.ndarray` or None) Value of the tensor. None represents
-        an uninitialized tensor.
-
-    Returns:
-      (`bool`) True if and only if tensor consists of any nan or inf values.
-    """
-
-    _ = datum  # Datum metadata is unused in this predicate.
-
-    if isinstance(tensor, InconvertibleTensorProto):
-        # Uninitialized tensor doesn't have bad numerical values.
-        # Also return False for data types that cannot be represented as numpy
-        # arrays.
-        return False
-    elif (np.issubdtype(tensor.dtype, np.floating) or
-          np.issubdtype(tensor.dtype, np.complex) or
-          np.issubdtype(tensor.dtype, np.integer)):
-        return np.any(np.isnan(tensor)) or np.any(np.isinf(tensor))
-    return False
-
-
 _CoreMetadata = collections.namedtuple("CoreMetadata", [
     "global_step", "session_run_index", "executor_step_index", "input_names",
     "output_names", "target_nodes"
 ])
-
-
-def _extract_core_metadata_from_event_proto(event):
-    json_metadata = json.loads(event.log_message.message)
-    return _CoreMetadata(json_metadata["global_step"],
-                         json_metadata["session_run_index"],
-                         json_metadata["executor_step_index"],
-                         json_metadata["input_names"],
-                         json_metadata["output_names"],
-                         json_metadata["target_nodes"])
-
 
 def as_text(bytes_or_text, encoding='utf-8'):
     """Returns the given argument as a unicode string.
@@ -302,7 +258,7 @@ class DebugTensorDatum(object):
 
         return load_tensor_from_event_file(self.file_path)
 
-    # TODO(cais): Add time unit suffix to timestamp and t0 (us).
+    # TODO(cais): Add time unit suffix to timestamp and ts0 (us).
     @property
     def timestamp(self):
         """Timestamp of when this tensor value was dumped.
@@ -413,7 +369,7 @@ class WatchKeyDoesNotExistInDebugDumpDirError(ValueError):
     pass
 
 
-class DebugDumpDir(object):# pylint: disable=too-many-public-methods
+class DebugDumpDir(object):
     """Data set from a debug-dump directory on filesystem.
 
     An instance of `DebugDumpDir` contains all `DebugTensorDatum` instances
@@ -517,11 +473,11 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             lambda: collections.defaultdict(set))
 
         for root, _, files in os.walk(device_root):
-            for file in files:
-                if _is_graph_file(file):
-                    self._dump_graph_file_paths[device_name] = os.path.join(root, file)
+            for dump_file in files:
+                if _is_graph_file(dump_file):
+                    self._dump_graph_file_paths[device_name] = os.path.join(root, dump_file)
                 else:
-                    datum = self._dump_file_name_to_datum(root, file)
+                    datum = self._dump_file_name_to_datum(root, dump_file)
                     self._dump_tensor_data[device_name].append(datum)
                     self._debug_watches[device_name][datum.node_name][
                         datum.output_slot].add(datum.debug_op)
@@ -537,7 +493,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
 
     def _calculate_t0(self):
         """Calculate the first timestamp across all devices."""
-        t0s = [t0 for t0 in six.itervalues(self._t0s) if t0 is not None]
+        t0s = [ts0 for ts0 in six.itervalues(self._t0s) if ts0 is not None]
         self._t0 = min(t0s) if t0s else None
 
     def _load_core_metadata(self):
@@ -556,7 +512,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._run_outputs_info = []
         for outputs_info_file in outputs_info_files:
             self._run_outputs_info.append(
-                _load_log_message_from_event_file(outputs_info_file))
+                _load_log_msg_from_evt_file(outputs_info_file))
 
     def _load_inputs_info(self):
         inputs_info_files = _glob(os.path.join(
@@ -564,7 +520,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._run_input_keys_info = []
         for inputs_info_file in inputs_info_files:
             self._run_input_keys_info.append(
-                _load_log_message_from_event_file(inputs_info_file))
+                _load_log_msg_from_evt_file(inputs_info_file))
 
     def _dump_file_name_to_datum(self, dir_name, file_name):
         """Obtain a DebugTensorDatum from the directory and file name.
@@ -587,7 +543,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
 
         Create a map from watch key (tensor name + debug op) to `DebugTensorDatum`
         item. Also make a map from watch key to relative timestamp.
-        "relative" means (absolute timestamp - t0).
+        "relative" means (absolute timestamp - ts0).
 
         Args:
           device_name: (str) name of the device.
@@ -689,7 +645,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         return sorted(data, key=lambda x: x.extended_timestamp)
 
     @property
-    def t0(self):
+    def ts0(self):
         """Absolute timestamp of the first dumped tensor across all devices.
 
         Returns:
@@ -727,10 +683,10 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         """
 
         if partition_graphs:
-            partition_graphs_and_device_names = [
+            partition_graphs_dev_names = [
                 (partition_graph, None) for partition_graph in partition_graphs]
         else:
-            partition_graphs_and_device_names = []
+            partition_graphs_dev_names = []
             for device_name in self._device_names:
                 partition_graph = None
                 if device_name in self._dump_graph_file_paths:
@@ -741,12 +697,12 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                     partition_graph = _find_partition_graph(partition_graphs,
                                                             device_name)
                 if partition_graph:
-                    partition_graphs_and_device_names.append((partition_graph,
-                                                              device_name))
+                    partition_graphs_dev_names.append((partition_graph,
+                                                       device_name))
                 else:
                     print("Failed to load partition graphs from disk.")
 
-        for partition_graph, maybe_device_name in partition_graphs_and_device_names:
+        for partition_graph, maybe_device_name in partition_graphs_dev_names:
             debug_graph = debug_graphs.DebugGraph(partition_graph,
                                                   device_name=maybe_device_name)
             self._debug_graphs[debug_graph.device_name] = debug_graph
@@ -1491,7 +1447,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                            device_name=None):
         """Get the relative timestamp from for a debug-dumped tensor.
 
-        Relative timestamp means (absolute timestamp - `t0`), where `t0` is the
+        Relative timestamp means (absolute timestamp - `ts0`), where `ts0` is the
         absolute timestamp of the first dumped tensor in the dump root. The tensor
         may be dumped multiple times in the dump root directory, so a list of
         relative timestamps (`numpy.ndarray`) is returned.
@@ -1518,7 +1474,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             raise WatchKeyDoesNotExistInDebugDumpDirError(
                 "Watch key \"%s\" does not exist in the debug dump" % watch_key)
 
-        # TODO(cais): Figure out whether this should be relative to the global t0.
+        # TODO(cais): Figure out whether this should be relative to the global ts0.
         return self._watch_key_to_rel_time[device_name][watch_key]
 
     def get_dump_sizes_bytes(self,

@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals
 """Shared functions and classes for tvmdbg command-line interface."""
 from __future__ import absolute_import
 from __future__ import division
@@ -102,7 +100,7 @@ def parse_ranges_highlight(ranges_string):
 
     Args:
       ranges_string: (str) A string representing a numerical range of a list of
-        numerical ranges. See the help info of the -r flag of the print_tensor
+        numerical ranges. See the help info of the -r flag of the view_tensor
         command for more details.
 
     Returns:
@@ -134,8 +132,7 @@ def parse_ranges_highlight(ranges_string):
             ranges_filter, description=ranges_string)
     return None
 
-
-def numpy_printoptions_from_screen_info(screen_info):
+def get_np_printoptions_frm_scr(screen_info):
     """Retreive np.set_printoptions() to set the text format for display numpy ndarrays.
 
     Args:
@@ -200,7 +197,7 @@ def format_tensor(tensor,
         line = debugger_cli_common.RichLine("Saved value to: ")
         line += debugger_cli_common.RichLine(write_path, font_attr="bold")
         line += " (%sB)" % bytes_to_readable_str(os.stat(write_path).st_size)
-        auxiliary_message = debugger_cli_common.rich_text_lines_from_rich_line_list(
+        auxiliary_message = debugger_cli_common.rich_text_lines_frm_line_list(
             [line, debugger_cli_common.RichLine("")])
 
     if print_all:
@@ -229,7 +226,7 @@ def error(msg):
         for screen output.
     """
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list([
+    return debugger_cli_common.rich_text_lines_frm_line_list([
         RL("ERROR: " + msg, COLOR_RED)])
 
 
@@ -258,35 +255,21 @@ def _recommend_command(command, description, indent=2, create_link=False):
     lines = [RL(indent_str) + RL(command, font_attr) + ":",
              indent_str + "   " + description]
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
 
 def get_tvmdbg_logo():
     """Make an ASCII representation of the tvmdbg logo."""
 
-    lines = [
-        RL(" ",COLOR_GRAY)
-    ]
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@                                                          @@@  @@@            @@@@        ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@                                                          @@@  @@@          @@@@@@@@@@@   ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@@@@@@@  @@@         @@@  @@@   @@@        @@@             @@@  @@@         @@     @@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@   ",COLOR_BLUE)+ RL("@@@@@      ",COLOR_GRAY) + RL("@@@@@@@@@   @@@        @@@  @@@@@@@@@@@@@@@@@@@@@@@          @@@  @@@         @@     @@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@@@            ",COLOR_BLUE) + RL("@@@          @@@      @@@   @@@@@   @@@@@@@@   @@@@@    @@@@ @@@  @@@ @@@@    @@@@@@@@@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@@@@@@@@@@@    ",COLOR_BLUE) + RL("@@@          @@@      @@@   @@@@      @@@@@      @@@  @@@@@@@@@@  @@@@@@@@@     @@@@@        ",COLOR_GRAY))
-    lines.append(RL("        @@@@@@@@@@@    ",COLOR_BLUE) + RL("@@@           @@@    @@@    @@@        @@@       @@@  @@@    @@@  @@@    @@@  @@             ",COLOR_GRAY))
-    lines.append(RL("  @@@@@",COLOR_GRAY)+ RL("   @@@@@@@@@    ",COLOR_BLUE) + RL("@@@           @@@    @@@    @@@        @@@       @@@  @@@    @@@  @@@    @@@    @@@@@@@@@    ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL("@@@@           @@@  @@@     @@@        @@@       @@@  @@@    @@@  @@@    @@@   @@        @@  ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL("@@@@@@@@@       @@@@@@      @@@        @@@       @@@  @@@@@@@@@@  @@@@@@@@@    @@@@@@@@@@@   ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL(" @@@@@@@@        @@@@       @@@        @@@       @@@    @@@@ @@@  @@@ @@@@      @@@@@@@@@    ",COLOR_GRAY))
-    lines.append(RL(" ",COLOR_GRAY))
-
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    lines = []
+    return debugger_cli_common.RichTextLines(lines)
 
 
-_HORIZONTAL_BAR = "--------------------------------------------------------------------------------------------------------------------"
+_HORIZONTAL_BAR = " ======================================"
 
 
 def get_run_start_intro(run_call_count,
+                        graph_node_count,
                         outputs,
                         input_dict,
                         tensor_filters,
@@ -323,83 +306,50 @@ def get_run_start_intro(run_call_count,
             # Surround the name string with quotes, because input_key_name may contain
             # spaces in some cases, e.g., SparseTensors.
             input_dict_lines.append(input_dict_line)
-    input_dict_lines = debugger_cli_common.rich_text_lines_from_rich_line_list(
+    input_dict_lines = debugger_cli_common.rich_text_lines_frm_line_list(
         input_dict_lines)
 
     out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
-    if is_callable_runner:
-        out.append(" Running a runner returned by GraphRuntime.make_callable()")
-    else:
-        out.append(" GraphRuntime.run() call #%d:" % run_call_count)
-        out.append("")
-        out.append(" Output:")
-        out.extend(debugger_cli_common.RichTextLines(
-            ["   " + line for line in output_lines]))
-        out.append("")
-        out.append(" Inputs:")
-        out.extend(input_dict_lines)
-    out.append(_HORIZONTAL_BAR)
     out.append("")
-    out.append(" Select one of the following commands to proceed ---->")
+    out.append("")
+    out.append(" Choose any of the below option to continue...")
+    out.append(" ---------------------------------------------")
 
     out.extend(
         _recommend_command(
             "run",
-            "Execute the run() call with debug tensor-watching",
+            "Run the NNVM graph with debug",
             create_link=True))
     out.extend(
         _recommend_command(
-            "run -n",
-            "Execute the run() call without debug tensor-watching",
+            "run -nodebug",
+            "Run the NNVM graph without debug",
             create_link=True))
-    out.extend(
-        _recommend_command(
-            "run -t <T>",
-            "Execute run() calls (T - 1) times without debugging, then "
-            "execute run() once more with debugging and drop back to the CLI"))
-    # TODO(Pariksheet): Python run -f <filter_name> implementation not support now.
-    #out.extend(
-    #    _recommend_command(
-    #        "run -f <filter_name>",
-    #        "Keep executing run() calls until a dumped tensor passes a given, "
-    #        "registered filter (conditional breakpoint mode)"))
-
-    #more_lines = ["    Registered filter(s):"]
-    #if tensor_filters:
-    #    filter_names = []
-    #    for filter_name in tensor_filters:
-    #        filter_names.append(filter_name)
-    #        command_menu_node = debugger_cli_common.MenuItem(
-    #            "", "run -f %s" % filter_name)
-    #        more_lines.append(RL("        * ") + RL(filter_name, command_menu_node))
-    #else:
-    #    more_lines.append("        (None)")
-
-    #out.extend(
-    #    debugger_cli_common.rich_text_lines_from_rich_line_list(more_lines))
-
-    # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-    #out.extend(
-    #    _recommend_command(
-    #        "invoke_stepper",
-    #        "Use the node-stepper interface, which allows you to interactively "
-    #        "step through nodes involved in the graph run() call and "
-    #        "inspect/modify their values", create_link=True))
 
     out.append("")
-
-    out.append_rich_line(RL("For more details, see ") +
-                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
-                         ".")
-    out.append("")
+    out.append(_HORIZONTAL_BAR)
+    if is_callable_runner:
+        out.append(" Running a runner returned by GraphRuntime.make_callable()")
+    else:
+        out.append("")
+        out.append(" TVM Graph details")# % run_call_count)
+        out.append(" -----------------")
+        out.append("")
+        out.append(" Node count:")
+        out.append("  " + str(graph_node_count))
+        out.append("")
+        out.append(" Input(s):")
+        out.extend(input_dict_lines)
+        out.append("")
+        out.append(" Output(s):")
+        out.extend(debugger_cli_common.RichTextLines(
+            ["  " + line for line in output_lines]))
+        out.append("")
+    out.append(_HORIZONTAL_BAR)
 
     # Make main menu for the run-start intro.
     menu = debugger_cli_common.Menu()
     menu.append(debugger_cli_common.MenuItem("run", "run"))
-    # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-    #menu.append(debugger_cli_common.MenuItem(
-    #    "invoke_stepper", "invoke_stepper"))
-    #menu.append(debugger_cli_common.MenuItem("exit", "exit"))
     out.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
     return out
@@ -473,7 +423,7 @@ def get_error_intro(tvm_error):
         "You may use the following commands to debug:",
     ]
 
-    out = debugger_cli_common.rich_text_lines_from_rich_line_list(intro_lines)
+    out = debugger_cli_common.rich_text_lines_frm_line_list(intro_lines)
 
     out.extend(
         _recommend_command("ni -a -d -t %s" % op_name,

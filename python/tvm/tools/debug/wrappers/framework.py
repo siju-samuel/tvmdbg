@@ -1,16 +1,8 @@
-# coding: utf-8
-# pylint: disable=fixme, too-few-public-methods, too-many-instance-attributes, too-many-arguments, invalid-name, too-many-public-methods, too-many-branches
 """Framework of debug wrapper sessions."""
 from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import abc
-import re
-import threading
 
-#from tvm.tools.debug.util import debug_utils
-from tvm.tools.debug.util import stepper
 from tvm.tools.debug.util import common
 
 # Helper function.
@@ -43,7 +35,6 @@ class OnSessionInitRequest(object):
           sess: A TVM Session object.
         """
 
-        # _check_type(sess, (session.BaseSession, monitored_session.MonitoredSession))
         self.session = sess
 
 
@@ -121,7 +112,7 @@ class OnRunStartResponse(object):
                  node_name_regex_whitelist=None,
                  op_type_regex_whitelist=None,
                  tensor_dtype_regex_whitelist=None,
-                 tolerate_debug_op_creation_failures=False):
+                 tolerate_dbg_op_failures=False):
         """Constructor of `OnRunStartResponse`.
 
         Args:
@@ -136,7 +127,7 @@ class OnRunStartResponse(object):
           op_type_regex_whitelist: Regular-expression whitelist for op type.
           tensor_dtype_regex_whitelist: Regular-expression whitelist for tensor
             dtype.
-          tolerate_debug_op_creation_failures: Whether debug op creation failures
+          tolerate_dbg_op_failures: Whether debug op creation failures
             are to be tolerated.
         """
 
@@ -151,9 +142,7 @@ class OnRunStartResponse(object):
         self.node_name_regex_whitelist = node_name_regex_whitelist
         self.op_type_regex_whitelist = op_type_regex_whitelist
         self.tensor_dtype_regex_whitelist = tensor_dtype_regex_whitelist
-        self.tolerate_debug_op_creation_failures = (
-            tolerate_debug_op_creation_failures)
-
+        self.tolerate_dbg_op_failures = (tolerate_dbg_op_failures)
 
 class OnRunEndRequest(object):
     """Request to an on-run-end callback.
@@ -189,8 +178,22 @@ class OnRunEndResponse(object):
         # Currently only a placeholder.
         pass
 
+
 class CLIRunCommand(object):
+    """Run command created based on the CLI user input.
+
+    Contain the CLI user input and other parameters to invoke graph runtime run
+    and trigger back the CLI on run end to handle the output.
+    """
+
     def __init__(self, run_start_resp, metadata):
+        """Constructor of CLIRunCommand.
+
+        Args:
+          run_start_resp: Run start is depend on the action triggered from the CLI.
+          RUN output also depend on the action saved in 'run_start_resp'.
+          metadata: Same as meta data argument
+        """
         self._run_metadata = metadata
         self._run_start_resp = run_start_resp
 
@@ -200,15 +203,13 @@ class CLIRunCommand(object):
     def get_run_start_resp(self):
         return self._run_start_resp
 
-class BaseDebugWrapperModule():
+
+class BaseDebugWrapperModule(object):
     """Base class of debug-wrapper session classes.
 
     Concrete classes that inherit from this class need to implement the abstract
     methods such as on_session_init, on_run_start and on_run_end.
     """
-
-    # TODO(cais): Add on_cont_start and on_cont_end callbacks once the stepper is
-    # is available.
 
     def __init__(self, sess, graph, ctx=None, thread_name_filter=None,
                  pass_through_operrors=False):
@@ -234,8 +235,6 @@ class BaseDebugWrapperModule():
         self._input_dict = {}
         self._graph = graph
         self._ctx = ctx
-
-        # _check_type(sess, (session.BaseSession, monitored_session.MonitoredSession))
 
         # The session being wrapped.
         self._sess = sess
@@ -265,8 +264,6 @@ class BaseDebugWrapperModule():
             raise ValueError(
                 "Invalid OnSessionInitAction value: %s" % response.action)
 
-        self._default_session_context_manager = None
-
     def set_ouputs(self, name):
         """Set the output Name which used to access from runtime.
 
@@ -295,10 +292,22 @@ class BaseDebugWrapperModule():
             self._dump_folder = folder_name
         return self._dump_folder
 
-    def run_end(self, run_cli_session, retvals):
-        run_start_resp = run_cli_session.get_run_start_resp()
+    def run_end(self, cli_command, retvals):
+        """Notify CLI that the graph runtime is completed the task and output
+        is ready access from CLI.
+
+        Args:
+          cli_command: CLI command is created by the CLI wrapper before invoking
+          graph runtime.
+          retvals: graph runtime return value.
+
+        Returns:
+          None
+        """
+        retvals = retvals
+        run_start_resp = cli_command.get_run_start_resp()
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
-            run_metadata = run_cli_session.get_run_metadata()
+            run_metadata = cli_command.get_run_metadata()
             run_end_req = OnRunEndRequest(
                 run_start_resp.action,
                 run_metadata=run_metadata)
@@ -308,14 +317,12 @@ class BaseDebugWrapperModule():
             # Currently run_end_resp is only a placeholder. No action is taken on it.
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
             run_end_req = OnRunEndRequest(run_start_resp.action)
-        return retvals
 
     def get_run_command(self,
-            outputs=None,
-            options=None,
-            run_metadata=None,
-            callable_runner=None,
-            callable_runner_args=None):
+                        outputs=None,
+                        options=None,
+                        run_metadata=None,
+                        callable_runner=None):
         """Wrapper around Session.run() that inserts tensor watch options.
 
         Args:
@@ -324,7 +331,6 @@ class BaseDebugWrapperModule():
           run_metadata: Same as the `run_metadata` arg to regular `Session.run()`.
           callable_runner: A `callable` returned by `Session.make_callable()`.
             If not `None`, `outputs` and `input_dict` must both be `None`.
-          callable_runner_args: An optional list of arguments to `callable_runner`.
 
         Returns:
           Simply forwards the output of the wrapped `Session.run()` call.
@@ -406,7 +412,7 @@ class BaseDebugWrapperModule():
         Returns:
           An instance of `OnRunStartResponse`, carrying information to
             1) direct the wrapper session to perform a specified action (e.g., run
-              with or without debug tensor watching, invoking the stepper.)
+              with or without debug tensor watching.)
             2) debug URLs used to watch the tensors.
         """
 

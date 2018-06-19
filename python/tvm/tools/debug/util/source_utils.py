@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=invalid-name, too-many-arguments, too-many-branches, too-many-locals
 """Classes and functions that help to inspect Python source w.r.t. TVM graphs."""
 
 from __future__ import absolute_import
@@ -11,8 +9,6 @@ import os
 import re
 
 import numpy as np
-
-from tvm.tools.debug.util import profiling
 
 _TVM_BASEDIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.dirname(
@@ -26,17 +22,17 @@ def _norm_abs_path(file_path):
     return os.path.normpath(os.path.abspath(file_path))
 
 
-def _is_extension_uncompiled_python_source(file_path):
+def _is_extension_uncompiled(file_path):
     _, extension = os.path.splitext(file_path)
     return extension.lower() in UNCOMPILED_SOURCE_SUFFIXES
 
 
-def _is_extension_compiled_python_source(file_path):
+def _is_extension_compiled(file_path):
     _, extension = os.path.splitext(file_path)
     return extension.lower() in COMPILED_SOURCE_SUFFIXES
 
 
-def _convert_watch_key_to_tensor_name(watch_key):
+def _cvrt_watch_key_to_tensor(watch_key):
     return watch_key[:watch_key.rfind(":")]
 
 
@@ -57,8 +53,8 @@ def guess_is_tvm_py_library(py_file_path):
       ValueError: if the extension name of py_file_path does not indicate a Python
         source file (compiled or uncomplied).
     """
-    if (not _is_extension_uncompiled_python_source(py_file_path) and
-            not _is_extension_compiled_python_source(py_file_path)):
+    if (not _is_extension_uncompiled(py_file_path) and
+            not _is_extension_compiled(py_file_path)):
         raise ValueError(
             "Input file path (%s) is not a Python source file." % py_file_path)
     py_file_path = _norm_abs_path(py_file_path)
@@ -79,8 +75,8 @@ def load_source(source_file_path):
       1. Content of source file splitted by line.
       2. Source content line width
     """
-    with open(source_file_path, "rU") as fo:
-        source_text = fo.read()
+    with open(source_file_path, "rU") as fopen:
+        source_text = fopen.read()
     source_lines = source_text.split("\n")
     line_num_width = int(np.ceil(np.log10(len(source_lines)))) + 3
     return source_lines, line_num_width
@@ -138,7 +134,7 @@ def annotate_source(dump,
                 watch_keys = dump.debug_watch_keys(op.name)
                 # Convert watch keys to unique Tensor names.
                 items_to_append = list(
-                    set(map(_convert_watch_key_to_tensor_name, watch_keys)))
+                    set(map(_cvrt_watch_key_to_tensor, watch_keys)))
             else:
                 items_to_append = [op.name]
 
@@ -251,61 +247,3 @@ def list_source_files_against_dump(dump,
             path_to_first_line[file_path]))
 
     return sorted(output, key=lambda x: x[0])
-
-
-def annotate_source_against_profile(profile_data,
-                                    source_file_path,
-                                    node_name_filter=None,
-                                    op_type_filter=None,
-                                    min_line=None,
-                                    max_line=None):
-    """Annotate a Python source file with profiling information at each line.
-
-    (The annotation doesn't change the source file itself.)
-
-    Args:
-      profile_data: (`list` of `ProfileDatum`) A list of `ProfileDatum`.
-      source_file_path: (`str`) Path to the source file being annotated.
-      node_name_filter: Regular expression to filter by node name.
-      op_type_filter: Regular expression to filter by op type.
-      min_line: (`None` or `int`) The 1-based line to start annotate the source
-        file from (inclusive).
-      max_line: (`None` or `int`) The 1-based line number to end the annotation
-        at (exclusive).
-
-    Returns:
-      A `dict` mapping 1-based line number to a the namedtuple
-        `profiling.LineOrFuncProfileSummary`.
-    """
-
-    source_file_path = _norm_abs_path(source_file_path)
-
-    node_name_regex = re.compile(node_name_filter) if node_name_filter else None
-    op_type_regex = re.compile(op_type_filter) if op_type_filter else None
-
-    line_to_profile_summary = {}
-    for profile_datum in profile_data:
-        if not profile_datum.file_path:
-            continue
-
-        if _norm_abs_path(profile_datum.file_path) != source_file_path:
-            continue
-
-        if (min_line is not None and profile_datum.line_number < min_line or
-                max_line is not None and profile_datum.line_number >= max_line):
-            continue
-
-        if (node_name_regex and
-                not node_name_regex.match(profile_datum.node_exec_stats.node_name)):
-            continue
-
-        if op_type_regex and not op_type_regex.match(profile_datum.op_type):
-            continue
-
-        if profile_datum.line_number not in line_to_profile_summary:
-            line_to_profile_summary[profile_datum.line_number] = (
-                profiling.AggregateProfile(profile_datum))
-        else:
-            line_to_profile_summary[profile_datum.line_number].add(profile_datum)
-
-    return line_to_profile_summary

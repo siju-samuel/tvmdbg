@@ -140,7 +140,7 @@ class CLIConfig(object):
             line += RL(": ")
             line += RL(str(val), font_attr=highlight_attr)
             lines.append(line)
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
     def _load_from_file(self):
         try:
@@ -152,5 +152,5 @@ class CLIConfig(object):
                 return config
         except (IOError, ValueError):
             # The reading of the config file may fail due to IO issues or file
-            # corruption. We do not want tfdbg to error out just because of that.
+            # corruption. We do not want tvmdbg to error out just because of that.
             return dict()

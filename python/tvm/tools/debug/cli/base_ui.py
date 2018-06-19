@@ -42,16 +42,16 @@ def _analyze_tab_complete_input(text):
 
     Returns:
       context: (str) the context str. For example,
-        If text == "print_tensor softmax", returns "print_tensor".
+        If text == "view_tensor softmax", returns "view_tensor".
         If text == "print", returns "".
         If text == "", returns "".
       prefix: (str) the prefix to be tab-completed, from the last word.
-        For example, if text == "print_tensor softmax", returns "softmax".
+        For example, if text == "view_tensor softmax", returns "softmax".
         If text == "print", returns "print".
         If text == "", returns "".
       except_last_word: (str) the input text, except the last word.
-        For example, if text == "print_tensor softmax", returns "print_tensor".
-        If text == "print_tensor -a softmax", returns "print_tensor -a".
+        For example, if text == "view_tensor softmax", returns "view_tensor".
+        If text == "view_tensor -a softmax", returns "view_tensor -a".
         If text == "print", returns "".
         If text == "", returns "".
     """

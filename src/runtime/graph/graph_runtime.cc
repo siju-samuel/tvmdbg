@@ -69,7 +69,7 @@ class GraphRuntime : public ModuleNode {
     for (size_t i = 0; i < op_execs_.size(); ++i) {
       if (op_execs_[i]) op_execs_[i]();
       gettimeofday(&tp, NULL);
-      int64_t mstime = int64_t(tp.tv_sec * 1000L + tp.tv_usec / 1000);
+      int64_t mstime = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
       size_t num_outputs = (nodes_[i].op_type == "null") ? 1: nodes_[i].param.num_outputs;
       for (size_t j = 0; j < num_outputs; j++) {
           uint32_t eid = this->entry_id(i, j);

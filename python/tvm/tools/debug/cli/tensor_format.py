@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, no-member,consider-using-enumerate
 """Format tensors (ndarrays) for screen display and navigation."""
 from __future__ import absolute_import
 from __future__ import division
@@ -9,10 +7,12 @@ import copy
 import re
 
 import numpy as np
-from six.moves import xrange  # pylint: disable=redefined-builtin
-
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.util import debug_data
+
+import six
+if six.PY3:
+    xrange=range
 
 _NUMPY_OMISSION = "...,"
 _NUMPY_DEFAULT_EDGE_ITEMS = 3
@@ -25,7 +25,7 @@ OMITTED_INDICES_KEY = "omitted"
 DEFAULT_TENSOR_ELEMENT_HIGHLIGHT_FONT_ATTR = "bold"
 
 
-class HighlightOptions(object):  # pylint: disable=too-few-public-methods
+class HighlightOptions(object):
     """Options for highlighting elements of a tensor."""
 
     def __init__(self,
@@ -96,14 +96,14 @@ def format_tensor(tensor,
         suffix = tensor_label.split(":")[-1]
         if suffix.isdigit():
             # Suffix is a number. Assume it is the output slot index.
-            font_attr_segs[0] = [(8, 8 + len(tensor_label), "bold")]
+            font_attr_segs[0] = [(8, 8 + len(tensor_label), "blue")]
         else:
             # Suffix is not a number. It is auxiliary information such as the debug
             # op type. In this case, highlight the suffix with a different color.
             debug_op_len = len(suffix)
             proper_len = len(tensor_label) - debug_op_len - 1
             font_attr_segs[0] = [
-                (8, 8 + proper_len, "bold"),
+                (8, 8 + proper_len, "blue"),
                 (8 + proper_len + 1, 8 + proper_len + 1 + debug_op_len, "yellow")
             ]
 
@@ -514,7 +514,7 @@ def numeric_summary(tensor):
             key_line += total_key_str + " |"
             val_line += total_val_str + " |"
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(
+        return debugger_cli_common.rich_text_lines_frm_line_list(
             [key_line, val_line])
 
     if not isinstance(tensor, np.ndarray) or not np.size(tensor):
@@ -549,6 +549,5 @@ def numeric_summary(tensor):
             ("False", np.sum(tensor == 0)),
             ("True", np.sum(tensor > 0)), ]
         return _counts_summary(counts, total_count=np.size(tensor))
-    else:
-        return debugger_cli_common.RichTextLines([
-            "No numeric summary available due to tensor dtype: %s." % tensor.dtype])
+    return debugger_cli_common.RichTextLines([
+        "No numeric summary available due to tensor dtype: %s." % tensor.dtype])

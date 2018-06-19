@@ -1,13 +1,9 @@
-# coding: utf-8
-# pylint: disable=fixme
 """Library for arbitrary expression evaluation based on a debugger data dump."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import re
-
-import numpy as np  # pylint: disable=unused-import
 
 from tvm.tools.debug.util import debug_data
 
@@ -20,7 +16,6 @@ _DEFAULT_DEBUG_OP = "DebugIdentity"
 
 
 def _parse_debug_tensor_name(debug_tensor_name):
-    # pylint: disable=line-too-long
     """Parse a debug tensor name in a to-be-evaluated expression.
 
     Args:
@@ -53,7 +48,6 @@ def _parse_debug_tensor_name(debug_tensor_name):
     Raises:
       ValueError: If the input `debug_tensor_name` is malformed.
     """
-    # pylint: enable=line-too-long
     device_prefix_match = re.match(_DEVICE_NAME_PREFIX_PATTERN, debug_tensor_name)
     if device_prefix_match:
         device_name = debug_tensor_name[
@@ -91,7 +85,7 @@ def _parse_debug_tensor_name(debug_tensor_name):
     return device_name, node_name, output_slot, debug_op, exec_index
 
 
-class ExpressionEvaluator(object):  # pylint: disable=too-few-public-methods
+class ExpressionEvaluator(object):
     """Evaluates Python expressions using debug tensor values from a dump."""
 
     def __init__(self, dump):

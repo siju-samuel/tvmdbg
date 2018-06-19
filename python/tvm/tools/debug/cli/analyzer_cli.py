@@ -1,11 +1,8 @@
-# coding: utf-8
-# pylint: disable=fixme, invalid-name, protected-access, too-many-arguments, too-many-lines, consider-using-enumerate, too-many-locals, too-many-branches, too-many-statements
+# pylint: disable=too-many-lines
 """CLI Backend for the Analyzer Part of the Debugger.
 
 The analyzer performs post hoc analysis of dumped intermediate tensors and
 graph structure information from debugged GraphRuntime.debug_run() calls.
-
-The other part of the debugger is the stepper (c.f. stepper_cli.py).
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -13,9 +10,8 @@ from __future__ import print_function
 
 import argparse
 import copy
+import curses
 import re
-
-from six.moves import xrange  # pylint: disable=redefined-builtin
 
 from tvm.tools.debug.cli import cli_config
 from tvm.tools.debug.cli import cli_shared
@@ -25,6 +21,10 @@ from tvm.tools.debug.cli import evaluator
 from tvm.tools.debug.cli import ui_factory
 from tvm.tools.debug.util import debug_graphs
 from tvm.tools.debug.util import source_utils
+
+import six
+if six.PY3:
+    xrange=range
 
 RL = debugger_cli_common.RichLine
 
@@ -52,64 +52,64 @@ SORT_TENSORS_BY_TENSOR_NAME = "tensor_name"
 
 def _add_main_menu(output,
                    node_name=None,
-                   enable_list_tensors=True,
-                   enable_node_info=True,
-                   enable_print_tensor=True,
-                   enable_list_inputs=True,
-                   enable_list_outputs=True):
+                   enable_list_graphnodes=True,
+                   enable_node_details=True,
+                   enable_view_tensor=True,
+                   enable_graphnode_inputs=True,
+                   enable_graphnode_outputs=True):
     """Generate main menu for the screen output from a command.
 
     Args:
       output: (debugger_cli_common.RichTextLines) the output object to modify.
       node_name: (str or None) name of the node involved (if any). If None,
-        the menu items node_info, list_inputs and list_outputs will be
+        the menu items node_details, graphnode_inputs and graphnode_outputs will be
         automatically disabled, overriding the values of arguments
-        enable_node_info, enable_list_inputs and enable_list_outputs.
-      enable_list_tensors: (bool) whether the list_tensor menu item will be
+        enable_node_details, enable_graphnode_inputs and enable_graphnode_outputs.
+      enable_list_graphnodes: (bool) whether the list_tensor menu item will be
         enabled.
-      enable_node_info: (bool) whether the node_info item will be enabled.
-      enable_print_tensor: (bool) whether the print_tensor item will be enabled.
-      enable_list_inputs: (bool) whether the item list_inputs will be enabled.
-      enable_list_outputs: (bool) whether the item list_outputs will be enabled.
+      enable_node_details: (bool) whether the node_details item will be enabled.
+      enable_view_tensor: (bool) whether the view_tensor item will be enabled.
+      enable_graphnode_inputs: (bool) whether the item graphnode_inputs will be enabled.
+      enable_graphnode_outputs: (bool) whether the item graphnode_outputs will be enabled.
     """
 
     menu = debugger_cli_common.Menu()
 
     menu.append(
         debugger_cli_common.MenuItem(
-            "list_tensors", "list_tensors", enabled=enable_list_tensors))
+            "list_graphnodes", "list_graphnodes", enabled=enable_list_graphnodes))
 
     if node_name:
         menu.append(
             debugger_cli_common.MenuItem(
-                "node_info",
-                "node_info -a -d -t %s" % node_name,
-                enabled=enable_node_info))
+                "node_details",
+                "node_details -a -d -t %s" % node_name,
+                enabled=enable_node_details))
         menu.append(
             debugger_cli_common.MenuItem(
-                "print_tensor",
-                "print_tensor %s" % node_name,
-                enabled=enable_print_tensor))
+                "view_tensor",
+                "view_tensor %s" % node_name,
+                enabled=enable_view_tensor))
         menu.append(
             debugger_cli_common.MenuItem(
-                "list_inputs",
-                "list_inputs -c -r %s" % node_name,
-                enabled=enable_list_inputs))
+                "graphnode_inputs",
+                "graphnode_inputs -c -r %s" % node_name,
+                enabled=enable_graphnode_inputs))
         menu.append(
             debugger_cli_common.MenuItem(
-                "list_outputs",
-                "list_outputs -c -r %s" % node_name,
-                enabled=enable_list_outputs))
+                "graphnode_outputs",
+                "graphnode_outputs -c -r %s" % node_name,
+                enabled=enable_graphnode_outputs))
     else:
         menu.append(
             debugger_cli_common.MenuItem(
-                "node_info", None, enabled=False))
+                "node_details", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("print_tensor", None, enabled=False))
+            debugger_cli_common.MenuItem("view_tensor", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("list_inputs", None, enabled=False))
+            debugger_cli_common.MenuItem("graphnode_inputs", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("list_outputs", None, enabled=False))
+            debugger_cli_common.MenuItem("graphnode_outputs", None, enabled=False))
 
     #menu.append(
     #    debugger_cli_common.MenuItem("home", "home"))
@@ -119,9 +119,9 @@ def _add_main_menu(output,
     output.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
 
-def _reconstruct_print_source_command(parsed,
-                                      line_begin,
-                                      max_elements_per_line_increase=0):
+def _reconstruct_print_src_cmd(parsed,
+                               line_begin,
+                               max_elements_per_line_increase=0):
     return "ps %s %s -b %d -m %d" % (
         parsed.source_file_path, "-t" if parsed.tensors else "", line_begin,
         parsed.max_elements_per_line + max_elements_per_line_increase)
@@ -157,7 +157,7 @@ def _make_source_table(source_list, is_tvm_py_library):
     if not source_list:
         lines.append(RL("[No files.]"))
         lines.append(RL())
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
     path_column_width = max(
         max([len(item[0]) for item in source_list]), len(path_head)) + 1
@@ -197,18 +197,18 @@ def _make_source_table(source_list, is_tvm_py_library):
         lines.append(line)
     lines.append(RL())
 
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
 
 class DebugAnalyzer(object):
     """Analyzer for debug data from dump directories."""
 
-    _TIMESTAMP_COLUMN_HEAD = "t (ms)"
+    _TIMESTAMP_COLUMN_HEAD = "Time (us)"
     _DUMP_SIZE_COLUMN_HEAD = "Size (B)"
     _OP_TYPE_COLUMN_HEAD = "Op type"
-    _OP_NUMBER_INPUTS_HEAD = "Input(no)"
-    _OP_NUMBER_OUTPUTS_HEAD = "Output(no)"
-    _TENSOR_NAME_COLUMN_HEAD = "Tensor name"
+    _OP_NUMBER_INPUTS_HEAD = "Input(s)"
+    _OP_NUMBER_OUTPUTS_HEAD = "Output(s)"
+    _TENSOR_NAME_COLUMN_HEAD = "Node name"
 
     def __init__(self, debug_dump, config):
         """DebugAnalyzer constructor.
@@ -243,226 +243,142 @@ class DebugAnalyzer(object):
         # Argument parsers for command handlers.
         self._arg_parsers = {}
 
-        # Parser for list_tensors.
-        ap = argparse.ArgumentParser(
+        # Parser for list_graphnodes.
+        arg_p = argparse.ArgumentParser(
             description="List dumped intermediate tensors.",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "-f",
             "--tensor_filter",
             dest="tensor_filter",
             type=str,
             default="",
             help="List only Tensors passing the filter of the specified name")
-        ap.add_argument(
+        arg_p.add_argument(
             "-n",
             "--node_name_filter",
             dest="node_name_filter",
             type=str,
             default="",
             help="filter node name by regex.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type_filter",
             dest="op_type_filter",
             type=str,
             default="",
             help="filter op type by regex.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-s",
             "--sort_by",
             dest="sort_by",
             type=str,
             default=SORT_TENSORS_BY_TIMESTAMP,
             help=("the field to sort the data by: (%s | %s | %s | %s | %s | %s)" %
-                  (SORT_TENSORS_BY_TIMESTAMP, SORT_TENSORS_BY_DUMP_SIZE,
-                   SORT_TENSORS_BY_OP_TYPE, SORT_TENSORS_BY_INPUT_SIZE,
-                   SORT_TENSORS_BY_OUTPUT_SIZE, SORT_TENSORS_BY_TENSOR_NAME)))
-        ap.add_argument(
+                  (SORT_TENSORS_BY_TENSOR_NAME, SORT_TENSORS_BY_TIMESTAMP,
+                   SORT_TENSORS_BY_DUMP_SIZE,SORT_TENSORS_BY_INPUT_SIZE,
+                   SORT_TENSORS_BY_OUTPUT_SIZE, SORT_TENSORS_BY_OP_TYPE )))
+        arg_p.add_argument(
             "-r",
             "--reverse",
             dest="reverse",
             action="store_true",
             help="sort the data in reverse (descending) order")
-        self._arg_parsers["list_tensors"] = ap
+        self._arg_parsers["list_graphnodes"] = arg_p
 
-        # Parser for node_info.
-        ap = argparse.ArgumentParser(
+        # Parser for node_details.
+        arg_p = argparse.ArgumentParser(
             description="Show information about a node.", usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an associated tensor.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-a",
             "--attributes",
             dest="attributes",
             action="store_true",
             help="Also list attributes of the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--dumps",
             dest="dumps",
             action="store_true",
             help="Also list dumps available from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--traceback",
             dest="traceback",
             action="store_true",
             help="Also include the traceback of the node's creation "
                  "(if available in Python).")
-        self._arg_parsers["node_info"] = ap
+        self._arg_parsers["node_details"] = arg_p
 
-        # Parser for list_inputs.
-        ap = argparse.ArgumentParser(
+        # Parser for graphnode_inputs.
+        arg_p = argparse.ArgumentParser(
             description="Show inputs to a node.", usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an output tensor from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-c", "--control", action="store_true", help="Include control inputs.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
             type=int,
             default=config.get("graph_recursion_depth"),
             help="Maximum depth of recursion used when showing the input tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-r",
             "--recursive",
             dest="recursive",
             action="store_true",
             help="Show inputs to the node recursively, i.e., the input tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type",
             action="store_true",
             help="Show op types of input nodes.")
-        self._arg_parsers["list_inputs"] = ap
+        self._arg_parsers["graphnode_inputs"] = arg_p
 
-        # Parser for list_outputs.
-        ap = argparse.ArgumentParser(
+        # Parser for graphnode_outputs.
+        arg_p = argparse.ArgumentParser(
             description="Show the nodes that receive the outputs of given node.",
             usage=argparse.SUPPRESS)
-        ap.add_argument(
+        arg_p.add_argument(
             "node_name",
             type=str,
             help="Name of the node or an output tensor from the node.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-c", "--control", action="store_true", help="Include control inputs.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
             type=int,
             default=config.get("graph_recursion_depth"),
             help="Maximum depth of recursion used when showing the output tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-r",
             "--recursive",
             dest="recursive",
             action="store_true",
             help="Show recipients of the node recursively, i.e., the output "
                  "tree.")
-        ap.add_argument(
+        arg_p.add_argument(
             "-t",
             "--op_type",
             action="store_true",
             help="Show op types of recipient nodes.")
-        self._arg_parsers["list_outputs"] = ap
+        self._arg_parsers["graphnode_outputs"] = arg_p
 
-        # Parser for print_tensor.
-        self._arg_parsers["print_tensor"] = (
-            command_parser.get_print_tensor_argparser(
+        # Parser for view_tensor.
+        self._arg_parsers["view_tensor"] = (
+            command_parser.get_view_tensor_argparser(
                 "Print the value of a dumped tensor."))
 
-        # Parser for print_source.
-        ap = argparse.ArgumentParser(
-            description="Print a Python source file with overlaid debug "
-                        "information, including the nodes (ops) or Tensors created at the "
-                        "source lines.",
-            usage=argparse.SUPPRESS)
-        ap.add_argument(
-            "source_file_path",
-            type=str,
-            help="Path to the source file.")
-        ap.add_argument(
-            "-t",
-            "--tensors",
-            dest="tensors",
-            action="store_true",
-            help="Label lines with dumped Tensors, instead of ops.")
-        ap.add_argument(
-            "-m",
-            "--max_elements_per_line",
-            type=int,
-            default=10,
-            help="Maximum number of elements (ops or Tensors) to show per source "
-                 "line.")
-        ap.add_argument(
-            "-b",
-            "--line_begin",
-            type=int,
-            default=1,
-            help="Print source beginning at line number (1-based.)")
-        self._arg_parsers["print_source"] = ap
-
-        # Parser for list_source.
-        ap = argparse.ArgumentParser(
-            description="List source files responsible for constructing nodes and "
-                        "tensors present in the run().",
-            usage=argparse.SUPPRESS)
-        ap.add_argument(
-            "-p",
-            "--path_filter",
-            type=str,
-            default="",
-            help="Regular expression filter for file path.")
-        ap.add_argument(
-            "-n",
-            "--node_name_filter",
-            type=str,
-            default="",
-            help="Regular expression filter for node name.")
-        self._arg_parsers["list_source"] = ap
-
-        # Parser for eval.
-        ap = argparse.ArgumentParser(
-            description="""Evaluate an arbitrary expression. Can use tensor values
-        from the current debug dump. The debug tensor names should be enclosed
-        in pairs of backticks. Expressions with spaces should be enclosed in
-        a pair of double quotes or a pair of single quotes. By default, numpy
-        is imported as np and can be used in the expressions.""",
-            usage=argparse.SUPPRESS)
-        ap.add_argument(
-            "expression",
-            type=str,
-            help="""Expression to be evaluated.
-        1) in the simplest case, use <node_name>:<output_slot>.
-
-        2) if the tensor of the same name exists on more than one device, use
-          <device_name>:<node_name>:<output_slot>[:<debug_op>]..
-
-        3) if the tensor is executed multiple times in a given `GraphRuntime.DebugRun`
-        call, specify the execution index with a 0-based integer enclose in a
-        pair of brackets at the end.""")
-        ap.add_argument(
-            "-a",
-            "--all",
-            dest="print_all",
-            action="store_true",
-            help="Print the tensor in its entirety, i.e., do not use ellipses "
-                 "(may be slow for large results).")
-        ap.add_argument(
-            "-w",
-            "--write_path",
-            default="",
-            help="Path of the numpy file to write the evaluation result to, "
-                 "using numpy.save()")
-        self._arg_parsers["eval"] = ap
 
     def add_tensor_filter(self, filter_name, filter_callable):
         """Add a tensor filter.
@@ -532,8 +448,8 @@ class DebugAnalyzer(object):
         """
         return self._arg_parsers[handler_name].format_help()
 
-    def list_tensors(self, args, screen_info=None):
-        """Command handler for list_tensors.
+    def list_graphnodes(self, args, screen_info=None):
+        """Command handler for list_graphnodes.
 
         List tensors dumped during debugged Session.run() call.
 
@@ -551,7 +467,7 @@ class DebugAnalyzer(object):
         # facilitate on-screen highlighting/selection of node names.
         _ = screen_info
 
-        parsed = self._arg_parsers["list_tensors"].parse_args(args)
+        parsed = self._arg_parsers["list_graphnodes"].parse_args(args)
 
         output = []
 
@@ -578,7 +494,7 @@ class DebugAnalyzer(object):
             except ValueError:
                 output = cli_shared.error("There is no tensor filter named \"%s\"." %
                                           parsed.tensor_filter)
-                _add_main_menu(output, node_name=None, enable_list_tensors=False)
+                _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
                 return output
 
             data_to_show = self._debug_dump.find(filter_callable)
@@ -587,17 +503,17 @@ class DebugAnalyzer(object):
 
         # TODO(cais): Implement filter by lambda on tensor value.
 
-        timestamp_width, dump_size_width, op_type_width, no_ip_width, no_op_width = (
-            self._measure_tensor_list_column_widths(data_to_show))
+        ts_width, dump_size_width, op_type_width, no_ip_width, no_op_width, no_tensor_width = (
+            self._measure_tensor_lst_col_width(data_to_show))
 
         # Sort the data.
         data_to_show = self._sort_dump_data_by(
             data_to_show, parsed.sort_by, parsed.reverse)
 
         output.extend(
-            self._tensor_list_column_heads(parsed, timestamp_width,
+            self._tensor_list_column_heads(parsed, ts_width,
                                            dump_size_width, op_type_width,
-                                           no_ip_width, no_op_width))
+                                           no_ip_width, no_op_width, no_tensor_width))
 
         dump_count = 0
         for dump in data_to_show:
@@ -609,35 +525,37 @@ class DebugAnalyzer(object):
                 if not op_type_regex.match(op_type):
                     continue
 
-            rel_time = (dump.timestamp - self._debug_dump.t0) / 1000.0
+            rel_time = (dump.timestamp - self._debug_dump.ts0) / 1000.0
             dump_size_str = cli_shared.bytes_to_readable_str(dump.dump_size_bytes)
             dumped_tensor_name = "%s:%d" % (dump.node_name, dump.output_slot)
             op_type = self._debug_dump.node_op_type(dump.node_name)
             no_ips = str(len(self._debug_dump.node_inputs(dump.node_name)))
             no_ops = str(len(self._debug_dump.node_recipients(dump.node_name)))
 
-            line = "[%.3f]" % rel_time
-            line += " " * (timestamp_width - len(line))
+            line = dumped_tensor_name
+            line += " " * (no_tensor_width - len(line))
+
+            line += "%.3f" % rel_time
+            line += " " * (no_tensor_width + ts_width - len(line))
             line += dump_size_str
-            line += " " * (timestamp_width + dump_size_width - len(line))
-            line += op_type
-            line += " " * (timestamp_width + dump_size_width +
-                           op_type_width - len(line))
+            line += " " * (no_tensor_width + ts_width + dump_size_width - len(line))
 
             line += no_ips
-            line += " " * (no_ip_width + timestamp_width +
-                           dump_size_width + op_type_width - len(line))
+            line += " " * (no_tensor_width + no_ip_width + ts_width +
+                           dump_size_width - len(line))
 
             line += no_ops
-            line += " " * (no_op_width + no_ip_width + timestamp_width +
-                           dump_size_width + op_type_width - len(line))
+            line += " " * (no_tensor_width + no_op_width + no_ip_width + ts_width +
+                           dump_size_width - len(line))
 
-            line += dumped_tensor_name
+            line += op_type
+            line += " " * (no_tensor_width + ts_width + dump_size_width +
+                           no_op_width + no_ip_width + op_type_width - len(line))
 
             output.append(
                 line,
                 font_attr_segs=[(
-                    len(line) - len(dumped_tensor_name), len(line),
+                    0, len(dumped_tensor_name),
                     debugger_cli_common.MenuItem("", "pt %s" % dumped_tensor_name))])
             dump_count += 1
 
@@ -647,12 +565,12 @@ class DebugAnalyzer(object):
                 (dump_count, parsed.tensor_filter)
             ])
         else:
-            output.prepend(["%d dumped tensor(s):" % dump_count])
+            output.prepend(["Dumped tensor(s):%d" % dump_count])
 
-        _add_main_menu(output, node_name=None, enable_list_tensors=False)
+        _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
         return output
 
-    def _measure_tensor_list_column_widths(self, data):
+    def _measure_tensor_lst_col_width(self, data):
         """Determine the maximum widths of the timestamp and op-type column.
 
         This method assumes that data is sorted in the default order, i.e.,
@@ -670,7 +588,7 @@ class DebugAnalyzer(object):
 
         max_timestamp_width = 0
         if data:
-            max_rel_time_ms = (data[-1].timestamp - self._debug_dump.t0) / 1000.0
+            max_rel_time_ms = (data[-1].timestamp - self._debug_dump.ts0) / 1000.0
             max_timestamp_width = len("[%.3f] " % max_rel_time_ms) + 1
         max_timestamp_width = max(max_timestamp_width,
                                   len(self._TIMESTAMP_COLUMN_HEAD) + 1)
@@ -707,8 +625,16 @@ class DebugAnalyzer(object):
         max_no_op_width = max(max_no_op_width,
                                 len(self._OP_NUMBER_OUTPUTS_HEAD) + 2)
 
+        max_no_tensorname_width = 0
+        for dump in data:
+            nodename = dump.node_name
+            if len(nodename) + 1 > max_no_tensorname_width:
+                max_no_tensorname_width = len(nodename) + 4
+        max_no_tensorname_width = max(max_no_tensorname_width,
+                                len(self._TENSOR_NAME_COLUMN_HEAD) + 4)
+
         return (max_timestamp_width, max_dump_size_width, max_op_type_width,
-                max_no_ip_width, max_no_op_width)
+                max_no_ip_width, max_no_op_width, max_no_tensorname_width)
 
     def _sort_dump_data_by(self, data, sort_by, reverse):
         """Sort a list of DebugTensorDatum in specified order.
@@ -759,11 +685,11 @@ class DebugAnalyzer(object):
 
     def _tensor_list_column_heads(self, parsed, max_timestamp_width,
                                   max_dump_size_width, max_op_type_width,
-                                  max_no_ip_width, max_no_op_width):
+                                  max_no_ip_width, max_no_op_width, no_tensor_width):
         """Generate a line containing the column heads of the tensor list.
 
         Args:
-          parsed: Parsed arguments (by argparse) of the list_tensors command.
+          parsed: Parsed arguments (by argparse) of the list_graphnodes command.
           max_timestamp_width: (int) maximum width of the timestamp column.
           max_dump_size_width: (int) maximum width of the dump size column.
           max_op_type_width: (int) maximum width of the op type column.
@@ -772,7 +698,7 @@ class DebugAnalyzer(object):
           A RichTextLines object.
         """
 
-        base_command = "list_tensors"
+        base_command = "list_graphnodes"
         if parsed.tensor_filter:
             base_command += " -f %s" % parsed.tensor_filter
         if parsed.op_type_filter:
@@ -781,13 +707,23 @@ class DebugAnalyzer(object):
             base_command += " -n %s" % parsed.node_name_filter
 
         attr_segs = {0: []}
-        row = self._TIMESTAMP_COLUMN_HEAD
+
+        row = self._TENSOR_NAME_COLUMN_HEAD
+        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TENSOR_NAME)
+        if parsed.sort_by == SORT_TENSORS_BY_TENSOR_NAME and not parsed.reverse:
+            command += " -r"
+        attr_segs[0].append((0, len(row),
+                             [debugger_cli_common.MenuItem("", command), "bold"]))
+        row += " " * (no_tensor_width - len(row))
+
+        prev_len = len(row)
+        row += self._TIMESTAMP_COLUMN_HEAD
         command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TIMESTAMP)
         if parsed.sort_by == SORT_TENSORS_BY_TIMESTAMP and not parsed.reverse:
             command += " -r"
         attr_segs[0].append(
-            (0, len(row), [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (max_timestamp_width - len(row))
+            (prev_len, len(row), [debugger_cli_common.MenuItem(None, command), "bold"]))
+        row += " " * (no_tensor_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
         row += self._DUMP_SIZE_COLUMN_HEAD
@@ -796,18 +732,7 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (max_dump_size_width + max_timestamp_width - len(row))
-
-        prev_len = len(row)
-        row += self._OP_TYPE_COLUMN_HEAD
-        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_OP_TYPE)
-        if parsed.sort_by == SORT_TENSORS_BY_OP_TYPE and not parsed.reverse:
-            command += " -r"
-        attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
-            max_op_type_width + max_dump_size_width + max_timestamp_width - len(row)
-        )
+        row += " " * (no_tensor_width + max_dump_size_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
         row += self._OP_NUMBER_INPUTS_HEAD
@@ -816,8 +741,8 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
-            max_no_ip_width + max_op_type_width + max_dump_size_width +
+        row += " " * (no_tensor_width +
+            max_no_ip_width + max_dump_size_width +
             max_timestamp_width - len(row)
         )
 
@@ -828,27 +753,26 @@ class DebugAnalyzer(object):
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
                              [debugger_cli_common.MenuItem(None, command), "bold"]))
-        row += " " * (
-            max_no_op_width + max_no_ip_width + max_op_type_width + max_dump_size_width +
+        row += " " * (no_tensor_width +
+            max_no_op_width + max_no_ip_width + max_dump_size_width +
             max_timestamp_width - len(row)
         )
 
         prev_len = len(row)
-        row += self._TENSOR_NAME_COLUMN_HEAD
-        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_TENSOR_NAME)
-        if parsed.sort_by == SORT_TENSORS_BY_TENSOR_NAME and not parsed.reverse:
+        row += self._OP_TYPE_COLUMN_HEAD
+        command = "%s -s %s" % (base_command, SORT_TENSORS_BY_OP_TYPE)
+        if parsed.sort_by == SORT_TENSORS_BY_OP_TYPE and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem("", command), "bold"]))
-        row += " " * (
-            max_no_op_width + max_no_ip_width + max_op_type_width + max_dump_size_width +
-            max_timestamp_width - len(row)
+                             [debugger_cli_common.MenuItem(None, command), "bold"]))
+        row += " " * (no_tensor_width + max_no_op_width + max_no_ip_width +
+            max_op_type_width + max_dump_size_width + max_timestamp_width - len(row)
         )
 
         return debugger_cli_common.RichTextLines([row], font_attr_segs=attr_segs)
 
-    def node_info(self, args, screen_info=None):
-        """Command handler for node_info.
+    def node_details(self, args, screen_info=None):
+        """Command handler for node_details.
 
         Query information about a given node.
 
@@ -866,11 +790,11 @@ class DebugAnalyzer(object):
         # on-screen highlighting/selection of node names.
         _ = screen_info
 
-        parsed = self._arg_parsers["node_info"].parse_args(args)
+        parsed = self._arg_parsers["node_details"].parse_args(args)
 
         # Get a node name, regardless of whether the input is a node name (without
         # output slot attached) or a tensor name (with output slot attached).
-        node_name, unused_slot = debug_graphs.parse_node_or_tensor_name(
+        node_name, _ = debug_graphs.parse_node_or_tensor_name(
             parsed.node_name)
 
         if not self._debug_dump.node_exists(node_name):
@@ -879,10 +803,10 @@ class DebugAnalyzer(object):
             _add_main_menu(
                 output,
                 node_name=None,
-                enable_list_tensors=True,
-                enable_node_info=False,
-                enable_list_inputs=False,
-                enable_list_outputs=False)
+                enable_list_graphnodes=True,
+                enable_node_details=False,
+                enable_graphnode_inputs=False,
+                enable_graphnode_outputs=False)
             return output
 
         # TODO(cais): Provide UI glossary feature to explain to users what the
@@ -896,11 +820,12 @@ class DebugAnalyzer(object):
 
         lines = ["Node %s" % node_name]
         font_attr_segs = {
-            0: [(len(lines[-1]) - len(node_name), len(lines[-1]), "bold")]
+            0: [(len(lines[-1]) - len(node_name), len(lines[-1]), "blue")]
         }
         lines.append("")
         lines.append("  Op: %s" % self._debug_dump.node_op_type(node_name))
-        lines.append("  Device: %s" % self._debug_dump.node_device(node_name))
+        node_device_name = self._debug_dump.node_device(node_name).split("device:", 1)[1]
+        lines.append("  Device: %s" % node_device_name)
         output = debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
 
@@ -926,7 +851,7 @@ class DebugAnalyzer(object):
         #if hasattr(parsed, "traceback") and parsed.traceback:
         #    output.extend(self._render_node_traceback(node_name))
 
-        _add_main_menu(output, node_name=node_name, enable_node_info=False)
+        _add_main_menu(output, node_name=node_name, enable_node_details=False)
         return output
 
     def _render_node_traceback(self, node_name):
@@ -962,9 +887,9 @@ class DebugAnalyzer(object):
         except LookupError:
             lines.append("(Unavailable because no Python graph has been loaded)")
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
 
-    def list_inputs(self, args, screen_info=None):
+    def graphnode_inputs(self, args, screen_info=None):
         """Command handler for inputs.
 
         Show inputs to a given node.
@@ -980,14 +905,13 @@ class DebugAnalyzer(object):
         """
 
         # Screen info not currently used by this handler. Include this line to
-        # mute pylint.
         _ = screen_info
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
 
-        parsed = self._arg_parsers["list_inputs"].parse_args(args)
+        parsed = self._arg_parsers["graphnode_inputs"].parse_args(args)
 
-        output = self._list_inputs_or_outputs(
+        output = self._graphnode_inputs_or_outputs(
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
@@ -996,12 +920,12 @@ class DebugAnalyzer(object):
             do_outputs=False)
 
         node_name = debug_graphs.get_node_name(parsed.node_name)
-        _add_main_menu(output, node_name=node_name, enable_list_inputs=False)
+        _add_main_menu(output, node_name=node_name, enable_graphnode_inputs=False)
 
         return output
 
-    def print_tensor(self, args, screen_info=None):
-        """Command handler for print_tensor.
+    def view_tensor(self, args, screen_info=None):
+        """Command handler for view_tensor.
 
         Print value of a given dumped tensor.
 
@@ -1015,9 +939,9 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        parsed = self._arg_parsers["print_tensor"].parse_args(args)
+        parsed = self._arg_parsers["view_tensor"].parse_args(args)
 
-        np_printoptions = cli_shared.numpy_printoptions_from_screen_info(
+        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
 
         # Determine if any range-highlighting is required.
@@ -1034,8 +958,8 @@ class DebugAnalyzer(object):
             _add_main_menu(
                 output,
                 node_name=None,
-                enable_list_tensors=True,
-                enable_print_tensor=False)
+                enable_list_graphnodes=True,
+                enable_view_tensor=False)
             return output
 
         watch_keys = self._debug_dump.debug_watch_keys(node_name)
@@ -1062,8 +986,8 @@ class DebugAnalyzer(object):
                 _add_main_menu(
                     output,
                     node_name=node_name,
-                    enable_list_tensors=True,
-                    enable_print_tensor=False)
+                    enable_list_graphnodes=True,
+                    enable_view_tensor=False)
                 return output
 
         # Find debug dump data that match the tensor name (node name + output
@@ -1096,7 +1020,7 @@ class DebugAnalyzer(object):
                     "Invalid number (%d) for tensor %s, which generated one dump." %
                     (parsed.number, parsed.tensor_name))
 
-            _add_main_menu(output, node_name=node_name, enable_print_tensor=False)
+            _add_main_menu(output, node_name=node_name, enable_view_tensor=False)
         else:
             # There are more than one dumps for this tensor.
             if parsed.number < 0:
@@ -1107,9 +1031,9 @@ class DebugAnalyzer(object):
                 font_attr_segs = {}
 
                 for i, datum in enumerate(matching_data):
-                    rel_time = (datum.timestamp - self._debug_dump.t0) / 1000.0
+                    rel_time = (datum.timestamp - self._debug_dump.ts0) / 1000.0
                     lines.append("#%d [%.3f ms] %s" % (i, rel_time, datum.watch_key))
-                    command = "print_tensor %s -n %d" % (parsed.tensor_name, i)
+                    command = "view_tensor %s -n %d" % (parsed.tensor_name, i)
                     font_attr_segs[len(lines) - 1] = [(
                         len(lines[-1]) - len(datum.watch_key), len(lines[-1]),
                         debugger_cli_common.MenuItem(None, command))]
@@ -1119,7 +1043,7 @@ class DebugAnalyzer(object):
                     "You can use the -n (--number) flag to specify which dump to "
                     "print.")
                 lines.append("For example:")
-                lines.append("  print_tensor %s -n 0" % parsed.tensor_name)
+                lines.append("  view_tensor %s -n 0" % parsed.tensor_name)
 
                 output = debugger_cli_common.RichTextLines(
                     lines, font_attr_segs=font_attr_segs)
@@ -1138,11 +1062,11 @@ class DebugAnalyzer(object):
                     tensor_slicing=tensor_slicing,
                     highlight_options=highlight_options,
                     write_path=parsed.write_path)
-            _add_main_menu(output, node_name=node_name, enable_print_tensor=False)
+            _add_main_menu(output, node_name=node_name, enable_view_tensor=False)
 
         return output
 
-    def list_outputs(self, args, screen_info=None):
+    def graphnode_outputs(self, args, screen_info=None):
         """Command handler for inputs.
 
         Show inputs to a given node.
@@ -1158,14 +1082,13 @@ class DebugAnalyzer(object):
         """
 
         # Screen info not currently used by this handler. Include this line to
-        # mute pylint.
         _ = screen_info
         # TODO(cais): Use screen info to format the output lines more prettily,
         # e.g., hanging indent of long node names.
 
-        parsed = self._arg_parsers["list_outputs"].parse_args(args)
+        parsed = self._arg_parsers["graphnode_outputs"].parse_args(args)
 
-        output = self._list_inputs_or_outputs(
+        output = self._graphnode_inputs_or_outputs(
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
@@ -1174,7 +1097,7 @@ class DebugAnalyzer(object):
             do_outputs=True)
 
         node_name = debug_graphs.get_node_name(parsed.node_name)
-        _add_main_menu(output, node_name=node_name, enable_list_outputs=False)
+        _add_main_menu(output, node_name=node_name, enable_graphnode_outputs=False)
 
         return output
 
@@ -1193,7 +1116,7 @@ class DebugAnalyzer(object):
 
         eval_res = self._evaluator.evaluate(parsed.expression)
 
-        np_printoptions = cli_shared.numpy_printoptions_from_screen_info(
+        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
             screen_info)
         return cli_shared.format_tensor(
             eval_res,
@@ -1240,7 +1163,7 @@ class DebugAnalyzer(object):
                             "+5",
                             debugger_cli_common.MenuItem(
                                 None,
-                                _reconstruct_print_source_command(
+                                _reconstruct_print_src_cmd(
                                     parsed, i + 1, max_elements_per_line_increase=5)))
                         labeled_source_lines.append(omitted_info_line)
                         break
@@ -1255,7 +1178,7 @@ class DebugAnalyzer(object):
                     label += RL(element, attribute)
                     labeled_source_lines.append(label)
 
-        output = debugger_cli_common.rich_text_lines_from_rich_line_list(
+        output = debugger_cli_common.rich_text_lines_frm_line_list(
             labeled_source_lines,
             annotations={debugger_cli_common.INIT_SCROLL_POS_KEY:
                              actual_initial_scroll_target})
@@ -1281,7 +1204,7 @@ class DebugAnalyzer(object):
             top_lines.append(
                 RL("Node name regex filter: \"%s\"" % parsed.node_name_filter))
         top_lines.append(RL())
-        output = debugger_cli_common.rich_text_lines_from_rich_line_list(top_lines)
+        output = debugger_cli_common.rich_text_lines_frm_line_list(top_lines)
         if not source_list:
             output.append("[No source file information.]")
             return output
@@ -1293,14 +1216,14 @@ class DebugAnalyzer(object):
         _add_main_menu(output, node_name=None)
         return output
 
-    def _list_inputs_or_outputs(self,
-                                recursive,
-                                node_name,
-                                depth,
-                                control,
-                                op_type,
-                                do_outputs=False):
-        """Helper function used by list_inputs and list_outputs.
+    def _graphnode_inputs_or_outputs(self,
+                                     recursive,
+                                     node_name,
+                                     depth,
+                                     control,
+                                     op_type,
+                                     do_outputs=False):
+        """Helper function used by graphnode_inputs and graphnode_outputs.
 
         Format a list of lines to display the inputs or output recipients of a
         given node.
@@ -1352,7 +1275,7 @@ class DebugAnalyzer(object):
             include_ctrls_str = ""
 
         line = "%s node \"%s\"" % (type_str, node_name)
-        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "bold")]
+        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "blue")]
         lines.append(line + " (Depth limit = %d%s):" % (max_depth, include_ctrls_str))
 
         command_template = "lo -c -r %s" if do_outputs else "li -c -r %s"
@@ -1380,7 +1303,7 @@ class DebugAnalyzer(object):
         # TODO(cais): Consider appending ":0" at the end of 1st outputs of nodes.
 
         return debugger_cli_common.RichTextLines(
-            lines, font_attr_segs=font_attr_segs)
+            lines, font_attr_segs=font_attr_segs, additional_attr=curses.A_BOLD)
 
     def _dfs_from_node(self,
                        lines,
@@ -1590,11 +1513,11 @@ class DebugAnalyzer(object):
                 if not datum.debug_op:
                     line = "  Slot %d @ %.3f ms" % (
                         datum.output_slot,
-                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                        (datum.timestamp - self._debug_dump.ts0) / 1000.0)
                 else:
                     line = "  Slot %d @ %s @ %.3f ms" % (
                         datum.output_slot, datum.debug_op,
-                        (datum.timestamp - self._debug_dump.t0) / 1000.0)
+                        (datum.timestamp - self._debug_dump.ts0) / 1000.0)
                 lines.append(line)
                 command = "pt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
                 font_attr_segs[len(lines) - 1] = [(
@@ -1604,7 +1527,7 @@ class DebugAnalyzer(object):
         output = debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
         output_with_header = debugger_cli_common.RichTextLines(
-            ["%d dumped tensor(s):" % dump_count, ""])
+            ["Dumped tensor(s):%d" % dump_count, ""])
         output_with_header.extend(output)
         return output_with_header
 
@@ -1639,51 +1562,36 @@ def create_analyzer_ui(debug_dump,
 
     cli = ui_factory.get_ui(ui_type, on_ui_exit=on_ui_exit, config=config)
     cli.register_command_handler(
-        "list_tensors",
-        analyzer.list_tensors,
-        analyzer.get_help("list_tensors"),
+        "list_graphnodes",
+        analyzer.list_graphnodes,
+        analyzer.get_help("list_graphnodes"),
         prefix_aliases=["lt"])
     cli.register_command_handler(
-        "node_info",
-        analyzer.node_info,
-        analyzer.get_help("node_info"),
+        "node_details",
+        analyzer.node_details,
+        analyzer.get_help("node_details"),
         prefix_aliases=["ni"])
     cli.register_command_handler(
-        "list_inputs",
-        analyzer.list_inputs,
-        analyzer.get_help("list_inputs"),
+        "graphnode_inputs",
+        analyzer.graphnode_inputs,
+        analyzer.get_help("graphnode_inputs"),
         prefix_aliases=["li"])
     cli.register_command_handler(
-        "list_outputs",
-        analyzer.list_outputs,
-        analyzer.get_help("list_outputs"),
+        "graphnode_outputs",
+        analyzer.graphnode_outputs,
+        analyzer.get_help("graphnode_outputs"),
         prefix_aliases=["lo"])
     cli.register_command_handler(
-        "print_tensor",
-        analyzer.print_tensor,
-        analyzer.get_help("print_tensor"),
+        "view_tensor",
+        analyzer.view_tensor,
+        analyzer.get_help("view_tensor"),
         prefix_aliases=["pt"])
-    cli.register_command_handler(
-        "print_source",
-        analyzer.print_source,
-        analyzer.get_help("print_source"),
-        prefix_aliases=["ps"])
-    cli.register_command_handler(
-        "list_source",
-        analyzer.list_source,
-        analyzer.get_help("list_source"),
-        prefix_aliases=["ls"])
-    cli.register_command_handler(
-        "eval",
-        analyzer.evaluate_expression,
-        analyzer.get_help("eval"),
-        prefix_aliases=["ev"])
 
     dumped_tensor_names = []
     for datum in debug_dump.dumped_tensor_data:
         dumped_tensor_names.append("%s:%d" % (datum.node_name, datum.output_slot))
 
-    # Tab completions for command "print_tensors".
-    cli.register_tab_comp_context(["print_tensor", "pt"], dumped_tensor_names)
+    # Tab completions for command "view_tensors".
+    cli.register_tab_comp_context(["view_tensor", "pt"], dumped_tensor_names)
 
     return cli
