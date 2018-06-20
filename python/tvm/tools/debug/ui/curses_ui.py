@@ -13,12 +13,12 @@ import signal
 import sys
 import threading
 
-from tvm.tools.debug.ui import base_ui
-from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import ui_base
+from tvm.tools.debug.ui import ui_shared
 from tvm.tools.debug.ui import command_parser
 from tvm.tools.debug.ui import curses_widgets
-from tvm.tools.debug.ui import debugger_cli_common
-from tvm.tools.debug.ui import tensor_format
+from tvm.tools.debug.ui import ui_common
+from tvm.tools.debug.ui import tensor_data
 
 
 _SCROLL_REFRESH = "refresh"
@@ -52,7 +52,7 @@ def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
         if seg[0] <= mouse_x < seg[1]:
             attributes = seg[2] if isinstance(seg[2], list) else [seg[2]]
             for attr in attributes:
-                if isinstance(attr, debugger_cli_common.MenuItem):
+                if isinstance(attr, ui_common.MenuItem):
                     return attr.content
     return None
 
@@ -71,8 +71,8 @@ class ScrollBar(object):
     event in the screen region it occupies.
     """
 
-    BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK
-    BACKGROUND_BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK
+    BASE_ATTR = ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK
+    BACKGROUND_BASE_ATTR = ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK
 
     def __init__(self,
                  min_x,
@@ -145,7 +145,7 @@ class ScrollBar(object):
         """Get the RichTextLines layout of the scroll bar.
 
         Returns:
-          (debugger_cli_common.RichTextLines) The text layout of the scroll bar.
+          (ui_common.RichTextLines) The text layout of the scroll bar.
         """
         width = self._max_x - self._min_x + 1
         empty_line = " " * width
@@ -168,7 +168,7 @@ class ScrollBar(object):
                 up_text = " ^ "
                 down_text = " v "
 
-            layout = debugger_cli_common.RichTextLines(
+            layout = ui_common.RichTextLines(
                 [up_text], font_attr_segs={0: [(0, width, self.BASE_ATTR)]})
             for i in range(1, self._scroll_bar_height - 1):
                 font_attr_segs = background_font_attr_segs
@@ -177,7 +177,7 @@ class ScrollBar(object):
                 layout.append("  ", font_attr_segs=font_attr_segs)
             layout.append(down_text, font_attr_segs=foreground_font_attr_segs)
         else:
-            layout = debugger_cli_common.RichTextLines(
+            layout = ui_common.RichTextLines(
                 [empty_line] * self._scroll_bar_height)
 
         return layout
@@ -229,7 +229,7 @@ def _format_indices(indices):
     return repr(indices).replace(" ", "")
 
 
-class CursesUI(base_ui.BaseUI):
+class CursesUI(ui_base.BaseUI):
     """Curses-based Command-line UI.
 
     In this class, the methods with the prefix "_screen_" are the methods that
@@ -262,36 +262,36 @@ class CursesUI(base_ui.BaseUI):
     }
 
     _FOREGROUND_COLORS = {
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
-        cli_shared.COLOR_RED: curses.COLOR_RED,
-        cli_shared.COLOR_GREEN: curses.COLOR_GREEN,
-        cli_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
-        cli_shared.COLOR_BLUE: curses.COLOR_BLUE,
-        cli_shared.COLOR_CYAN: curses.COLOR_CYAN,
-        cli_shared.COLOR_MAGENTA: curses.COLOR_MAGENTA,
-        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        ui_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        ui_shared.COLOR_RED: curses.COLOR_RED,
+        ui_shared.COLOR_GREEN: curses.COLOR_GREEN,
+        ui_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
+        ui_shared.COLOR_BLUE: curses.COLOR_BLUE,
+        ui_shared.COLOR_CYAN: curses.COLOR_CYAN,
+        ui_shared.COLOR_MAGENTA: curses.COLOR_MAGENTA,
+        ui_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
     _BACKGROUND_COLORS = {
         "transparent": -1,
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
-        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        ui_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        ui_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
 
     # Font attribute for search and highlighting.
     _SEARCH_HIGHLIGHT_FONT_ATTR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLACK + "_on_" + ui_shared.COLOR_WHITE)
     _ARRAY_INDICES_COLOR_PAIR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLACK + "_on_" + ui_shared.COLOR_WHITE)
     _ERROR_TOAST_COLOR_PAIR = (
-        cli_shared.COLOR_RED + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_RED + "_on_" + ui_shared.COLOR_WHITE)
     _INFO_TOAST_COLOR_PAIR = (
-        cli_shared.COLOR_BLUE + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLUE + "_on_" + ui_shared.COLOR_WHITE)
     _STATUS_BAR_COLOR_PAIR = (
-        cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK)
+        ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK)
     _UI_WAIT_COLOR_PAIR = (
-        cli_shared.COLOR_MAGENTA + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_MAGENTA + "_on_" + ui_shared.COLOR_WHITE)
     _NAVIGATION_WARNING_COLOR_PAIR = (
-        cli_shared.COLOR_RED + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_RED + "_on_" + ui_shared.COLOR_WHITE)
 
     _UI_WAIT_MESSAGE = "Processing..."
 
@@ -300,11 +300,11 @@ class CursesUI(base_ui.BaseUI):
 
         Args:
           on_ui_exit: (Callable) Callback invoked when the UI exits.
-          config: An instance of `cli_config.CLIConfig()` carrying user-facing
+          config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
         """
 
-        base_ui.BaseUI.__init__(self, on_ui_exit=on_ui_exit, config=config)
+        ui_base.BaseUI.__init__(self, on_ui_exit=on_ui_exit, config=config)
 
         self._candidates_top_row = None
         self._cmd_ptr = None
@@ -333,7 +333,7 @@ class CursesUI(base_ui.BaseUI):
         # Initialize some UI component size and locations.
         self._init_layout()
 
-        self._command_history_store = debugger_cli_common.CommandHistory()
+        self._command_history_store = ui_common.CommandHistory()
 
         # Active list of command history, used in history navigation.
         # _command_handler_registry holds all the history commands the CLI has
@@ -450,7 +450,7 @@ class CursesUI(base_ui.BaseUI):
             for bg_color in self._BACKGROUND_COLORS:
                 color_index += 1
 
-                if bg_color == cli_shared.COLOR_GRAY:
+                if bg_color == ui_shared.COLOR_GRAY:
                     curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color], 236)
                 else:
                     curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
@@ -466,11 +466,11 @@ class CursesUI(base_ui.BaseUI):
         try:
             color_index += 1
             curses.init_pair(color_index, 245, -1)
-            self._color_pairs[cli_shared.COLOR_GRAY] = curses.color_pair(color_index)
+            self._color_pairs[ui_shared.COLOR_GRAY] = curses.color_pair(color_index)
         except curses.error:
             # Use fall-back color(s):
-            self._color_pairs[cli_shared.COLOR_GRAY] = (
-                self._color_pairs[cli_shared.COLOR_GREEN])
+            self._color_pairs[ui_shared.COLOR_GRAY] = (
+                self._color_pairs[ui_shared.COLOR_GREEN])
 
         # A_BOLD or A_BLINK is not really a "color". But place it here for
         # convenience.
@@ -479,7 +479,7 @@ class CursesUI(base_ui.BaseUI):
         self._color_pairs["underline"] = curses.A_UNDERLINE
 
         # Default color pair to use when a specified color pair does not exist.
-        self._default_color_pair = self._color_pairs[cli_shared.COLOR_BLUE]
+        self._default_color_pair = self._color_pairs[ui_shared.COLOR_BLUE]
 
     def _screen_launch(self):
         """Launch the curses screen."""
@@ -528,7 +528,7 @@ class CursesUI(base_ui.BaseUI):
                init_command=None,
                title=None,
                title_color=None):
-        """Run the CLI: See the doc of base_ui.BaseUI.run_ui for more details."""
+        """Run the CLI: See the doc of ui_base.BaseUI.run_ui for more details."""
 
         # Only one instance of the Curses UI can be running at a time, since
         # otherwise they would try to both read from the same keystrokes, and write
@@ -606,7 +606,7 @@ class CursesUI(base_ui.BaseUI):
 
             try:
                 command, terminator, pending_command_changed = self._get_user_command()
-            except debugger_cli_common.CommandLineExit as exception:
+            except ui_common.CommandLineExit as exception:
                 return exception.exit_token
 
             if not command and terminator != self.CLI_TAB_KEY:
@@ -710,7 +710,7 @@ class CursesUI(base_ui.BaseUI):
         if command in self.CLI_EXIT_COMMANDS:
             # Explicit user command-triggered exit: EXPLICIT_USER_EXIT as the exit
             # token.
-            return debugger_cli_common.EXPLICIT_USER_EXIT
+            return ui_common.EXPLICIT_USER_EXIT
         elif (command == self._NAVIGATION_FORWARD_COMMAND or
               command == self._NAVIGATION_BACK_COMMAND):
             self._navigate_screen_output(command)
@@ -742,7 +742,7 @@ class CursesUI(base_ui.BaseUI):
             if indices_str:
                 try:
                     indices = command_parser.parse_indices(indices_str)
-                    omitted, line_index, _, _ = tensor_format.locate_tensor_element(
+                    omitted, line_index, _, _ = tensor_data.locate_tensor_element(
                         self._curr_wrapped_output, indices)
                     if not omitted:
                         self._scroll_output(
@@ -755,7 +755,7 @@ class CursesUI(base_ui.BaseUI):
             return None
 
         try:
-            prefix, args, output_file_path = base_ui._parse_command(command)
+            prefix, args, output_file_path = ui_base._parse_command(command)
         except SyntaxError as exception:
             self._error_toast(str(exception))
             return None
@@ -771,10 +771,10 @@ class CursesUI(base_ui.BaseUI):
             try:
                 screen_output = self._command_handler_registry.dispatch_command(
                     prefix, args, screen_info=screen_info)
-            except debugger_cli_common.CommandLineExit as exception:
+            except ui_common.CommandLineExit as exception:
                 exit_token = exception.exit_token
         else:
-            screen_output = debugger_cli_common.RichTextLines([
+            screen_output = ui_common.RichTextLines([
                 self.ERROR_MESSAGE_PREFIX + "Invalid command prefix \"%s\"" % prefix
             ])
 
@@ -828,7 +828,7 @@ class CursesUI(base_ui.BaseUI):
 
         Raises:
           TypeError: If the input x is not of type int.
-          debugger_cli_common.CommandLineExit: If a mouse-triggered command returns
+          ui_common.CommandLineExit: If a mouse-triggered command returns
             an exit token when dispatched.
         """
         if not isinstance(key_code, int):
@@ -906,7 +906,7 @@ class CursesUI(base_ui.BaseUI):
                         self._screen_create_command_textbox()
                         exit_token = self._dispatch_command(command)
                         if exit_token is not None:
-                            raise debugger_cli_common.CommandLineExit(exit_token=exit_token)
+                            raise ui_common.CommandLineExit(exit_token=exit_token)
         # Mark the pending command as modified.
         self._textbox_pending_cmd_changed = True
         # Invalidate active command history.
@@ -1037,7 +1037,7 @@ class CursesUI(base_ui.BaseUI):
 
         # Wrap the output lines according to screen width.
         self._curr_wrapped_output, wrapped_line_indices = (
-            debugger_cli_common.wrap_rich_text_lines(output, self._max_x - 2))
+            ui_common.wrap_rich_text_lines(output, self._max_x - 2))
 
         # Append lines to curr_wrapped_output so that the user can scroll to a
         # state where the last text line is on the top of the output area.
@@ -1050,7 +1050,7 @@ class CursesUI(base_ui.BaseUI):
             self._curr_wrapped_output.lines.append("Output cut off at %d lines!" %
                                                    self.max_output_lines)
             self._curr_wrapped_output.font_attr_segs[self.max_output_lines] = [
-                (0, len(output.lines[-1]), cli_shared.COLOR_MAGENTA)
+                (0, len(output.lines[-1]), ui_shared.COLOR_MAGENTA)
             ]
 
         self._display_nav_bar()
@@ -1087,7 +1087,7 @@ class CursesUI(base_ui.BaseUI):
 
         if highlight_regex:
             try:
-                output = debugger_cli_common.regex_find(
+                output = ui_common.regex_find(
                     output, highlight_regex, font_attr=self._SEARCH_HIGHLIGHT_FONT_ATTR)
             except ValueError as exception:
                 self._error_toast(str(exception))
@@ -1096,7 +1096,7 @@ class CursesUI(base_ui.BaseUI):
             if not is_refresh:
                 # Perform new regex search on the current output.
                 self._unwrapped_regex_match_lines = output.annotations[
-                    debugger_cli_common.REGEX_MATCH_LINES_KEY]
+                    ui_common.REGEX_MATCH_LINES_KEY]
             else:
                 # Continue scrolling down.
                 self._output_pad_row += 1
@@ -1127,8 +1127,8 @@ class CursesUI(base_ui.BaseUI):
                 self._toast("Pattern not found", color=self._ERROR_TOAST_COLOR_PAIR)
         elif is_refresh:
             self._scroll_output(_SCROLL_REFRESH)
-        elif debugger_cli_common.INIT_SCROLL_POS_KEY in output.annotations:
-            line_index = output.annotations[debugger_cli_common.INIT_SCROLL_POS_KEY]
+        elif ui_common.INIT_SCROLL_POS_KEY in output.annotations:
+            line_index = output.annotations[ui_common.INIT_SCROLL_POS_KEY]
             self._scroll_output(_SCROLL_TO_LINE_INDEX, line_index=line_index)
         else:
             self._output_pad_row = 0
@@ -1150,7 +1150,7 @@ class CursesUI(base_ui.BaseUI):
           ValueError: If input argument "output" is invalid.
         """
 
-        if not isinstance(output, debugger_cli_common.RichTextLines):
+        if not isinstance(output, ui_common.RichTextLines):
             raise ValueError(
                 "Output is required to be an instance of RichTextLines, but is not.")
 
@@ -1197,21 +1197,21 @@ class CursesUI(base_ui.BaseUI):
         """Display main menu associated with screen output, if the menu exists.
 
         Args:
-          output: (debugger_cli_common.RichTextLines) The RichTextLines output from
+          output: (ui_common.RichTextLines) The RichTextLines output from
             the annotations field of which the menu will be extracted and used (if
             the menu exists).
         """
 
-        if debugger_cli_common.MAIN_MENU_KEY in output.annotations:
+        if ui_common.MAIN_MENU_KEY in output.annotations:
             self._main_menu = output.annotations[
-                debugger_cli_common.MAIN_MENU_KEY].format_as_single_line(
+                ui_common.MAIN_MENU_KEY].format_as_single_line(
                     prefix="| ", divider=" | ", enabled_item_attrs=["underline"])
 
             self._main_menu_pad = _screen_new_output_pad(1, self._max_x - 2)
 
             # The unwrapped menu line may exceed screen width, in which case it needs
             # to be cut off.
-            wrapped_menu, _ = debugger_cli_common.wrap_rich_text_lines(
+            wrapped_menu, _ = ui_common.wrap_rich_text_lines(
                 self._main_menu, self._max_x - 3)
             self._screen_add_line_to_output_pad(
                 self._main_menu_pad,
@@ -1273,7 +1273,7 @@ class CursesUI(base_ui.BaseUI):
             curses_attr = curses.A_NORMAL
             for attr in curr_attrs:
                 if (self._mouse_enabled and
-                        isinstance(attr, debugger_cli_common.MenuItem)):
+                        isinstance(attr, ui_common.MenuItem)):
                     curses_attr |= curses.A_UNDERLINE
                     if attr.get_custom_color:
                         curses_attr |= self._color_pairs[attr.get_custom_color]
@@ -1467,7 +1467,7 @@ class CursesUI(base_ui.BaseUI):
           appended by the common prefix of the candidates.
         """
 
-        context, prefix, except_last_word = base_ui._analyze_tab_complete_input(
+        context, prefix, except_last_word = ui_base._analyze_tab_complete_input(
             command_str)
         candidates, common_prefix = self._tab_completion_registry.get_completions(
             context, prefix)
@@ -1502,13 +1502,13 @@ class CursesUI(base_ui.BaseUI):
 
         candidates_prefix = "Candidates: "
         candidates_line = candidates_prefix + " ".join(candidates)
-        candidates_output = debugger_cli_common.RichTextLines(
+        candidates_output = ui_common.RichTextLines(
             candidates_line,
             font_attr_segs={
                 0: [(len(candidates_prefix), len(candidates_line), "yellow")]
             })
 
-        candidates_output, _ = debugger_cli_common.wrap_rich_text_lines(
+        candidates_output, _ = ui_common.wrap_rich_text_lines(
             candidates_output, self._max_x - 3)
 
         # Calculate how many lines the candidate text should occupy. Limit it to
@@ -1537,10 +1537,10 @@ class CursesUI(base_ui.BaseUI):
         """
 
         pad, _, _ = self._display_lines(
-            debugger_cli_common.RichTextLines(
+            ui_common.RichTextLines(
                 message,
                 font_attr_segs={
-                    0: [(0, len(message), color or cli_shared.COLOR_WHITE)]}),
+                    0: [(0, len(message), color or ui_shared.COLOR_WHITE)]}),
             0)
 
         right_end = min(len(message), self._max_x - 2)

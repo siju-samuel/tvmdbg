@@ -4,7 +4,7 @@ import os
 import json
 import numpy as np
 from tvm import ndarray as nd
-from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
+from tvm.tools.debug.wrappers import ui_wrapper as tvmdbg
 
 class DebugGraphModule(object):
     """Wrapper debug runtime module.

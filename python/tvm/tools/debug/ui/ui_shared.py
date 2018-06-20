@@ -11,11 +11,11 @@ import six
 import numpy as np
 
 from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import debugger_cli_common
-from tvm.tools.debug.ui import tensor_format
+from tvm.tools.debug.ui import ui_common
+from tvm.tools.debug.ui import tensor_data
 from tvm.tools.debug.util import common
 
-RL = debugger_cli_common.RichLine
+RL = ui_common.RichLine
 
 # Default threshold number of elements above which ellipses will be used
 # when printing the value of the tensor.
@@ -104,7 +104,7 @@ def parse_ranges_highlight(ranges_string):
         command for more details.
 
     Returns:
-      An instance of tensor_format.HighlightOptions, if range_string is a valid
+      An instance of tensor_data.HighlightOptions, if range_string is a valid
         representation of a range or a list of ranges.
     """
 
@@ -128,7 +128,7 @@ def parse_ranges_highlight(ranges_string):
 
     if ranges_string:
         ranges = command_parser.parse_ranges(ranges_string)
-        return tensor_format.HighlightOptions(
+        return tensor_data.HighlightOptions(
             ranges_filter, description=ranges_string)
     return None
 
@@ -169,8 +169,8 @@ def format_tensor(tensor,
          can handle.)
       tensor_slicing: (str or None) Slicing of the tensor, e.g., "[:, 1]". If
         None, no slicing will be performed on the tensor.
-      highlight_options: (tensor_format.HighlightOptions) options to highlight
-        elements of the tensor. See the doc of tensor_format.format_tensor()
+      highlight_options: (tensor_data.HighlightOptions) options to highlight
+        elements of the tensor. See the doc of tensor_data.format_tensor()
         for more details.
       include_numeric_summary: Whether a text summary of the numeric values (if
         applicable) will be included.
@@ -178,7 +178,7 @@ def format_tensor(tensor,
         (optional). `numpy.save()` is used to save the value.
 
     Returns:
-      An instance of `debugger_cli_common.RichTextLines` representing the
+      An instance of `ui_common.RichTextLines` representing the
       (potentially sliced) tensor.
     """
 
@@ -194,18 +194,18 @@ def format_tensor(tensor,
     if write_path:
         with open(write_path, "wb") as output_file:
             np.save(output_file, value)
-        line = debugger_cli_common.RichLine("Saved value to: ")
-        line += debugger_cli_common.RichLine(write_path, font_attr="bold")
+        line = ui_common.RichLine("Saved value to: ")
+        line += ui_common.RichLine(write_path, font_attr="bold")
         line += " (%sB)" % bytes_to_readable_str(os.stat(write_path).st_size)
-        auxiliary_message = debugger_cli_common.rich_text_lines_frm_line_list(
-            [line, debugger_cli_common.RichLine("")])
+        auxiliary_message = ui_common.rich_text_lines_frm_line_list(
+            [line, ui_common.RichLine("")])
 
     if print_all:
         np_printoptions["threshold"] = value.size
     else:
         np_printoptions["threshold"] = DEFAULT_NDARRAY_DISPLAY_THRESHOLD
 
-    return tensor_format.format_tensor(
+    return tensor_data.format_tensor(
         value,
         sliced_name,
         include_metadata=True,
@@ -222,11 +222,11 @@ def error(msg):
       msg: (str) The error message.
 
     Returns:
-      (debugger_cli_common.RichTextLines) A representation of the error message
+      (ui_common.RichTextLines) A representation of the error message
         for screen output.
     """
 
-    return debugger_cli_common.rich_text_lines_frm_line_list([
+    return ui_common.rich_text_lines_frm_line_list([
         RL("ERROR: " + msg, COLOR_RED)])
 
 
@@ -248,21 +248,21 @@ def _recommend_command(command, description, indent=2, create_link=False):
     indent_str = " " * indent
 
     if create_link:
-        font_attr = [debugger_cli_common.MenuItem("", command), "bold"]
+        font_attr = [ui_common.MenuItem("", command), "bold"]
     else:
         font_attr = "bold"
 
     lines = [RL(indent_str) + RL(command, font_attr) + ":",
              indent_str + "   " + description]
 
-    return debugger_cli_common.rich_text_lines_frm_line_list(lines)
+    return ui_common.rich_text_lines_frm_line_list(lines)
 
 
 def get_tvmdbg_logo():
     """Make an ASCII representation of the tvmdbg logo."""
 
     lines = []
-    return debugger_cli_common.RichTextLines(lines)
+    return ui_common.RichTextLines(lines)
 
 
 _HORIZONTAL_BAR = " ======================================"
@@ -292,22 +292,22 @@ def get_run_start_intro(graph_node_count,
     output_lines = common.get_flattened_names(outputs)
 
     if not input_dict:
-        input_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
+        input_dict_lines = [ui_common.RichLine("  (Empty)")]
     else:
         input_dict_lines = []
         for input_key in input_dict:
             input_key_name = common.get_graph_element_name(input_key)
-            input_dict_line = debugger_cli_common.RichLine("  ")
-            input_dict_line += debugger_cli_common.RichLine(
+            input_dict_line = ui_common.RichLine("  ")
+            input_dict_line += ui_common.RichLine(
                 input_key_name,
-                debugger_cli_common.MenuItem(None, "pi '%s'" % input_key_name))
+                ui_common.MenuItem(None, "pi '%s'" % input_key_name))
             # Surround the name string with quotes, because input_key_name may contain
             # spaces in some cases, e.g., SparseTensors.
             input_dict_lines.append(input_dict_line)
-    input_dict_lines = debugger_cli_common.rich_text_lines_frm_line_list(
+    input_dict_lines = ui_common.rich_text_lines_frm_line_list(
         input_dict_lines)
 
-    out = debugger_cli_common.RichTextLines(_HORIZONTAL_BAR)
+    out = ui_common.RichTextLines(_HORIZONTAL_BAR)
     out.append("")
     out.append("")
     out.append(" Choose any of the below option to continue...")
@@ -340,15 +340,15 @@ def get_run_start_intro(graph_node_count,
         out.extend(input_dict_lines)
         out.append("")
         out.append(" Output(s):")
-        out.extend(debugger_cli_common.RichTextLines(
+        out.extend(ui_common.RichTextLines(
             ["  " + line for line in output_lines]))
         out.append("")
     out.append(_HORIZONTAL_BAR)
 
     # Make main menu for the run-start intro.
-    menu = debugger_cli_common.Menu()
-    menu.append(debugger_cli_common.MenuItem("run", "run"))
-    out.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
+    menu = ui_common.Menu()
+    menu.append(ui_common.MenuItem("run", "run"))
+    out.annotations[ui_common.MAIN_MENU_KEY] = menu
 
     return out
 
@@ -421,7 +421,7 @@ def get_error_intro(tvm_error):
         "You may use the following commands to debug:",
     ]
 
-    out = debugger_cli_common.rich_text_lines_frm_line_list(intro_lines)
+    out = ui_common.rich_text_lines_frm_line_list(intro_lines)
 
     out.extend(
         _recommend_command("nd -a -d -t %s" % op_name,
@@ -452,6 +452,6 @@ def get_error_intro(tvm_error):
         "",
     ]
 
-    out.extend(debugger_cli_common.RichTextLines(more_lines))
+    out.extend(ui_common.RichTextLines(more_lines))
 
     return out

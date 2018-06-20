@@ -13,15 +13,15 @@ import copy
 import curses
 import re
 
-from tvm.tools.debug.ui import cli_config
-from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import ui_config
+from tvm.tools.debug.ui import ui_shared
 from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_common
 from tvm.tools.debug.ui import ui_factory
-from tvm.tools.debug.util import debug_graphs
+from tvm.tools.debug.util import graph_dump
 
 
-RL = debugger_cli_common.RichLine
+RL = ui_common.RichLine
 
 # String constants for the depth-dependent hanging indent at the beginning
 # of each line.
@@ -55,7 +55,7 @@ def _add_main_menu(output,
     """Generate main menu for the screen output from a command.
 
     Args:
-      output: (debugger_cli_common.RichTextLines) the output object to modify.
+      output: (ui_common.RichTextLines) the output object to modify.
       node_name: (str or None) name of the node involved (if any). If None,
         the menu items node_details, graphnode_inputs and graphnode_outputs will be
         automatically disabled, overriding the values of arguments
@@ -68,50 +68,50 @@ def _add_main_menu(output,
       enable_graphnode_outputs: (bool) whether the item graphnode_outputs will be enabled.
     """
 
-    menu = debugger_cli_common.Menu()
+    menu = ui_common.Menu()
 
     menu.append(
-        debugger_cli_common.MenuItem(
+        ui_common.MenuItem(
             "list_graphnodes", "list_graphnodes", enabled=enable_list_graphnodes))
 
     if node_name:
         menu.append(
-            debugger_cli_common.MenuItem(
+            ui_common.MenuItem(
                 "node_details",
                 "node_details -a -d -t %s" % node_name,
                 enabled=enable_node_details))
         menu.append(
-            debugger_cli_common.MenuItem(
+            ui_common.MenuItem(
                 "view_tensor",
                 "view_tensor %s" % node_name,
                 enabled=enable_view_tensor))
         menu.append(
-            debugger_cli_common.MenuItem(
+            ui_common.MenuItem(
                 "graphnode_inputs",
                 "graphnode_inputs -r %s" % node_name,
                 enabled=enable_graphnode_inputs))
         menu.append(
-            debugger_cli_common.MenuItem(
+            ui_common.MenuItem(
                 "graphnode_outputs",
                 "graphnode_outputs -r %s" % node_name,
                 enabled=enable_graphnode_outputs))
     else:
         menu.append(
-            debugger_cli_common.MenuItem(
+            ui_common.MenuItem(
                 "node_details", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("view_tensor", None, enabled=False))
+            ui_common.MenuItem("view_tensor", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("graphnode_inputs", None, enabled=False))
+            ui_common.MenuItem("graphnode_inputs", None, enabled=False))
         menu.append(
-            debugger_cli_common.MenuItem("graphnode_outputs", None, enabled=False))
+            ui_common.MenuItem("graphnode_outputs", None, enabled=False))
 
     #menu.append(
-    #    debugger_cli_common.MenuItem("home", "home"))
+    #    ui_common.MenuItem("home", "home"))
     #menu.append(
-    #    debugger_cli_common.MenuItem("help", "help"))
+    #    ui_common.MenuItem("help", "help"))
 
-    output.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
+    output.annotations[ui_common.MAIN_MENU_KEY] = menu
 
 class DebugAnalyzer(object):
     """Analyzer for debug data from dump directories."""
@@ -128,7 +128,7 @@ class DebugAnalyzer(object):
 
         Args:
           debug_dump: A DebugDumpDir object.
-          config: A `cli_config.CLIConfig` object that carries user-facing
+          config: A `ui_config.CLIConfig` object that carries user-facing
             configurations.
         """
         self._debug_dump = debug_dump
@@ -144,7 +144,7 @@ class DebugAnalyzer(object):
         """Build argument parsers for DebugAnalayzer.
 
         Args:
-          config: A `cli_config.CLIConfig` object.
+          config: A `ui_config.CLIConfig` object.
 
         Returns:
           A dict mapping command handler name to `ArgumentParser` instance.
@@ -291,12 +291,12 @@ class DebugAnalyzer(object):
         A tensor filter is a named callable of the signature:
           filter_callable(dump_datum, tensor),
 
-        wherein dump_datum is an instance of debug_data.DebugTensorDatum carrying
+        wherein dump_datum is an instance of data_dump.DebugTensorDatum carrying
         metadata about the dumped tensor, including tensor name, timestamps, etc.
         tensor is the value of the dumped tensor as an numpy.ndarray object.
         The return value of the function is a bool.
         This is the same signature as the input argument to
-        debug_data.DebugDumpDir.find().
+        data_dump.DebugDumpDir.find().
 
         Args:
           filter_name: (str) name of the filter. Cannot be empty.
@@ -387,14 +387,14 @@ class DebugAnalyzer(object):
         else:
             node_name_regex = None
 
-        output = debugger_cli_common.RichTextLines(filter_strs)
+        output = ui_common.RichTextLines(filter_strs)
         output.append("")
 
         if parsed.tensor_filter:
             try:
                 filter_callable = self.get_tensor_filter(parsed.tensor_filter)
             except ValueError:
-                output = cli_shared.error("There is no tensor filter named \"%s\"." %
+                output = ui_shared.error("There is no tensor filter named \"%s\"." %
                                           parsed.tensor_filter)
                 _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
                 return output
@@ -426,7 +426,7 @@ class DebugAnalyzer(object):
                     continue
 
             rel_time = (dump.timestamp - self._debug_dump.ts0) / 1000.0
-            dump_size_str = cli_shared.bytes_to_readable_str(dump.dump_size_bytes)
+            dump_size_str = ui_shared.bytes_to_readable_str(dump.dump_size_bytes)
             dumped_tensor_name = "%s:%d" % (dump.node_name, dump.output_slot)
             op_type = self._debug_dump.node_op_type(dump.node_name)
             no_ips = str(len(self._debug_dump.node_inputs(dump.node_name)))
@@ -456,7 +456,7 @@ class DebugAnalyzer(object):
                 line,
                 font_attr_segs=[(
                     0, len(dumped_tensor_name),
-                    debugger_cli_common.MenuItem("", "vt %s" % dumped_tensor_name))])
+                    ui_common.MenuItem("", "vt %s" % dumped_tensor_name))])
             dump_count += 1
 
         if parsed.tensor_filter:
@@ -495,7 +495,7 @@ class DebugAnalyzer(object):
 
         max_dump_size_width = 0
         for dump in data:
-            dump_size_str = cli_shared.bytes_to_readable_str(dump.dump_size_bytes)
+            dump_size_str = ui_shared.bytes_to_readable_str(dump.dump_size_bytes)
             if len(dump_size_str) + 1 > max_dump_size_width:
                 max_dump_size_width = len(dump_size_str) + 2
         max_dump_size_width = max(max_dump_size_width,
@@ -613,7 +613,7 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_TENSOR_NAME and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((0, len(row),
-                             [debugger_cli_common.MenuItem("", command), "bold"]))
+                             [ui_common.MenuItem("", command), "bold"]))
         row += " " * (no_tensor_width - len(row))
 
         prev_len = len(row)
@@ -622,7 +622,7 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_TIMESTAMP and not parsed.reverse:
             command += " -r"
         attr_segs[0].append(
-            (prev_len, len(row), [debugger_cli_common.MenuItem(None, command), "bold"]))
+            (prev_len, len(row), [ui_common.MenuItem(None, command), "bold"]))
         row += " " * (no_tensor_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
@@ -631,7 +631,7 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_DUMP_SIZE and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem(None, command), "bold"]))
+                             [ui_common.MenuItem(None, command), "bold"]))
         row += " " * (no_tensor_width + max_dump_size_width + max_timestamp_width - len(row))
 
         prev_len = len(row)
@@ -640,7 +640,7 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_INPUT_SIZE and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem(None, command), "bold"]))
+                             [ui_common.MenuItem(None, command), "bold"]))
         row += " " * (no_tensor_width + max_no_ip_width + max_dump_size_width +
                       max_timestamp_width - len(row))
 
@@ -650,7 +650,7 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_OUTPUT_SIZE and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem(None, command), "bold"]))
+                             [ui_common.MenuItem(None, command), "bold"]))
         row += " " * (no_tensor_width + max_no_op_width + max_no_ip_width + max_dump_size_width +
                       max_timestamp_width - len(row))
 
@@ -660,11 +660,11 @@ class DebugAnalyzer(object):
         if parsed.sort_by == SORT_TENSORS_BY_OP_TYPE and not parsed.reverse:
             command += " -r"
         attr_segs[0].append((prev_len, len(row),
-                             [debugger_cli_common.MenuItem(None, command), "bold"]))
+                             [ui_common.MenuItem(None, command), "bold"]))
         row += " " * (no_tensor_width + max_no_op_width + max_no_ip_width + max_op_type_width +
                       max_dump_size_width + max_timestamp_width - len(row))
 
-        return debugger_cli_common.RichTextLines([row], font_attr_segs=attr_segs)
+        return ui_common.RichTextLines([row], font_attr_segs=attr_segs)
 
     def node_details(self, args, screen_info=None):
         """Command handler for node_details.
@@ -686,11 +686,11 @@ class DebugAnalyzer(object):
 
         # Get a node name, regardless of whether the input is a node name (without
         # output slot attached) or a tensor name (with output slot attached).
-        node_name, _ = debug_graphs.parse_node_or_tensor_name(
+        node_name, _ = graph_dump.parse_node_or_tensor_name(
             parsed.node_name)
 
         if not self._debug_dump.node_exists(node_name):
-            output = cli_shared.error(
+            output = ui_shared.error(
                 "There is no node named \"%s\" in the partition graphs" % node_name)
             _add_main_menu(
                 output,
@@ -709,7 +709,7 @@ class DebugAnalyzer(object):
         lines.append("  Op: %s" % self._debug_dump.node_op_type(node_name))
         node_device_name = self._debug_dump.node_device(node_name).split("device:", 1)[1]
         lines.append("  Device: %s" % node_device_name)
-        output = debugger_cli_common.RichTextLines(
+        output = ui_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
 
         # List node inputs (non-control and control).
@@ -752,7 +752,7 @@ class DebugAnalyzer(object):
                     node_stack):
                 lines.append("%d: %s" % (depth, file_path))
 
-                attribute = debugger_cli_common.MenuItem(
+                attribute = ui_common.MenuItem(
                     "", "ps %s -b %d" % (file_path, line)) if text else None
                 line_number_line = RL("  ")
                 line_number_line += RL("Line:     %d" % line, attribute)
@@ -766,7 +766,7 @@ class DebugAnalyzer(object):
         except LookupError:
             lines.append("(Unavailable because no Python graph has been loaded)")
 
-        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
+        return ui_common.rich_text_lines_frm_line_list(lines)
 
     def graphnode_inputs(self, args, screen_info=None):
         """Command handler for inputs.
@@ -793,7 +793,7 @@ class DebugAnalyzer(object):
             parsed.op_type,
             do_outputs=False)
 
-        node_name = debug_graphs.get_node_name(parsed.node_name)
+        node_name = graph_dump.get_node_name(parsed.node_name)
         _add_main_menu(output, node_name=node_name, enable_graphnode_inputs=False)
 
         return output
@@ -815,19 +815,19 @@ class DebugAnalyzer(object):
 
         parsed = self._arg_parsers["view_tensor"].parse_args(args)
 
-        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
+        np_printoptions = ui_shared.get_np_printoptions_frm_scr(
             screen_info)
 
         # Determine if any range-highlighting is required.
-        highlight_options = cli_shared.parse_ranges_highlight(parsed.ranges)
+        highlight_options = ui_shared.parse_ranges_highlight(parsed.ranges)
 
         tensor_name, tensor_slicing = (
             command_parser.parse_tensor_name_with_slicing(parsed.tensor_name))
 
-        node_name, output_slot = debug_graphs.parse_node_or_tensor_name(tensor_name)
+        node_name, output_slot = graph_dump.parse_node_or_tensor_name(tensor_name)
         if (self._debug_dump.loaded_partition_graphs() and
                 not self._debug_dump.node_exists(node_name)):
-            output = cli_shared.error(
+            output = ui_shared.error(
                 "Node \"%s\" does not exist in partition graphs" % node_name)
             _add_main_menu(
                 output,
@@ -854,7 +854,7 @@ class DebugAnalyzer(object):
                     (node_name, len(output_slots)),
                     "Please specify the output slot: %s:x." % node_name
                 ]
-                output = debugger_cli_common.RichTextLines(lines)
+                output = ui_common.RichTextLines(lines)
                 _add_main_menu(
                     output,
                     node_name=node_name,
@@ -873,12 +873,12 @@ class DebugAnalyzer(object):
 
         if not matching_data:
             # No dump for this tensor.
-            output = cli_shared.error("Tensor \"%s\" did not generate any dumps." %
+            output = ui_shared.error("Tensor \"%s\" did not generate any dumps." %
                                       parsed.tensor_name)
         elif len(matching_data) == 1:
             # There is only one dump for this tensor.
             if parsed.number <= 0:
-                output = cli_shared.format_tensor(
+                output = ui_shared.format_tensor(
                     matching_data[0].get_tensor(),
                     matching_data[0].watch_key,
                     np_printoptions,
@@ -888,7 +888,7 @@ class DebugAnalyzer(object):
                     include_numeric_summary=parsed.numeric_summary,
                     write_path=parsed.write_path)
             else:
-                output = cli_shared.error(
+                output = ui_shared.error(
                     "Invalid number (%d) for tensor %s, which generated one dump." %
                     (parsed.number, parsed.tensor_name))
 
@@ -908,7 +908,7 @@ class DebugAnalyzer(object):
                     command = "view_tensor %s -n %d" % (parsed.tensor_name, i)
                     font_attr_segs[len(lines) - 1] = [(
                         len(lines[-1]) - len(datum.watch_key), len(lines[-1]),
-                        debugger_cli_common.MenuItem(None, command))]
+                        ui_common.MenuItem(None, command))]
 
                 lines.append("")
                 lines.append(
@@ -917,15 +917,15 @@ class DebugAnalyzer(object):
                 lines.append("For example:")
                 lines.append("  view_tensor %s -n 0" % parsed.tensor_name)
 
-                output = debugger_cli_common.RichTextLines(
+                output = ui_common.RichTextLines(
                     lines, font_attr_segs=font_attr_segs)
             elif parsed.number >= len(matching_data):
-                output = cli_shared.error(
+                output = ui_shared.error(
                     "Specified number (%d) exceeds the number of available dumps "
                     "(%d) for tensor %s" %
                     (parsed.number, len(matching_data), parsed.tensor_name))
             else:
-                output = cli_shared.format_tensor(
+                output = ui_shared.format_tensor(
                     matching_data[parsed.number].get_tensor(),
                     matching_data[parsed.number].watch_key + " (dump #%d)" %
                     parsed.number,
@@ -963,7 +963,7 @@ class DebugAnalyzer(object):
             parsed.op_type,
             do_outputs=True)
 
-        node_name = debug_graphs.get_node_name(parsed.node_name)
+        node_name = graph_dump.get_node_name(parsed.node_name)
         _add_main_menu(output, node_name=node_name, enable_graphnode_outputs=False)
 
         return output
@@ -1004,11 +1004,11 @@ class DebugAnalyzer(object):
         font_attr_segs = {}
 
         # Check if this is a tensor name, instead of a node name.
-        node_name, _ = debug_graphs.parse_node_or_tensor_name(node_name)
+        node_name, _ = graph_dump.parse_node_or_tensor_name(node_name)
 
         # Check if node exists.
         if not self._debug_dump.node_exists(node_name):
-            return cli_shared.error(
+            return ui_shared.error(
                 "There is no node named \"%s\" in the partition graphs" % node_name)
 
         if recursive:
@@ -1039,7 +1039,7 @@ class DebugAnalyzer(object):
         if op_type:
             lines.append("  [Op]: Input node has op type Op.")
 
-        return debugger_cli_common.RichTextLines(
+        return ui_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs, additional_attr=curses.A_BOLD)
 
     def _dfs_from_node(self,
@@ -1113,7 +1113,7 @@ class DebugAnalyzer(object):
         len_all_inputs = len(all_inputs)
         for i in range(len_all_inputs):
             inp = all_inputs[i]
-            op_type = self._debug_dump.node_op_type(debug_graphs.get_node_name(inp))
+            op_type = self._debug_dump.node_op_type(graph_dump.get_node_name(inp))
 
             if is_ctrl[i]:
                 ctrl_str = CTRL_LABEL
@@ -1132,12 +1132,12 @@ class DebugAnalyzer(object):
             if command_template:
                 attr_segs[len(lines) - 1] = [(
                     len(line) - len(inp), len(line),
-                    debugger_cli_common.MenuItem(None, command_template % inp))]
+                    ui_common.MenuItem(None, command_template % inp))]
 
             # Recursive call.
             # The input's/output's name can be a tensor name, in the case of node
             # with >1 output slots.
-            inp_node_name, _ = debug_graphs.parse_node_or_tensor_name(inp)
+            inp_node_name, _ = graph_dump.parse_node_or_tensor_name(inp)
             self._dfs_from_node(
                 lines,
                 attr_segs,
@@ -1181,7 +1181,7 @@ class DebugAnalyzer(object):
             lines.append(line)
             font_attr_segs[len(lines) - 1] = [(
                 len(line) - len(non_ctrl), len(line),
-                debugger_cli_common.MenuItem(None, "nd -a -d -t %s" % non_ctrl))]
+                ui_common.MenuItem(None, "nd -a -d -t %s" % non_ctrl))]
 
         if ctrls and neighbors_display:
             lines.append("")
@@ -1191,9 +1191,9 @@ class DebugAnalyzer(object):
                 lines.append(line)
                 font_attr_segs[len(lines) - 1] = [(
                     len(line) - len(ctrl), len(line),
-                    debugger_cli_common.MenuItem(None, "nd -a -d -t %s" % ctrl))]
+                    ui_common.MenuItem(None, "nd -a -d -t %s" % ctrl))]
 
-        return debugger_cli_common.RichTextLines(
+        return ui_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
 
     def _list_node_attributes(self, node_name):
@@ -1217,7 +1217,7 @@ class DebugAnalyzer(object):
             lines.append("    %s" % attr_val_str)
             lines.append("")
 
-        return debugger_cli_common.RichTextLines(lines)
+        return ui_common.RichTextLines(lines)
 
     def _list_node_dumps(self, node_name):
         """List dumped tensor data from a node.
@@ -1249,12 +1249,12 @@ class DebugAnalyzer(object):
                 lines.append(line)
                 command = "vt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
                 font_attr_segs[len(lines) - 1] = [(
-                    2, len(line), debugger_cli_common.MenuItem(None, command))]
+                    2, len(line), ui_common.MenuItem(None, command))]
                 dump_count += 1
 
-        output = debugger_cli_common.RichTextLines(
+        output = ui_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
-        output_with_header = debugger_cli_common.RichTextLines(
+        output_with_header = ui_common.RichTextLines(
             ["Dumped tensor(s):%d" % dump_count, ""])
         output_with_header.extend(output)
         return output_with_header
@@ -1268,19 +1268,19 @@ def create_analyzer_ui(debug_dump,
     """Create an instance of CursesUI based on a DebugDumpDir object.
 
     Args:
-      debug_dump: (debug_data.DebugDumpDir) The debug dump to use.
+      debug_dump: (data_dump.DebugDumpDir) The debug dump to use.
       tensor_filters: (dict) A dict mapping tensor filter name (str) to tensor
         filter (Callable).
       ui_type: (str) requested UI type, e.g., "curses", "readline".
       on_ui_exit: (`Callable`) the callback to be called when the UI exits.
-      config: A `cli_config.CLIConfig` object.
+      config: A `ui_config.CLIConfig` object.
 
     Returns:
-      (base_ui.BaseUI) A BaseUI subtype object with a set of standard analyzer
+      (ui_base.BaseUI) A BaseUI subtype object with a set of standard analyzer
         commands and tab-completions registered.
     """
     if config is None:
-        config = cli_config.CLIConfig()
+        config = ui_config.CLIConfig()
 
     analyzer = DebugAnalyzer(debug_dump, config=config)
     if tensor_filters:

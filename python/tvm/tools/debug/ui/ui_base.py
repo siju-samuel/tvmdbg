@@ -5,9 +5,9 @@ from __future__ import print_function
 
 import argparse
 
-from tvm.tools.debug.ui import cli_config
+from tvm.tools.debug.ui import ui_config
 from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_common
 
 
 def _parse_command(command):
@@ -90,25 +90,25 @@ class BaseUI(object):
 
         Args:
           on_ui_exit: (`Callable`) the callback to be called when the UI exits.
-          config: An instance of `cli_config.CLIConfig()` carrying user-facing
+          config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
         """
 
         self._on_ui_exit = on_ui_exit
 
         self._command_handler_registry = (
-            debugger_cli_common.CommandHandlerRegistry())
+            ui_common.CommandHandlerRegistry())
 
-        self._tab_completion_registry = debugger_cli_common.TabCompletionRegistry()
+        self._tab_completion_registry = ui_common.TabCompletionRegistry()
 
         # Create top-level tab-completion context and register the exit and help
         # commands.
         self._tab_completion_registry.register_tab_comp_context(
             [""], self.CLI_EXIT_COMMANDS +
-            [debugger_cli_common.CommandHandlerRegistry.HELP_COMMAND] +
-            debugger_cli_common.CommandHandlerRegistry.HELP_COMMAND_ALIASES)
+            [ui_common.CommandHandlerRegistry.HELP_COMMAND] +
+            ui_common.CommandHandlerRegistry.HELP_COMMAND_ALIASES)
 
-        self._config = config or cli_config.CLIConfig()
+        self._config = config or ui_config.CLIConfig()
         self._config_argparser = argparse.ArgumentParser(
             description="config command", usage=argparse.SUPPRESS)
         subparsers = self._config_argparser.add_subparsers()

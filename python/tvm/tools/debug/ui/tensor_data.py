@@ -7,8 +7,8 @@ import copy
 import re
 
 import numpy as np
-from tvm.tools.debug.ui import debugger_cli_common
-from tvm.tools.debug.util import debug_data
+from tvm.tools.debug.ui import ui_common
+from tvm.tools.debug.util import data_dump
 
 _NUMPY_OMISSION = "...,"
 _NUMPY_DEFAULT_EDGE_ITEMS = 3
@@ -103,18 +103,18 @@ def format_tensor(tensor,
                 (8 + proper_len + 1, 8 + proper_len + 1 + debug_op_len, "yellow")
             ]
 
-    if isinstance(tensor, debug_data.InconvertibleTensorProto):
+    if isinstance(tensor, data_dump.InconvertibleTensorProto):
         if lines:
             lines.append("")
         lines.extend(str(tensor).split("\n"))
-        return debugger_cli_common.RichTextLines(lines)
+        return ui_common.RichTextLines(lines)
     elif not isinstance(tensor, np.ndarray):
         # If tensor is not a np.ndarray, return simple text-line representation of
         # the object without annotations.
         if lines:
             lines.append("")
         lines.extend(repr(tensor).split("\n"))
-        return debugger_cli_common.RichTextLines(lines)
+        return ui_common.RichTextLines(lines)
 
     if include_metadata:
         lines.append("  dtype: %s" % str(tensor.dtype))
@@ -122,7 +122,7 @@ def format_tensor(tensor,
 
     if lines:
         lines.append("")
-    formatted = debugger_cli_common.RichTextLines(
+    formatted = ui_common.RichTextLines(
         lines, font_attr_segs=font_attr_segs)
 
     if auxiliary_message:
@@ -145,7 +145,7 @@ def format_tensor(tensor,
             array_lines, tensor, np_printoptions=np_printoptions)
     else:
         annotations = None
-    formatted_array = debugger_cli_common.RichTextLines(
+    formatted_array = ui_common.RichTextLines(
         array_lines, annotations=annotations)
     formatted.extend(formatted_array)
 
@@ -492,8 +492,8 @@ def numeric_summary(tensor):
             common_len = max(len(count_key) + 1, len(count_val_str) + 1)
             max_common_len = max(common_len, max_common_len)
 
-        key_line = debugger_cli_common.RichLine("|")
-        val_line = debugger_cli_common.RichLine("|")
+        key_line = ui_common.RichLine("|")
+        val_line = ui_common.RichLine("|")
         for count_key, count_val in counts:
             count_val_str = str(count_val)
             key_line += _pad_string_to_length(count_key, max_common_len)
@@ -510,11 +510,11 @@ def numeric_summary(tensor):
             key_line += total_key_str + " |"
             val_line += total_val_str + " |"
 
-        return debugger_cli_common.rich_text_lines_frm_line_list(
+        return ui_common.rich_text_lines_frm_line_list(
             [key_line, val_line])
 
     if not isinstance(tensor, np.ndarray) or not np.size(tensor):
-        return debugger_cli_common.RichTextLines([
+        return ui_common.RichTextLines([
             "No numeric summary available due to empty tensor."])
     elif (np.issubdtype(tensor.dtype, np.floating) or
           np.issubdtype(tensor.dtype, np.complex) or
@@ -545,5 +545,5 @@ def numeric_summary(tensor):
             ("False", np.sum(tensor == 0)),
             ("True", np.sum(tensor > 0)), ]
         return _counts_summary(counts, total_count=np.size(tensor))
-    return debugger_cli_common.RichTextLines([
+    return ui_common.RichTextLines([
         "No numeric summary available due to tensor dtype: %s." % tensor.dtype])

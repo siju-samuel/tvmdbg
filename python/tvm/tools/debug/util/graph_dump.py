@@ -109,19 +109,19 @@ def _infer_device_name(graph_def):
 class DebugGraph(object):
     """Represents a debugger-decorated graph."""
 
-    def __init__(self, debug_graph_def, device_name=None):
+    def __init__(self, graph_dump_def, device_name=None):
         """Constructor of _DebugGraph.
 
         Args:
-          debug_graph_def: The debugger-decorated `tvm.GraphDef`, with the
+          graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
             debugger-inserted Copy* and Debug* nodes.
           device_name: (str) name of the device.
 
         Raises:
           ValueError: If duplicate node names are encountered.
         """
-        self._debug_graph_def = debug_graph_def
-        self._non_debug_graph_def = None
+        self._graph_dump_def = graph_dump_def
+        self._non_graph_dump_def = None
 
         self._node_attributes = {}
         self._node_inputs = {}
@@ -135,10 +135,10 @@ class DebugGraph(object):
 
         self._device_name = device_name
         if not self._device_name:
-            self._device_name = _infer_device_name(debug_graph_def)
+            self._device_name = _infer_device_name(graph_dump_def)
 
-        for node in debug_graph_def.node:
-            self._process_debug_graph_node(node)
+        for node in graph_dump_def.node:
+            self._process_graph_dump_node(node)
 
         self._prune_nctl_edges_of_dbg_ops()
         self._prune_ctl_edges_of_dbg_ops()
@@ -146,7 +146,7 @@ class DebugGraph(object):
 
         self._populate_recipient_maps()
 
-    def _process_debug_graph_node(self, node):
+    def _process_graph_dump_node(self, node):
         """Process a node from the debug GraphDef.
 
         Args:
@@ -267,7 +267,7 @@ class DebugGraph(object):
         Non-debug GraphDef means the original GraphDef without the Copy* and Debug
         nodes inserted by the debugger.
         """
-        if self._non_debug_graph_def:
+        if self._non_graph_dump_def:
             return
 
     @property
@@ -280,15 +280,15 @@ class DebugGraph(object):
         return self._device_name
 
     @property
-    def debug_graph_def(self):
+    def graph_dump_def(self):
         """The debugger-decorated GraphDef."""
-        return self._debug_graph_def
+        return self._graph_dump_def
 
     @property
-    def non_debug_graph_def(self):
+    def non_graph_dump_def(self):
         """The GraphDef without the Copy* and Debug* nodes added by the debugger."""
         self._reconstruct_ndbg_graph_def()
-        return self._non_debug_graph_def
+        return self._non_graph_dump_def
 
     @property
     def node_devices(self):
@@ -363,7 +363,7 @@ class DebugGraph(object):
         return self._node_ctrl_recipients
 
 
-def reconstruct_non_debug_graph_def(debug_graph_def):
+def reconstruct_non_graph_dump_def(graph_dump_def):
     """Reconstruct original (non-debugger-decorated) partition GraphDef.
 
     This method strips the input `tvm.GraphDef` of the Copy* and Debug*-type nodes
@@ -378,10 +378,10 @@ def reconstruct_non_debug_graph_def(debug_graph_def):
         3) The parallel_iteration attribute of while-loop Enter ops are set to 1.
 
     Args:
-      debug_graph_def: The debugger-decorated `tvm.GraphDef`, with the
+      graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
         debugger-inserted Copy* and Debug* nodes.
 
     Returns:
       The reconstructed `tvm.GraphDef` stripped of the debugger-inserted nodes.
     """
-    return DebugGraph(debug_graph_def).non_debug_graph_def
+    return DebugGraph(graph_dump_def).non_graph_dump_def

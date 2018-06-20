@@ -4,9 +4,9 @@ from __future__ import division
 from __future__ import print_function
 
 import curses
-from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_common
 
-RL = debugger_cli_common.RichLine
+RL = ui_common.RichLine
 EXIT_TEXT = "exit"
 HOME_TEXT = "HOME"
 HELP_TEXT = "help"
@@ -203,35 +203,35 @@ class CursesNavigationHistory(object):
             shortcut menu item.
 
         Returns:
-          (`debugger_cli_common.RichTextLines`) the navigation bar text with
+          (`ui_common.RichTextLines`) the navigation bar text with
             attributes.
 
         """
         output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(HOME_TEXT,
-                     (debugger_cli_common.MenuItem(None, home_command,
+                     (ui_common.MenuItem(None, home_command,
                                                    custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_home() else NAVIGATION_MENU_COLOR_ATTR))
         output += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
 
         output += RL(self.BACK_ARROW_TEXT,
-                     (debugger_cli_common.MenuItem(None, backward_command,
+                     (ui_common.MenuItem(None, backward_command,
                                                    custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_back() else NAVIGATION_MENU_COLOR_ATTR))
         output += RL(" ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(self.FORWARD_ARROW_TEXT,
-                     (debugger_cli_common.MenuItem(None, forward_command,
+                     (ui_common.MenuItem(None, forward_command,
                                                    custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_forward() else NAVIGATION_MENU_COLOR_ATTR))
 
         output_end = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output_end += RL(HELP_TEXT,
-                         (debugger_cli_common.MenuItem(None, help_command,
+                         (ui_common.MenuItem(None, help_command,
                                                        custom_color=NAVIGATION_MENU_COLOR_ATTR)
                           if self.can_go_help() else NAVIGATION_MENU_COLOR_ATTR))
         output_end += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
         output_end += RL(EXIT_TEXT,
-                         debugger_cli_common.MenuItem(None, exit_command,
+                         ui_common.MenuItem(None, exit_command,
                                                       custom_color=NAVIGATION_MENU_COLOR_ATTR))
         output_end += RL(" |", NAVIGATION_MENU_COLOR_ATTR)
 
@@ -248,5 +248,5 @@ class CursesNavigationHistory(object):
                 empty_line = "-" * space_need_size
                 output_middle = RL(empty_line, NAVIGATION_MENU_COLOR_ATTR)
 
-        return debugger_cli_common.rich_text_lines_frm_line_list(
+        return ui_common.rich_text_lines_frm_line_list(
             [output + output_middle + output_end], additional_attr=curses.A_BOLD)

@@ -14,7 +14,7 @@ import re
 import numpy as np
 import six
 
-from tvm.tools.debug.util import debug_graphs
+from tvm.tools.debug.util import graph_dump
 from tvm.tools.debug.runtime import graph_def
 
 METADATA_FILE_PREFIX = "_tvmdbg_"
@@ -662,7 +662,7 @@ class DebugDumpDir(object):
                     print("Failed to load partition graphs from disk.")
 
         for partition_graph, maybe_device_name in partition_graphs_dev_names:
-            debug_graph = debug_graphs.DebugGraph(partition_graph,
+            debug_graph = graph_dump.DebugGraph(partition_graph,
                                                   device_name=maybe_device_name)
             self._debug_graphs[debug_graph.device_name] = debug_graph
             self._collect_node_devices(debug_graph)
@@ -670,13 +670,13 @@ class DebugDumpDir(object):
             if validate and debug_graph.device_name in self._dump_tensor_data:
                 self._validate_dump_with_graphs(debug_graph.device_name)
 
-    def _collect_node_devices(self, debug_graph):
-        for node_name in debug_graph.node_devices:
+    def _collect_node_devices(self, graph_dmp):
+        for node_name in graph_dmp.node_devices:
             if node_name in self._node_devices:
                 self._node_devices[node_name] = self._node_devices[node_name].union(
-                    debug_graph.node_devices[node_name])
+                    graph_dmp.node_devices[node_name])
             else:
-                self._node_devices[node_name] = debug_graph.node_devices[node_name]
+                self._node_devices[node_name] = graph_dmp.node_devices[node_name]
 
     def _validate_dump_with_graphs(self, device_name):
         """Validate the dumped tensor data against the partition graphs.
@@ -710,8 +710,8 @@ class DebugDumpDir(object):
             pending_inputs[node] = []
             inputs = debug_graph.node_inputs[node]
             for inp in inputs:
-                inp_node = debug_graphs.get_node_name(inp)
-                inp_output_slot = debug_graphs.get_output_slot(inp)
+                inp_node = graph_dump.get_node_name(inp)
+                inp_output_slot = graph_dump.get_output_slot(inp)
                 # Inputs from Enter and NextIteration nodes are not validated because
                 # DebugNodeInserter::InsertNodes() in the debugger core skips creating
                 # control edges from debug ops watching these types of nodes.
@@ -1331,7 +1331,7 @@ class DebugDumpDir(object):
           KeyError: If the node cannot be found in the Python graph loaded.
         """
 
-        node_name = debug_graphs.get_node_name(element_name)
+        node_name = graph_dump.get_node_name(element_name)
         if node_name not in self._node_traceback:
             raise KeyError("Cannot find node \"%s\" in Python graph" % node_name)
 

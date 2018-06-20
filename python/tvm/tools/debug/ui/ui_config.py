@@ -7,9 +7,9 @@ import collections
 import json
 import os
 
-from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_common
 
-RL = debugger_cli_common.RichLine
+RL = ui_common.RichLine
 
 
 class CLIConfig(object):
@@ -140,7 +140,7 @@ class CLIConfig(object):
             line += RL(": ")
             line += RL(str(val), font_attr=highlight_attr)
             lines.append(line)
-        return debugger_cli_common.rich_text_lines_frm_line_list(lines)
+        return ui_common.rich_text_lines_frm_line_list(lines)
 
     def _load_from_file(self):
         try:

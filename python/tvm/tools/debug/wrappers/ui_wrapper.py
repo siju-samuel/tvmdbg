@@ -8,14 +8,14 @@ import shutil
 import sys
 import tempfile
 
-from tvm.tools.debug.ui import analyzer_cli
-from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import ui_shared
 from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_common
 from tvm.tools.debug.ui import ui_factory
+from tvm.tools.debug.ui.analyzer import analyzer
 from tvm.tools.debug.util import common
-from tvm.tools.debug.util import debug_data
-from tvm.tools.debug.wrappers import framework
+from tvm.tools.debug.util import data_dump
+from tvm.tools.debug.wrappers import ui_framework as framework
 
 _DUMP_ROOT_PREFIX = "tvmdbg_"
 
@@ -182,7 +182,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         return self._run_start_response
 
     def _exit_if_requested_by_user(self):
-        if self._run_start_response == debugger_cli_common.EXPLICIT_USER_EXIT:
+        if self._run_start_response == ui_common.EXPLICIT_USER_EXIT:
             # Explicit user "exit" command leads to sys.exit(1).
             print(
                 "Note: user exited from debugger CLI: Calling sys.exit(1).",
@@ -194,11 +194,11 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         self._run_cli = ui_factory.get_ui(self._ui_type)
 
-        help_intro = debugger_cli_common.RichTextLines([])
+        help_intro = ui_common.RichTextLines([])
         if self._run_call_count == 1:
             # Show logo at the onset of the first run.
-            help_intro.extend(cli_shared.get_tvmdbg_logo())
-        help_intro.extend(debugger_cli_common.RichTextLines("Upcoming run:"))
+            help_intro.extend(ui_shared.get_tvmdbg_logo())
+        help_intro.extend(ui_common.RichTextLines("Upcoming run:"))
         help_intro.extend(self._run_info)
 
         self._run_cli.set_help_intro(help_intro)
@@ -232,7 +232,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 # unwrapped Session does.
                 raise request.tvm_error
 
-            debug_dump = debug_data.DebugDumpDir(self._ctx,
+            debug_dump = data_dump.DebugDumpDir(self._ctx,
                                                  self._dump_root, partition_graphs=partition_graphs)
 
             passed_filter = None
@@ -259,7 +259,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         """Prepare (but not launch) CLI for run-end, with debug dump from the run.
 
         Args:
-          debug_dump: (debug_data.DebugDumpDir) The debug dump directory from this
+          debug_dump: (data_dump.DebugDumpDir) The debug dump directory from this
             run.
           tvm_error: (None or OpError) OpError that happened during the run() call
             (if any).
@@ -268,7 +268,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         """
 
         if tvm_error:
-            help_intro = cli_shared.get_error_intro(tvm_error)
+            help_intro = ui_shared.get_error_intro(tvm_error)
 
             self._init_command = "help"
             self._title_color = "red_on_white"
@@ -282,7 +282,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 self._init_command = "lg -f %s" % passed_filter
                 self._title_color = "red_on_white"
 
-        self._run_cli = analyzer_cli.create_analyzer_ui(
+        self._run_cli = analyzer.create_analyzer_ui(
             debug_dump, self._tensor_filters, ui_type=self._ui_type,
             on_ui_exit=self._remove_dump_root)
 
@@ -326,27 +326,27 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def _run_info_handler(self, args, screen_info=None):
         _ = args  # Currently unused.
         _ = screen_info  # Currently unused.
-        output = debugger_cli_common.RichTextLines([])
+        output = ui_common.RichTextLines([])
 
         if self._run_call_count == 1:
-            output.extend(cli_shared.get_tvmdbg_logo())
+            output.extend(ui_shared.get_tvmdbg_logo())
         output.extend(self._run_info)
 
         if (not self._is_run_start and
-                debugger_cli_common.MAIN_MENU_KEY in output.annotations):
-            menu = output.annotations[debugger_cli_common.MAIN_MENU_KEY]
+                ui_common.MAIN_MENU_KEY in output.annotations):
+            menu = output.annotations[ui_common.MAIN_MENU_KEY]
             if "list_graphnodes" not in menu.captions():
                 menu.insert(
-                    0, debugger_cli_common.MenuItem("list_graphnodes", "list_graphnodes"))
+                    0, ui_common.MenuItem("list_graphnodes", "list_graphnodes"))
 
         return output
 
     def _print_input_handler(self, args, screen_info=None):
-        np_printoptions = cli_shared.get_np_printoptions_frm_scr(
+        np_printoptions = ui_shared.get_np_printoptions_frm_scr(
             screen_info)
 
         if not self._input_dict:
-            return cli_shared.error(
+            return ui_shared.error(
                 "The input_dict of the current run is None or empty.")
 
         parsed = self._argparsers["print_input"].parse_args(args)
@@ -363,16 +363,16 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 break
 
         if input_key is None:
-            return cli_shared.error(
+            return ui_shared.error(
                 "The input_dict of the current run does not contain the key %s" %
                 tensor_name)
-        return cli_shared.format_tensor(
+        return ui_shared.format_tensor(
             input_value,
             input_key + " (input)",
             np_printoptions,
             print_all=parsed.print_all,
             tensor_slicing=tensor_slicing,
-            highlight_options=cli_shared.parse_ranges_highlight(parsed.ranges),
+            highlight_options=ui_shared.parse_ranges_highlight(parsed.ranges),
             include_numeric_summary=parsed.numeric_summary)
 
     def _run_handler(self, args, screen_info=None):
@@ -395,7 +395,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             debug_urls)
 
         # Raise CommandLineExit exception to cause the CLI to exit.
-        raise debugger_cli_common.CommandLineExit(exit_token=run_start_response)
+        raise ui_common.CommandLineExit(exit_token=run_start_response)
 
     def _register_this_run_info(self, curses_cli):
         curses_cli.register_command_handler(
@@ -454,14 +454,14 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         self._run_call_count = run_call_count
         self._input_dict = input_dict
-        self._run_description = cli_shared.get_run_short_description(
+        self._run_description = ui_shared.get_run_short_description(
             run_call_count,
             outputs,
             input_dict,
             is_callable_runner=is_callable_runner)
         self._run_through_times -= 1
 
-        self._run_info = cli_shared.get_run_start_intro(
+        self._run_info = ui_shared.get_run_start_intro(
             self._graph_node_count,
             outputs,
             input_dict,
