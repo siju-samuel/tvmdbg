@@ -411,8 +411,6 @@ class DebugDumpDir(object):
         self._load_inputs_info()
         self._load_all_device_dumps(partition_graphs, validate)
 
-        self._python_graph = None
-
     def _load_all_device_dumps(self, partition_graphs, validate):
         """Load the dump data for all devices."""
         device_dirs = _glob(os.path.join(
@@ -570,35 +568,6 @@ class DebugDumpDir(object):
                     datum.timestamp - self._t0)
                 self._watch_key_to_dump_size_bytes[device_name][datum.watch_key].append(
                     datum.dump_size_bytes)
-
-    def set_python_graph(self, python_graph):
-        """Provide Python `Graph` object to the wrapper.
-
-        Unlike the partition graphs, which are protobuf `GraphDef` objects, `Graph`
-        is a Python object and carries additional information such as the traceback
-        of the construction of the nodes in the graph.
-
-        Args:
-          python_graph: (ops.Graph) The Python Graph object.
-        """
-
-        self._python_graph = python_graph
-        self._node_traceback = {}
-        if self._python_graph:
-            for operation in self._python_graph.get_operations():
-                self._node_traceback[operation.name] = operation.traceback
-
-    @property
-    def python_graph(self):
-        """Get the Python graph.
-
-        Returns:
-          If the Python graph has been set, returns a `tvm.Graph` object. Otherwise,
-          returns None.
-        """
-
-        return self._python_graph
-
     @property
     def core_metadata(self):
         """Metadata about the `Session.run()` call from the core runtime.
@@ -1525,9 +1494,6 @@ class DebugDumpDir(object):
           LookupError: If Python graph is not available for traceback lookup.
           KeyError: If the node cannot be found in the Python graph loaded.
         """
-
-        if self._python_graph is None:
-            raise LookupError("Python graph is not available for traceback lookup")
 
         node_name = debug_graphs.get_node_name(element_name)
         if node_name not in self._node_traceback:
