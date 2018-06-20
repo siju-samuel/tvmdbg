@@ -156,7 +156,7 @@ class CursesNavigationHistory(object):
         Returns:
           (`bool`) Whether going back home place is possible.
         """
-        if (self._pointer >= 0):
+        if self._pointer >= 0:
             if self._items[self._pointer].command == "home":
                 return False
             return True
@@ -169,7 +169,7 @@ class CursesNavigationHistory(object):
         Returns:
           (`bool`) Whether going back help place is possible.
         """
-        if (self._pointer >= 0):
+        if self._pointer >= 0:
             if self._items[self._pointer].command == "help":
                 return False
             return True
@@ -203,8 +203,8 @@ class CursesNavigationHistory(object):
         """
         output = RL("| ")
         output += RL(self.HOME_TEXT,
-            (debugger_cli_common.MenuItem(None, home_command)
-             if self.can_go_home() else None))
+                     (debugger_cli_common.MenuItem(None, home_command)
+                      if self.can_go_home() else None))
         output += RL(" | ")
 
         output += RL(
@@ -224,8 +224,8 @@ class CursesNavigationHistory(object):
 
             output_end = RL("| ")
             output_end += RL(self.HELP_TEXT,
-                (debugger_cli_common.MenuItem(None, help_command)
-                 if self.can_go_help() else None))
+                             (debugger_cli_common.MenuItem(None, help_command)
+                              if self.can_go_help() else None))
             output_end += RL(" | ")
             output_end += RL(self.EXIT_TEXT, debugger_cli_common.MenuItem(None, exit_command))
             output_end += RL(" |")
@@ -234,7 +234,7 @@ class CursesNavigationHistory(object):
             output_cmd = RL("")
             if self._pointer != len(self._items) - 1:
                 output_cmd += RL("(-%d) " % (len(self._items) - 1 - self._pointer),
-                             command_attribute)
+                                 command_attribute)
 
             if (len(output)+len(output_cmd)+len(output_end)) < max_length:
 

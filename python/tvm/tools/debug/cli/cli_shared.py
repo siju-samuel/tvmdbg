@@ -292,7 +292,8 @@ def get_run_start_intro(run_call_count,
     """
 
     output_lines = common.get_flattened_names(outputs)
-
+    run_call_count = run_call_count
+    tensor_filters = tensor_filters
     if not input_dict:
         input_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
     else:

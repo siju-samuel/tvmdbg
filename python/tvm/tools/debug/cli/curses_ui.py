@@ -460,11 +460,11 @@ class CursesUI(base_ui.BaseUI):
             for bg_color in self._BACKGROUND_COLORS:
                 color_index += 1
 
-                if bg_color==cli_shared.COLOR_GRAY:
+                if bg_color == cli_shared.COLOR_GRAY:
                     curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color], 236)
                 else:
                     curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
-                                         self._BACKGROUND_COLORS[bg_color])
+                                     self._BACKGROUND_COLORS[bg_color])
 
                 color_name = fg_color
                 if bg_color != "transparent":
@@ -956,9 +956,9 @@ class CursesUI(base_ui.BaseUI):
           title: (str) The title to display.
           title_color: (str) Color of the title, e.g., "yellow".
         """
-
-        tvm_dgb_box_top    = "-------------------"
-        tvm_dgb_txt        = "    TVM DEBUG      "
+        title = title
+        tvm_dgb_box_top = "-------------------"
+        tvm_dgb_txt = "    TVM DEBUG      "
         tvm_dgb_box_bottom = "-------------------"
         self._title_line = ("-" * (self._max_x))
         txt_begin = int((self._max_x - len(tvm_dgb_txt))/2)
@@ -1428,7 +1428,7 @@ class CursesUI(base_ui.BaseUI):
             else:
                 scroll_directions = "↕"
 
-            if 10.00 > scroll_percentage:
+            if scroll_percentage < 10.00:
                 info += " "
             info += "%.2f%% %s" % (scroll_percentage, scroll_directions)
 
@@ -1450,12 +1450,12 @@ class CursesUI(base_ui.BaseUI):
 
         if len(info) + len(mouse_mode_str) + 5 < self._max_x:
             info += " " * (self._max_x - len(info) - len(mouse_mode_str) - 4)
-            if len(mouse_mode_str):
-              info += " "
-              info += mouse_mode_str
-              info += "    "
+            if mouse_mode_str:
+                info += " "
+                info += mouse_mode_str
+                info += "    "
             else:
-              info += "    "
+                info += "    "
         else:
             info += " " * (self._max_x - len(info))
 
