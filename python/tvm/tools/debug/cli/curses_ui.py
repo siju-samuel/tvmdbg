@@ -185,8 +185,6 @@ class ScrollBar(object):
         return layout
 
     def _get_click_command(self, mouse_y):
-        # TODO(cais): Support continuous scrolling when the mouse button is held
-        # down.
         if self._output_num_rows <= 1:
             return None
         elif mouse_y == self._min_y:
@@ -334,8 +332,6 @@ class CursesUI(base_ui.BaseUI):
 
         self._screen_init()
         self._screen_refresh_size()
-        # TODO(cais): Error out if the size of the screen is too small.
-
         # Initialize some UI component size and locations.
         self._init_layout()
 
@@ -1081,9 +1077,6 @@ class CursesUI(base_ui.BaseUI):
         highlighting requests (if any), scroll-to-next-match requests (if any),
         and screen refresh requests (if any).
 
-        TODO(cais): Separate these unrelated request to increase clarity and
-          maintainability.
-
         Args:
           output: A RichTextLines object that is the screen output text.
           is_refresh: (bool) Is this a refreshing display with existing output.
@@ -1457,6 +1450,7 @@ class CursesUI(base_ui.BaseUI):
                    "..." + scroll_status_info
 
         return info
+
 
     def _tab_complete(self, command_str):
         """Perform tab completion.

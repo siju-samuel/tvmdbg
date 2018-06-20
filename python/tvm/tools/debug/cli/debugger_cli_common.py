@@ -65,8 +65,6 @@ class RichLine(object):
             entire text.  Extending this object via concatenation allows creation
             of text with varying attributes.
         """
-        # TODO(ebreck) Make .text and .font_attr protected members when we no
-        # longer need public access.
         self.text = text
         if font_attr:
             self.font_attr_segs = [(0, len(text), font_attr)]
@@ -184,12 +182,10 @@ class RichTextLines(object):
         self._font_attr_segs = font_attr_segs
         if not self._font_attr_segs:
             self._font_attr_segs = {}
-            # TODO(cais): Refactor to collections.defaultdict(list) to simplify code.
 
         self._annotations = annotations
         if not self._annotations:
             self._annotations = {}
-            # TODO(cais): Refactor to collections.defaultdict(list) to simplify code.
         self._additional_attr = additional_attr
         if not self._additional_attr:
             self._additional_attr = {}
@@ -389,10 +385,6 @@ class RichTextLines(object):
         with open(file_path, "w") as file_opened:
             for line in self._lines:
                 file_opened.write(line + "\n")
-
-    # TODO(cais): Add a method to allow appending to a line in RichTextLines with
-    # both text and font_attr_segs.
-
 
 def regex_find(orig_screen_output, regex, font_attr):
     """Perform regex match in rich text lines.
@@ -856,9 +848,6 @@ class TabCompletionRegistry(object):
     def __init__(self):
         self._comp_dict = {}
 
-    # TODO(cais): Rename method names with "comp" to "*completion*" to avoid
-    # confusion.
-
     def register_tab_comp_context(self, context_words, comp_items):
         """Register a tab-completion context.
 
@@ -1112,16 +1101,11 @@ class CommandHistory(object):
 
         return commands[-n:]
 
-    # TODO(cais): Lookup by regex.
-
-
 class MenuItem(object):
     """A class for an item in a text-based menu."""
 
     def __init__(self, caption, content, enabled=True, custom_color=None):
         """Menu constructor.
-
-        TODO(cais): Nested menu is currently not supported. Support it.
 
         Args:
           caption: (str) caption of the menu item.

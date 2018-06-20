@@ -373,10 +373,7 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        # TODO(cais): Add annotations of substrings for dumped tensor names, to
-        # facilitate on-screen highlighting/selection of node names.
         _ = screen_info
-
         parsed = self._arg_parsers["list_graphnodes"].parse_args(args)
 
         output = []
@@ -410,8 +407,6 @@ class DebugAnalyzer(object):
             data_to_show = self._debug_dump.find(filter_callable)
         else:
             data_to_show = self._debug_dump.dumped_tensor_data
-
-        # TODO(cais): Implement filter by lambda on tensor value.
 
         ts_width, dump_size_width, op_type_width, no_ip_width, no_op_width, no_tensor_width = (
             self._measure_tensor_lst_col_width(data_to_show))
@@ -691,10 +686,7 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        # TODO(cais): Add annotation of substrings for node names, to facilitate
-        # on-screen highlighting/selection of node names.
         _ = screen_info
-
         parsed = self._arg_parsers["node_details"].parse_args(args)
 
         # Get a node name, regardless of whether the input is a node name (without
@@ -713,15 +705,6 @@ class DebugAnalyzer(object):
                 enable_graphnode_inputs=False,
                 enable_graphnode_outputs=False)
             return output
-
-        # TODO(cais): Provide UI glossary feature to explain to users what the
-        # term "partition graph" means and how it is related to TF graph objects
-        # in Python. The information can be along the line of:
-        # "A nnvm graph defined in Python is stripped of unused ops
-        # according to the inputs and outputs and divided into a number of
-        # partition graphs that may be distributed among multiple devices and
-        # hosts. The partition graphs are what's actually executed by the C++
-        # runtime during a run() call."
 
         lines = ["Node %s" % node_name]
         font_attr_segs = {
@@ -751,10 +734,6 @@ class DebugAnalyzer(object):
         # Optional: List dumps available from the node.
         if parsed.dumps:
             output.extend(self._list_node_dumps(node_name))
-
-        # TODO(Pariksheet): Python traceback implementation not support now.
-        #if hasattr(parsed, "traceback") and parsed.traceback:
-        #    output.extend(self._render_node_traceback(node_name))
 
         _add_main_menu(output, node_name=node_name, enable_node_details=False)
         return output
@@ -809,11 +788,7 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        # Screen info not currently used by this handler. Include this line to
         _ = screen_info
-        # TODO(cais): Use screen info to format the output lines more prettily,
-        # e.g., hanging indent of long node names.
-
         parsed = self._arg_parsers["graphnode_inputs"].parse_args(args)
 
         output = self._graphnode_inputs_or_outputs(
@@ -879,8 +854,6 @@ class DebugAnalyzer(object):
             else:
                 # There are more than one dumped tensors from this node. Indicate as
                 # such.
-                # TODO(cais): Provide an output screen with command links for
-                # convenience.
                 lines = [
                     "Node \"%s\" generated debug dumps from %s output slots:" %
                     (node_name, len(output_slots)),
@@ -985,11 +958,7 @@ class DebugAnalyzer(object):
           Output text lines as a RichTextLines object.
         """
 
-        # Screen info not currently used by this handler. Include this line to
         _ = screen_info
-        # TODO(cais): Use screen info to format the output lines more prettily,
-        # e.g., hanging indent of long node names.
-
         parsed = self._arg_parsers["graphnode_outputs"].parse_args(args)
 
         output = self._graphnode_inputs_or_outputs(
@@ -1078,8 +1047,6 @@ class DebugAnalyzer(object):
 
         if op_type:
             lines.append("  [Op]: Input node has op type Op.")
-
-        # TODO(cais): Consider appending ":0" at the end of 1st outputs of nodes.
 
         return debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs, additional_attr=curses.A_BOLD)
@@ -1202,8 +1169,6 @@ class DebugAnalyzer(object):
           A RichTextLines object.
         """
 
-        # TODO(cais): Return RichTextLines instead, to allow annotation of node
-        # names.
         lines = []
         font_attr_segs = {}
 

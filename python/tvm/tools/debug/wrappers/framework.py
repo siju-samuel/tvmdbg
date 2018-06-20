@@ -240,7 +240,6 @@ class BaseDebugWrapperModule(object):
         self._sess = sess
         self._thread_name_filter_pattern = (re.compile(thread_name_filter)
                                             if thread_name_filter else None)
-        # TODO(cais/kstevens): Unittest this pass through feature.
         self._pass_through_operrors = pass_through_operrors
 
         # Keeps track of number of run calls that have been performed on this
@@ -256,7 +255,6 @@ class BaseDebugWrapperModule(object):
         if response.action == OnSessionInitAction.PROCEED:
             pass
         elif response.action == OnSessionInitAction.REMOTE_INSTR_LOOP:
-            # TODO(cais): Implement REMOTE_INSTR_LOOP
             raise NotImplementedError(
                 "OnSessionInitAction REMOTE_INSTR_LOOP has not been "
                 "implemented.")
