@@ -5,14 +5,10 @@ from __future__ import print_function
 
 import copy
 import re
-import sys
 
 import numpy as np
 from tvm.tools.debug.ui import debugger_cli_common
 from tvm.tools.debug.util import debug_data
-
-if sys.version_info >= (3, 0):
-    xrange = range
 
 _NUMPY_OMISSION = "...,"
 _NUMPY_DEFAULT_EDGE_ITEMS = 3
@@ -235,7 +231,8 @@ def _annotate_ndarray_lines(
 
     curr_indices = [0] * len(dims)
     curr_dim = 0
-    for i in xrange(len(array_lines)):
+    len_array_lines = len(array_lines)
+    for i in range(len_array_lines):
         line = array_lines[i].strip()
 
         if not line:
@@ -259,7 +256,7 @@ def _annotate_ndarray_lines(
             else:
                 if curr_dim > 0:
                     curr_indices[curr_dim - 1] += 1
-                    for k in xrange(curr_dim, ndims):
+                    for k in range(curr_dim, ndims):
                         curr_indices[k] = 0
 
     return annotations
@@ -334,7 +331,8 @@ def locate_tensor_element(formatted, indices):
 
     batch_pos = 0  # Current position in the batch.
 
-    for i in xrange(len(lines)):
+    len_lines = len(lines)
+    for i in range(len_lines):
         if i not in annot:
             continue
 

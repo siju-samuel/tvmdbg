@@ -20,8 +20,6 @@ from tvm.tools.debug.ui import curses_widgets
 from tvm.tools.debug.ui import debugger_cli_common
 from tvm.tools.debug.ui import tensor_format
 
-if sys.version_info >= (3, 0):
-    xrange = range
 
 _SCROLL_REFRESH = "refresh"
 _SCROLL_UP = "up"
@@ -172,7 +170,7 @@ class ScrollBar(object):
 
             layout = debugger_cli_common.RichTextLines(
                 [up_text], font_attr_segs={0: [(0, width, self.BASE_ATTR)]})
-            for i in xrange(1, self._scroll_bar_height - 1):
+            for i in range(1, self._scroll_bar_height - 1):
                 font_attr_segs = background_font_attr_segs
                 if i == block_y:
                     font_attr_segs = None
@@ -991,7 +989,7 @@ class CursesUI(base_ui.BaseUI):
         """Erase existing text in command textpad."""
 
         existing_len = len(self._command_textbox.gather())
-        for _ in xrange(existing_len):
+        for _ in range(existing_len):
             self._command_textbox.do_command(self.BACKSPACE_KEY)
 
     def _screen_draw_text_line(self, row, line, attr=curses.A_NORMAL, color=None):
@@ -1168,7 +1166,7 @@ class CursesUI(base_ui.BaseUI):
         # Create new output pad.
         pad = _screen_new_output_pad(rows, cols)
 
-        for i in xrange(len(output.lines)):
+        for i in range(len(output.lines)):
             if i in output.font_attr_segs:
                 self._screen_add_line_to_output_pad(
                     pad, i, output.lines[i], color_segments=output.font_attr_segs[i],
@@ -1450,7 +1448,6 @@ class CursesUI(base_ui.BaseUI):
                    "..." + scroll_status_info
 
         return info
-
 
     def _tab_complete(self, command_str):
         """Perform tab completion.
