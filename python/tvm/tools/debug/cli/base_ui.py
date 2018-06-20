@@ -117,7 +117,6 @@ class BaseUI(object):
         set_parser.add_argument("property_value", type=str)
         set_parser = subparsers.add_parser("show")
 
-
     def set_help_intro(self, help_intro):
         """Set an introductory message to the help output of the command registry.
 

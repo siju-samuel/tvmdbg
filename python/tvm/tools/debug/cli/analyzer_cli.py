@@ -12,9 +12,9 @@ import argparse
 import copy
 import curses
 import re
+import sys
 
-import six
-if six.PY3:
+if sys.version_info >= (3, 0):
     xrange = range
 
 from tvm.tools.debug.cli import cli_config

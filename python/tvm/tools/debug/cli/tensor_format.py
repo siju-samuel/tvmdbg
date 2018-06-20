@@ -5,13 +5,13 @@ from __future__ import print_function
 
 import copy
 import re
-import six
+import sys
 
 import numpy as np
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.util import debug_data
 
-if six.PY3:
+if sys.version_info >= (3, 0):
     xrange = range
 
 _NUMPY_OMISSION = "...,"

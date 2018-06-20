@@ -12,7 +12,8 @@ import sre_constants
 import traceback
 
 import six
-if six.PY3:
+import sys
+if sys.version_info >= (3, 0):
     xrange = range
 
 HELP_INDENT = "  "

@@ -409,12 +409,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             "HOME",
             self._run_info_handler,
             self._argparsers["HOME"].format_help(),
-            prefix_aliases=["H"])
-        curses_cli.register_command_handler(
-            "home",
-            self._run_info_handler,
-            self._argparsers["HOME"].format_help(),
-            prefix_aliases=["ho"])
+            prefix_aliases=["home"])
         curses_cli.register_command_handler(
             "print_input",
             self._print_input_handler,
