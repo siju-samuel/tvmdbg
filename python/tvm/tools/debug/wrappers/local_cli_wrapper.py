@@ -8,11 +8,11 @@ import shutil
 import sys
 import tempfile
 
-from tvm.tools.debug.cli import analyzer_cli
-from tvm.tools.debug.cli import cli_shared
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import ui_factory
+from tvm.tools.debug.ui import analyzer_cli
+from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_factory
 from tvm.tools.debug.util import common
 from tvm.tools.debug.util import debug_data
 from tvm.tools.debug.wrappers import framework

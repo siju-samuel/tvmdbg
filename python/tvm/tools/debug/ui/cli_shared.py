@@ -10,9 +10,9 @@ import six
 
 import numpy as np
 
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import tensor_format
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import tensor_format
 from tvm.tools.debug.util import common
 
 RL = debugger_cli_common.RichLine

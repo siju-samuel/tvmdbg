@@ -13,12 +13,12 @@ import signal
 import sys
 import threading
 
-from tvm.tools.debug.cli import base_ui
-from tvm.tools.debug.cli import cli_shared
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import curses_widgets
-from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import tensor_format
+from tvm.tools.debug.ui import base_ui
+from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import curses_widgets
+from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import tensor_format
 
 if sys.version_info >= (3, 0):
     xrange = range

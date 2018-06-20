@@ -8,7 +8,7 @@ import re
 import sys
 
 import numpy as np
-from tvm.tools.debug.cli import debugger_cli_common
+from tvm.tools.debug.ui import debugger_cli_common
 from tvm.tools.debug.util import debug_data
 
 if sys.version_info >= (3, 0):

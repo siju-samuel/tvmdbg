@@ -17,11 +17,11 @@ import sys
 if sys.version_info >= (3, 0):
     xrange = range
 
-from tvm.tools.debug.cli import cli_config
-from tvm.tools.debug.cli import cli_shared
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import ui_factory
+from tvm.tools.debug.ui import cli_config
+from tvm.tools.debug.ui import cli_shared
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import debugger_cli_common
+from tvm.tools.debug.ui import ui_factory
 from tvm.tools.debug.util import debug_graphs
 from tvm.tools.debug.util import source_utils
 
