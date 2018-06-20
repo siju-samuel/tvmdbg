@@ -1449,6 +1449,7 @@ class CursesUI(ui_base.BaseUI):
 
         return info
 
+
     def _tab_complete(self, command_str):
         """Perform tab completion.
 
