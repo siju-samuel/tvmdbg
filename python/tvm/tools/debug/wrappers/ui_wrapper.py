@@ -233,7 +233,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 raise request.tvm_error
 
             debug_dump = data_dump.DebugDumpDir(self._ctx,
-                                                 self._dump_root, partition_graphs=partition_graphs)
+                                                self._dump_root, partition_graphs=partition_graphs)
 
             passed_filter = None
             self._prep_debug_cli_for_run_end(

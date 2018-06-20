@@ -663,7 +663,7 @@ class DebugDumpDir(object):
 
         for partition_graph, maybe_device_name in partition_graphs_dev_names:
             debug_graph = graph_dump.DebugGraph(partition_graph,
-                                                  device_name=maybe_device_name)
+                                                device_name=maybe_device_name)
             self._debug_graphs[debug_graph.device_name] = debug_graph
             self._collect_node_devices(debug_graph)
 

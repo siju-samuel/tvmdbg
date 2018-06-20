@@ -395,7 +395,7 @@ class DebugAnalyzer(object):
                 filter_callable = self.get_tensor_filter(parsed.tensor_filter)
             except ValueError:
                 output = ui_shared.error("There is no tensor filter named \"%s\"." %
-                                          parsed.tensor_filter)
+                                         parsed.tensor_filter)
                 _add_main_menu(output, node_name=None, enable_list_graphnodes=False)
                 return output
 
@@ -874,7 +874,7 @@ class DebugAnalyzer(object):
         if not matching_data:
             # No dump for this tensor.
             output = ui_shared.error("Tensor \"%s\" did not generate any dumps." %
-                                      parsed.tensor_name)
+                                     parsed.tensor_name)
         elif len(matching_data) == 1:
             # There is only one dump for this tensor.
             if parsed.number <= 0:

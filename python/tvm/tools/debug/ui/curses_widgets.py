@@ -210,29 +210,29 @@ class CursesNavigationHistory(object):
         output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(HOME_TEXT,
                      (ui_common.MenuItem(None, home_command,
-                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_home() else NAVIGATION_MENU_COLOR_ATTR))
         output += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
 
         output += RL(self.BACK_ARROW_TEXT,
                      (ui_common.MenuItem(None, backward_command,
-                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_back() else NAVIGATION_MENU_COLOR_ATTR))
         output += RL(" ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(self.FORWARD_ARROW_TEXT,
                      (ui_common.MenuItem(None, forward_command,
-                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
                       if self.can_go_forward() else NAVIGATION_MENU_COLOR_ATTR))
 
         output_end = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output_end += RL(HELP_TEXT,
                          (ui_common.MenuItem(None, help_command,
-                                                       custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                                             custom_color=NAVIGATION_MENU_COLOR_ATTR)
                           if self.can_go_help() else NAVIGATION_MENU_COLOR_ATTR))
         output_end += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
         output_end += RL(EXIT_TEXT,
                          ui_common.MenuItem(None, exit_command,
-                                                      custom_color=NAVIGATION_MENU_COLOR_ATTR))
+                                            custom_color=NAVIGATION_MENU_COLOR_ATTR))
         output_end += RL(" |", NAVIGATION_MENU_COLOR_ATTR)
 
         output_middle = RL("", NAVIGATION_MENU_COLOR_ATTR)
