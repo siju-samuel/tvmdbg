@@ -16,7 +16,6 @@ from tvm.tools.debug.cli import cli_config
 from tvm.tools.debug.cli import cli_shared
 from tvm.tools.debug.cli import command_parser
 from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import evaluator
 from tvm.tools.debug.cli import ui_factory
 from tvm.tools.debug.util import debug_graphs
 from tvm.tools.debug.util import source_utils
@@ -131,9 +130,7 @@ class DebugAnalyzer(object):
           config: A `cli_config.CLIConfig` object that carries user-facing
             configurations.
         """
-
         self._debug_dump = debug_dump
-        self._evaluator = evaluator.ExpressionEvaluator(self._debug_dump)
 
         # Initialize tensor filters state.
         self._tensor_filters = {}
