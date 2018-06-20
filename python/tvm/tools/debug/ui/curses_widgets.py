@@ -192,9 +192,7 @@ class CursesNavigationHistory(object):
                forward_command,
                home_command,
                help_command,
-               exit_command,
-               latest_command_attribute="black_on_white",
-               old_command_attribute="magenta_on_white"):
+               exit_command):
         """Render the rich text content of the single-line navigation bar.
 
         Args:
@@ -203,16 +201,12 @@ class CursesNavigationHistory(object):
             the shortcut menu item.
           forward_command: (`str`) command for going forward. Used to construct the
             shortcut menu item.
-           latest_command_attribute: font attribute for lastest command.
-           old_command_attribute: font attribute for old (non-latest) command.
 
         Returns:
           (`debugger_cli_common.RichTextLines`) the navigation bar text with
             attributes.
 
         """
-        latest_command_attribute = latest_command_attribute
-        old_command_attribute = old_command_attribute
         output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(HOME_TEXT,
                      (debugger_cli_common.MenuItem(None, home_command,

@@ -12,10 +12,6 @@ import argparse
 import copy
 import curses
 import re
-import sys
-
-if sys.version_info >= (3, 0):
-    xrange = range
 
 from tvm.tools.debug.ui import cli_config
 from tvm.tools.debug.ui import cli_shared
@@ -23,7 +19,6 @@ from tvm.tools.debug.ui import command_parser
 from tvm.tools.debug.ui import debugger_cli_common
 from tvm.tools.debug.ui import ui_factory
 from tvm.tools.debug.util import debug_graphs
-from tvm.tools.debug.util import source_utils
 
 
 RL = debugger_cli_common.RichLine
@@ -1001,11 +996,9 @@ class DebugAnalyzer(object):
         if do_outputs:
             tracker = self._debug_dump.node_recipients
             type_str = "Recipients of"
-            short_type_str = "recipients"
         else:
             tracker = self._debug_dump.node_inputs
             type_str = "Inputs to"
-            short_type_str = "inputs"
 
         lines = []
         font_attr_segs = {}
@@ -1023,11 +1016,9 @@ class DebugAnalyzer(object):
         else:
             max_depth = 1
 
-        include_ctrls_str = ""
-
         line = "%s node \"%s\"" % (type_str, node_name)
         font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "blue")]
-        lines.append(line + " (Depth limit = %d%s):" % (max_depth, include_ctrls_str))
+        lines.append(line + " (Depth limit = %d):" % (max_depth))
 
         command_template = "go -r %s" if do_outputs else "gi -r %s"
         self._dfs_from_node(
@@ -1103,7 +1094,7 @@ class DebugAnalyzer(object):
 
         # Create depth-dependent hanging indent for the line.
         hang = ""
-        for k in xrange(depth):
+        for k in range(depth):
             if k < depth - 1:
                 if k + 1 in unfinished:
                     hang += HANG_UNFINISHED
@@ -1119,7 +1110,8 @@ class DebugAnalyzer(object):
 
         hang += DEPTH_TEMPLATE % depth
 
-        for i in xrange(len(all_inputs)):
+        len_all_inputs = len(all_inputs)
+        for i in range(len_all_inputs):
             inp = all_inputs[i]
             op_type = self._debug_dump.node_op_type(debug_graphs.get_node_name(inp))
 

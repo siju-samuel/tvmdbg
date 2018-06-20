@@ -11,10 +11,8 @@ import re
 import sre_constants
 import traceback
 
-import sys
 import six
-if sys.version_info >= (3, 0):
-    xrange = range
+
 
 HELP_INDENT = "  "
 
@@ -419,7 +417,7 @@ def regex_find(orig_screen_output, regex, font_attr):
         raise ValueError("Invalid regular expression: \"%s\"" % regex)
 
     regex_match_lines = []
-    for i in xrange(len(new_screen_output.lines)):
+    for i in range(len(new_screen_output.lines)):
         line = new_screen_output.lines[i]
         find_it = re_prog.finditer(line)
 
@@ -513,7 +511,7 @@ def wrap_rich_text_lines(inp, cols):
     out = RichTextLines([])
 
     row_counter = 0  # Counter for new row index
-    for i in xrange(len(inp.lines)):
+    for i in range(len(inp.lines)):
         new_line_indices.append(out.num_lines())
 
         line = inp.lines[i]

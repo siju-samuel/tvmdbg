@@ -3,10 +3,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys
-if sys.version_info >= (3, 0):
-    xrange = range
-
 def parse_node_or_tensor_name(name):
     """Get the node name from a string that can be node or tensor name.
 
@@ -210,7 +206,8 @@ class DebugGraph(object):
         for node in self._node_inputs:
             inputs = self._node_inputs[node]
 
-            for i in xrange(len(inputs)):
+            len_inputs = len(inputs)
+            for i in range(len_inputs):
                 inp = inputs[i]
                 if is_copy_node(inp):
                     # Find the input to the Copy node, which should be the original
