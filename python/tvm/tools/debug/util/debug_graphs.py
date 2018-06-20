@@ -3,8 +3,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import six
-if six.PY3:
+import sys
+if sys.version_info >= (3, 0):
     xrange = range
 
 def parse_node_or_tensor_name(name):

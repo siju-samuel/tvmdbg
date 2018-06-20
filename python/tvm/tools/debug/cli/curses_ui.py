@@ -10,7 +10,6 @@ import curses
 from curses import textpad
 import os
 import signal
-import six
 import sys
 import threading
 
@@ -21,7 +20,7 @@ from tvm.tools.debug.cli import curses_widgets
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.cli import tensor_format
 
-if six.PY3:
+if sys.version_info >= (3, 0):
     xrange = range
 
 _SCROLL_REFRESH = "refresh"
@@ -549,7 +548,7 @@ class CursesUI(base_ui.BaseUI):
             self._dispatch_command(init_command)
 
         if title is not None:
-            self._title(title)
+            self._title()
 
         # CLI main loop.
         exit_token = self._ui_loop()
@@ -817,7 +816,7 @@ class CursesUI(base_ui.BaseUI):
         txt = self._command_textbox.gather()
         return txt.strip()
 
-    def _on_textbox_keypress(self, x):
+    def _on_textbox_keypress(self, key_code):
         """Text box key validator: Callback of key strokes.
 
         Handles a user's keypress in the input text box. Translates certain keys to
@@ -826,7 +825,7 @@ class CursesUI(base_ui.BaseUI):
         the screen output.
 
         Args:
-          x: (int) Key code.
+          key_code: (int) Key code.
 
         Returns:
           (int) A translated key code. In most cases, this is identical to the
@@ -838,30 +837,30 @@ class CursesUI(base_ui.BaseUI):
           debugger_cli_common.CommandLineExit: If a mouse-triggered command returns
             an exit token when dispatched.
         """
-        if not isinstance(x, int):
+        if not isinstance(key_code, int):
             raise TypeError("Key validator expected type int, received type %s" %
-                            type(x))
+                            type(key_code))
 
-        if x in self.CLI_CR_KEYS:
+        if key_code in self.CLI_CR_KEYS:
             # Make Enter key the terminator
-            self._textbox_curr_terminator = x
+            self._textbox_curr_terminator = key_code
             return self.CLI_TERMINATOR_KEY
-        elif x == self.CLI_TAB_KEY:
+        elif key_code == self.CLI_TAB_KEY:
             self._textbox_curr_terminator = self.CLI_TAB_KEY
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_PPAGE:
+        elif key_code == curses.KEY_PPAGE:
             self._scroll_output(_SCROLL_UP_A_LINE)
-            return x
-        elif x == curses.KEY_NPAGE:
+            return key_code
+        elif key_code == curses.KEY_NPAGE:
             self._scroll_output(_SCROLL_DOWN_A_LINE)
-            return x
-        elif x == curses.KEY_HOME:
+            return key_code
+        elif key_code == curses.KEY_HOME:
             self._scroll_output(_SCROLL_HOME)
-            return x
-        elif x == curses.KEY_END:
+            return key_code
+        elif key_code == curses.KEY_END:
             self._scroll_output(_SCROLL_END)
-            return x
-        elif x in [curses.KEY_UP, curses.KEY_DOWN]:
+            return key_code
+        elif key_code in [curses.KEY_UP, curses.KEY_DOWN]:
             # Command history navigation.
             if not self._active_command_history:
                 hist_prefix = self._screen_gather_textbox_str()
@@ -870,21 +869,21 @@ class CursesUI(base_ui.BaseUI):
                         hist_prefix, self._command_history_limit))
 
             if self._active_command_history:
-                if x == curses.KEY_UP:
+                if key_code == curses.KEY_UP:
                     if self._command_pointer < len(self._active_command_history):
                         self._command_pointer += 1
-                elif x == curses.KEY_DOWN:
+                elif key_code == curses.KEY_DOWN:
                     if self._command_pointer > 0:
                         self._command_pointer -= 1
             else:
                 self._command_pointer = 0
 
-            self._textbox_curr_terminator = x
+            self._textbox_curr_terminator = key_code
 
             # Force return from the textbox edit(), so that the textbox can be
             # redrawn with a history command entered.
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_RESIZE:
+        elif key_code == curses.KEY_RESIZE:
             # Respond to terminal resize.
             self._screen_refresh_size()
             self._init_layout()
@@ -894,7 +893,7 @@ class CursesUI(base_ui.BaseUI):
             # Force return from the textbox edit(), so that the textbox can be
             # redrawn.
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_MOUSE and self._mouse_enabled:
+        elif key_code == curses.KEY_MOUSE and self._mouse_enabled:
             try:
                 _, mouse_x, mouse_y, _, mouse_event_type = _screen_getmouse()
             except curses.error:
@@ -906,7 +905,7 @@ class CursesUI(base_ui.BaseUI):
                     scroll_command = self._scroll_bar._get_click_command(mouse_y)
                     if scroll_command is not None:
                         self._scroll_output(scroll_command)
-                    return x
+                    return key_code
                 else:
                     command = self._output_hyperlink_command(mouse_x, mouse_y)
                     if command:
@@ -919,7 +918,7 @@ class CursesUI(base_ui.BaseUI):
         # Invalidate active command history.
         self._command_pointer = 0
         self._active_command_history = []
-        return self._KEY_MAP.get(x, x)
+        return self._KEY_MAP.get(key_code, key_code)
 
     def _redraw_output(self):
         if self._curr_unwrapped_output is not None:
@@ -946,7 +945,7 @@ class CursesUI(base_ui.BaseUI):
                 mouse_x, self._curr_wrapped_output.font_attr_segs[absolute_mouse_y])
         return None
 
-    def _title(self, title):
+    def _title(self):
         """Display title.
 
         Args:
@@ -956,7 +955,6 @@ class CursesUI(base_ui.BaseUI):
 
         tvm_dgb_box_top = "-----------------"
         tvm_dgb_txt = "    TVM DEBUG    "
-        tvm_dgb_box_bottom = "-----------------"
         space_need_half = int(((self._max_x) - len(tvm_dgb_txt))/2)
         tvm_dgb_box_top = (" " * space_need_half) + tvm_dgb_box_top + (" " * (space_need_half))
         tvm_dgb_txt = (" " * space_need_half) + tvm_dgb_txt + (" " * space_need_half)
@@ -1236,7 +1234,7 @@ class CursesUI(base_ui.BaseUI):
             self._main_menu_pad = None
 
     def _screen_add_line_to_output_pad(self, pad, row, txt, color_segments=None,
-        additional_attr=None):
+                                       additional_attr=None):
         """Render a line in a text pad.
 
         Assumes: segments in color_segments are sorted in ascending order of the
@@ -1397,7 +1395,7 @@ class CursesUI(base_ui.BaseUI):
                                        self._output_pad_screen_location.right)
         self._screen_render_nav_bar()
         self._screen_render_menu_pad()
-        self._title(None)
+        self._title()
 
         self._scroll_info = self._compile_ui_status_summary()
         self._screen_draw_text_line(
@@ -1443,7 +1441,7 @@ class CursesUI(base_ui.BaseUI):
             else:
                 scroll_directions = "(PgDn/PgUp)"
 
-            if 10.00 > scroll_percentage:
+            if scroll_percentage < 10.00:
                 scroll_percentage = " %.2f%%" % (scroll_percentage)
             else:
                 scroll_percentage = "%.2f%%" % (scroll_percentage)
