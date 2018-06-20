@@ -116,11 +116,11 @@ class BaseUI(object):
         set_parser.add_argument("property_name", type=str)
         set_parser.add_argument("property_value", type=str)
         set_parser = subparsers.add_parser("show")
-        self.register_command_handler(
-            "config",
-            self._config_command_handler,
-            self._config_argparser.format_help(),
-            prefix_aliases=["cfg"])
+        #self.register_command_handler(
+        #    "config",
+        #    self._config_command_handler,
+        #    self._config_argparser.format_help(),
+        #    prefix_aliases=["cfg"])
 
     def set_help_intro(self, help_intro):
         """Set an introductory message to the help output of the command registry.

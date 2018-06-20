@@ -274,12 +274,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             self._title_color = "red_on_white"
         else:
             help_intro = None
-            self._init_command = "lt"
+            self._init_command = "lg"
 
             self._title_color = "black_on_white"
             if passed_filter is not None:
                 # Some dumped tensor(s) from this run passed the filter.
-                self._init_command = "lt -f %s" % passed_filter
+                self._init_command = "lg -f %s" % passed_filter
                 self._title_color = "red_on_white"
 
         self._run_cli = analyzer_cli.create_analyzer_ui(
@@ -293,14 +293,14 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                                        (datum.node_name, datum.output_slot))
 
         # Tab completions for command "view_tensors".
-        self._run_cli.register_tab_comp_context(["view_tensor", "pt"],
+        self._run_cli.register_tab_comp_context(["view_tensor", "vt"],
                                                 dumped_tensor_names)
 
         # Tab completion for commands "node_details", "graphnode_inputs" and
         # "graphnode_outputs". The list comprehension is used below because nodes()
         # output can be unicodes and they need to be converted to strs.
         self._run_cli.register_tab_comp_context(
-            ["node_details", "ni", "graphnode_inputs", "li", "graphnode_outputs", "lo"],
+            ["node_details", "nd", "graphnode_inputs", "gi", "graphnode_outputs", "go"],
             [str(node_name) for node_name in debug_dump.nodes()])
         # TODO(cais): Reduce API surface area for aliases vis-a-vis tab
         #    completion contexts and registered command handlers.
@@ -409,17 +409,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             "HOME",
             self._run_info_handler,
             self._argparsers["HOME"].format_help(),
-            prefix_aliases=["H"])
-        curses_cli.register_command_handler(
-            "home",
-            self._run_info_handler,
-            self._argparsers["HOME"].format_help(),
             prefix_aliases=["ho"])
         curses_cli.register_command_handler(
             "print_input",
             self._print_input_handler,
             self._argparsers["print_input"].format_help(),
-            prefix_aliases=["pf"])
+            prefix_aliases=["pi"])
 
         if self._tensor_filters:
             # Register tab completion for the filter names.
@@ -429,7 +424,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             # Register tab completion for input_dict keys.
             input_keys = [common.get_graph_element_name(key)
                           for key in self._input_dict.keys()]
-            curses_cli.register_tab_comp_context(["print_input", "pf"], input_keys)
+            curses_cli.register_tab_comp_context(["print_input", "pi"], input_keys)
 
     def _get_run_debug_urls(self):
         """Get the debug_urls value for the current run() call.
@@ -469,9 +464,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._run_through_times -= 1
 
         self._run_info = cli_shared.get_run_start_intro(
-            run_call_count,
             self._graph_node_count,
             outputs,
             input_dict,
-            self._tensor_filters,
             is_callable_runner=is_callable_runner)
