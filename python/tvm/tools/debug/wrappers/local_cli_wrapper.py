@@ -302,8 +302,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._run_cli.register_tab_comp_context(
             ["node_details", "nd", "graphnode_inputs", "gi", "graphnode_outputs", "go"],
             [str(node_name) for node_name in debug_dump.nodes()])
-        # TODO(cais): Reduce API surface area for aliases vis-a-vis tab
-        #    completion contexts and registered command handlers.
 
         self._title = "run-end: " + self._run_description
 

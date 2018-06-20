@@ -17,7 +17,6 @@ import six
 from tvm.tools.debug.util import debug_graphs
 from tvm.tools.debug.runtime import graph_def
 
-# TODO(cais): Tie these string constants in with C++?
 METADATA_FILE_PREFIX = "_tvmdbg_"
 CORE_METADATA_TAG = "core_metadata_"
 GRAPH_FILE_TAG = "graph_"
@@ -50,11 +49,6 @@ class InconvertibleTensorProto(object):
         output = "" if self._initialized else "Uninitialized tensor:\n"
         output += str(self._tensor_proto)
         return output
-
-#    @property
-#    def initialized(self):
-#        return self._initialized
-
 
 def load_tensor_from_event_file(event_file_path):
     """Load a tensor from an event file.
@@ -155,13 +149,11 @@ def as_text(bytes_or_text, encoding='utf-8'):
     else:
         raise TypeError('Expected binary or unicode string, got %r' % bytes_or_text)
 
-
 def device_name_to_device_path(device_name):
     """Convert device name to device path."""
     device_name_items = as_text(device_name).split("/")
     device_name_items = [item.replace(":", "_") for item in device_name_items]
     return METADATA_FILE_PREFIX + DEVICE_TAG + ",".join(device_name_items)
-
 
 def device_path_to_device_name(device_dir):
     """Parse device name from device path.
@@ -177,7 +169,6 @@ def device_path_to_device_name(device_dir):
     return "/".join([
         path_item.replace("device_", "device:").replace("_", ":", 1)
         for path_item in path_items])
-
 
 class DebugTensorDatum(object):
     """A single tensor dumped by TVM Debugger (tvmdbg).
@@ -258,7 +249,6 @@ class DebugTensorDatum(object):
 
         return load_tensor_from_event_file(self.file_path)
 
-    # TODO(cais): Add time unit suffix to timestamp and ts0 (us).
     @property
     def timestamp(self):
         """Timestamp of when this tensor value was dumped.
@@ -778,17 +768,6 @@ class DebugDumpDir(object):
         if not pending:
             return True
 
-#        for datum in self._dump_tensor_data[device_name][start_i:]:
-#            if datum.timestamp > timestamp:
-#                break
-#            if (datum.timestamp == timestamp and
-#                    (datum.node_name, datum.output_slot) in pending):
-#                pending.remove((datum.node_name, datum.output_slot))
-#                if not pending:
-#                    return True
-#
-#        return not pending
-        # Todo(Pariksheet) : Time stamp need to rework
         if not self._dump_tensor_data:
             return False
         if not device_name:
@@ -816,25 +795,6 @@ class DebugDumpDir(object):
             raise LookupError("No partition graphs have been loaded.")
         return [self._debug_graphs[key].debug_graph_def
                 for key in self._debug_graphs]
-
-#    def reconstructed_non_debug_partition_graphs(self):
-#        """Reconstruct partition graphs with the debugger-inserted ops stripped.
-#
-#        The reconstructed partition graphs are identical to the original (i.e.,
-#        non-debugger-decorated) partition graphs except in the following respects:
-#          1) The exact names of the runtime-inserted internal nodes may differ.
-#             These include _Send, _Recv, _HostSend, _HostRecv, _Retval ops.
-#          2) As a consequence of 1, the nodes that receive input directly from such
-#             send- and recv-type ops will have different input names.
-#          3) The parallel_iteration attribute of while-loop Enter ops are set to 1.
-#
-#        Returns:
-#          A dict mapping device names (`str`s) to reconstructed `tvm.GraphDef`s.
-#        """
-#        non_debug_graphs = dict()
-#        for key in self._debug_graphs:
-#            non_debug_graphs[key] = self._debug_graphs[key].non_debug_graph_def
-#        return non_debug_graphs
 
     @property
     def run_outputs_info(self):
@@ -972,50 +932,6 @@ class DebugDumpDir(object):
             return self._debug_graphs[device_name].node_ctrl_inputs[node_name]
         return self._debug_graphs[device_name].node_inputs[node_name]
 
-#    def transitive_inputs(self,
-#                          node_name,
-#                          include_control=True,
-#                          include_reversed_ref=False,
-#                          device_name=None, ):
-#        """Get the transitive inputs of given node according to partition graphs.
-#
-#        Args:
-#          node_name: Name of the node.
-#          include_control: Include control inputs (True by default).
-#          include_reversed_ref: Whether a ref input, say from A to B, is to be also
-#            considered as an input from B to A. The rationale is that ref inputs
-#            generally let the recipient (e.g., B in this case) mutate the value of
-#            the source (e.g., A in this case). So the reverse direction of the ref
-#            edge reflects the direction of information flow.
-#          device_name: (`str`) name of the device. If there is only one device or if
-#            node_name exists on only one device, this argument is optional.
-#
-#        Returns:
-#          (`list` of `str`) all transitive inputs to the node, as a list of node
-#            names.
-#
-#        Raises:
-#          LookupError: If node inputs and control inputs have not been loaded
-#             from partition graphs yet.
-#        """
-#        if not self._debug_graphs:
-#            raise LookupError(
-#                "Node inputs are not loaded from partition graphs yet.")
-#
-#        device_name = self._infer_device_name(device_name, node_name)
-#
-#        input_lists = [self._debug_graphs[device_name].node_inputs]
-#        if include_control:
-#            input_lists.append(self._debug_graphs[device_name].node_ctrl_inputs)
-#        if include_reversed_ref:
-#            input_lists.append(
-#                self._debug_graphs[device_name].node_reversed_ref_inputs)
-#        tracer = debug_graphs.DFSGraphTracer(
-#            input_lists,
-#            skip_node_names=self._get_merge_node_names(device_name))
-#        tracer.trace(node_name)
-#        return tracer.inputs()
-
     def _get_merge_node_names(self, device_name):
         """Lazily get a list of Merge nodes on a given device."""
         if device_name not in self._device_names:
@@ -1029,85 +945,6 @@ class DebugDumpDir(object):
                 node for node in debug_graph.node_op_types
                 if debug_graph.node_op_types[node] == "Merge"]
         return self._merge_node_names[device_name]
-
-#    def find_some_path(self,
-#                       src_node_name,
-#                       dst_node_name,
-#                       include_control=True,
-#                       include_reversed_ref=False,
-#                       device_name=None):
-#        """Find a path between a source node and a destination node.
-#
-#        Limitation: the source and destination are required to be on the same
-#        device, i.e., this method does not yet take into account Send/Recv nodes
-#        across devices.
-#
-#        TODO(cais): Make this method work across device edges by tracing Send/Recv
-#          nodes.
-#
-#        Args:
-#          src_node_name: (`str`) name of the source node or name of an output tensor
-#            of the node.
-#          dst_node_name: (`str`) name of the destination node or name of an output
-#            tensor of the node.
-#          include_control: (`bool`) whrther control edges are considered in the
-#            graph tracing.
-#          include_reversed_ref: Whether a ref input, say from A to B, is to be also
-#            considered as an input from B to A. The rationale is that ref inputs
-#            generally let the recipient (e.g., B in this case) mutate the value of
-#            the source (e.g., A in this case). So the reverse direction of the ref
-#            edge reflects the direction of information flow.
-#          device_name: (`str`) name of the device. If there is only one device or if
-#            node_name exists on only one device, this argument is optional.
-#
-#        Returns:
-#          A path from the src_node_name to dst_node_name, as a `list` of `str`, if
-#          it exists. The list includes src_node_name as the first item and
-#          dst_node_name as the last.
-#          If such a path does not exist, `None`.
-#
-#        Raises:
-#          ValueError: If the source and destination nodes are not on the same
-#            device.
-#        """
-#        src_device_name = self._infer_device_name(device_name, src_node_name)
-#        dst_device_name = self._infer_device_name(device_name, dst_node_name)
-#
-#        if src_device_name != dst_device_name:
-#            raise ValueError(
-#                "Source (%s) and destination (%s) are not on the same device: "
-#                "%s vs. %s" % (src_node_name, dst_node_name, src_device_name,
-#                               dst_device_name))
-#
-#        input_lists = [self._debug_graphs[dst_device_name].node_inputs]
-#        debug_graph = self._debug_graphs[dst_device_name]
-#        if include_control:
-#            input_lists.append(debug_graph.node_ctrl_inputs)
-#        if include_reversed_ref:
-#            input_lists.append(debug_graph.node_reversed_ref_inputs)
-#        tracer = debug_graphs.DFSGraphTracer(
-#            input_lists,
-#            skip_node_names=self._get_merge_node_names(dst_device_name),
-#            destination_node_name=src_node_name)
-#        # Here the value of destination_node_name is src_node_name, because we
-#        # are tracing the graph from output to its inputs (i.e., going backwards
-#        # on the graph).
-#
-#        try:
-#            tracer.trace(dst_node_name)
-#        except debug_graphs.GraphTracingReachedDestination:
-#            # Prune nodes not on the path.
-#            inputs = [dst_node_name] + tracer.inputs()
-#            depth_list = [0] + tracer.depth_list()
-#
-#            path = []
-#            curr_depth = depth_list[-1]
-#            for inp, depth in zip(reversed(inputs), reversed(depth_list)):
-#                if depth == curr_depth:
-#                    path.append(inp)
-#                    curr_depth -= 1
-#            return path
-#        return []
 
     def node_recipients(self, node_name, is_control=False, device_name=None):
         """Get recipient of the given node's output according to partition graphs.
@@ -1443,7 +1280,6 @@ class DebugDumpDir(object):
             raise WatchKeyDoesNotExistInDebugDumpDirError(
                 "Watch key \"%s\" does not exist in the debug dump" % watch_key)
 
-        # TODO(cais): Figure out whether this should be relative to the global ts0.
         return self._watch_key_to_rel_time[device_name][watch_key]
 
     def get_dump_sizes_bytes(self,
