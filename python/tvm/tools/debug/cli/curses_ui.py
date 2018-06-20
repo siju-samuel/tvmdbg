@@ -1450,13 +1450,13 @@ class CursesUI(base_ui.BaseUI):
             scroll_status_info = " %s %s" % (scroll_directions, scroll_percentage)
 
         if len(_COMMAND_TEXT + command_info + scroll_status_info) < self._max_x:
-            info = _COMMAND_TEXT + command_info
-                + " " * (self._max_x - len(_COMMAND_TEXT + command_info + scroll_status_info))
-                + scroll_status_info
+            info = _COMMAND_TEXT + command_info +\
+                   " " * (self._max_x - len(_COMMAND_TEXT + command_info + scroll_status_info)) + \
+                   scroll_status_info
         else:
-            info = _COMMAND_TEXT + command_info[:self._max_x
-                - len(_COMMAND_TEXT + command_info + scroll_status_info) - 3]
-                + "..." + scroll_status_info
+            info = _COMMAND_TEXT + command_info[:self._max_x - \
+                   len(_COMMAND_TEXT + command_info + scroll_status_info) - 3] + \
+                   "..." + scroll_status_info
 
         return info
 
