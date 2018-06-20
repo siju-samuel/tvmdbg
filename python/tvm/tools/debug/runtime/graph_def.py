@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, too-few-public-methods, invalid-name
 """Graph defenition class which is used to exchange the nodes information between tvm and CLI."""
 from __future__ import absolute_import as _abs
 

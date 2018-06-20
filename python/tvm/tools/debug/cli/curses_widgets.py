@@ -211,6 +211,8 @@ class CursesNavigationHistory(object):
             attributes.
 
         """
+        latest_command_attribute = latest_command_attribute
+        old_command_attribute = old_command_attribute
         output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
         output += RL(HOME_TEXT,
                      (debugger_cli_common.MenuItem(None, home_command,

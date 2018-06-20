@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 """Debug runtime functions."""
 
 import os
@@ -53,6 +52,7 @@ class DebugGraphModule(object):
         params : dict of str to NDArray
            Additonal arguments
         """
+        params = params
         if key:
             self.cli_obj.set_input(key.replace("/", "_"), value)
 

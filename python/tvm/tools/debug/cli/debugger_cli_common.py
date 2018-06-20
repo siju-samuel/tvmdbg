@@ -11,8 +11,8 @@ import re
 import sre_constants
 import traceback
 
-import six
 import sys
+import six
 if sys.version_info >= (3, 0):
     xrange = range
 
