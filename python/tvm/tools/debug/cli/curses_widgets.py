@@ -3,10 +3,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import curses
 from tvm.tools.debug.cli import debugger_cli_common
 
 RL = debugger_cli_common.RichLine
-
+EXIT_TEXT = "exit"
+HOME_TEXT = "HOME"
+HELP_TEXT = "help"
+TVM_DBG_BOX_BOTTOM = "-----------------"
+NAVIGATION_MENU_COLOR_ATTR = "white_on_black"
 
 class NavigationHistoryItem(object):
     """Individual item in navigation history."""
@@ -29,9 +34,6 @@ class CursesNavigationHistory(object):
 
     BACK_ARROW_TEXT = "<--"
     FORWARD_ARROW_TEXT = "-->"
-    EXIT_TEXT = "exit"
-    HOME_TEXT = "HOME"
-    HELP_TEXT = "help"
 
     def __init__(self, capacity):
         """Constructor of CursesNavigationHistory.
@@ -157,7 +159,7 @@ class CursesNavigationHistory(object):
           (`bool`) Whether going back home place is possible.
         """
         if self._pointer >= 0:
-            if self._items[self._pointer].command == "home":
+            if self._items[self._pointer].command == "HOME":
                 return False
             return True
         else:
@@ -175,6 +177,14 @@ class CursesNavigationHistory(object):
             return True
         else:
             return False
+
+    def get_latest_command_info(self):
+        """Get the latest command information.
+
+        Returns:
+          (`string`) Return the recent command shortcut.
+        """
+        return self._items[self._pointer].command
 
     def render(self,
                max_length,
@@ -201,46 +211,46 @@ class CursesNavigationHistory(object):
             attributes.
 
         """
-        output = RL("| ")
-        output += RL(self.HOME_TEXT,
-                     (debugger_cli_common.MenuItem(None, home_command)
-                      if self.can_go_home() else None))
-        output += RL(" | ")
+        output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
+        output += RL(HOME_TEXT,
+                     (debugger_cli_common.MenuItem(None, home_command,
+                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_home() else NAVIGATION_MENU_COLOR_ATTR))
+        output += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
 
-        output += RL(
-            self.BACK_ARROW_TEXT,
-            (debugger_cli_common.MenuItem(None, backward_command)
-             if self.can_go_back() else None))
-        output += RL(" ")
-        output += RL(
-            self.FORWARD_ARROW_TEXT,
-            (debugger_cli_common.MenuItem(None, forward_command)
-             if self.can_go_forward() else None))
+        output += RL(self.BACK_ARROW_TEXT,
+                     (debugger_cli_common.MenuItem(None, backward_command,
+                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_back() else NAVIGATION_MENU_COLOR_ATTR))
+        output += RL(" ", NAVIGATION_MENU_COLOR_ATTR)
+        output += RL(self.FORWARD_ARROW_TEXT,
+                     (debugger_cli_common.MenuItem(None, forward_command,
+                                                   custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_forward() else NAVIGATION_MENU_COLOR_ATTR))
 
-        if self._items:
-            command_attribute = (latest_command_attribute
-                                 if (self._pointer == (len(self._items) - 1))
-                                 else old_command_attribute)
+        output_end = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
+        output_end += RL(HELP_TEXT,
+                         (debugger_cli_common.MenuItem(None, help_command,
+                                                       custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                          if self.can_go_help() else NAVIGATION_MENU_COLOR_ATTR))
+        output_end += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
+        output_end += RL(EXIT_TEXT,
+                         debugger_cli_common.MenuItem(None, exit_command,
+                                                      custom_color=NAVIGATION_MENU_COLOR_ATTR))
+        output_end += RL(" |", NAVIGATION_MENU_COLOR_ATTR)
 
-            output_end = RL("| ")
-            output_end += RL(self.HELP_TEXT,
-                             (debugger_cli_common.MenuItem(None, help_command)
-                              if self.can_go_help() else None))
-            output_end += RL(" | ")
-            output_end += RL(self.EXIT_TEXT, debugger_cli_common.MenuItem(None, exit_command))
-            output_end += RL(" |")
+        output_middle = RL("", NAVIGATION_MENU_COLOR_ATTR)
+        if (len(output)+len(output_end)) < max_length:
+            space_need_size = max_length - len(output + output_end)
+            if space_need_size > len(TVM_DBG_BOX_BOTTOM):
+                space_need_size -= len(TVM_DBG_BOX_BOTTOM)
+                space_middle_size = int(space_need_size/2)
+                empty_line = (" " * (space_middle_size - (0 if space_need_size%2 else 1))
+                              + TVM_DBG_BOX_BOTTOM + " " * space_middle_size)
+                output_middle = RL(empty_line, NAVIGATION_MENU_COLOR_ATTR)
+            else:
+                empty_line = "-" * space_need_size
+                output_middle = RL(empty_line, NAVIGATION_MENU_COLOR_ATTR)
 
-            output += RL(" | ")
-            output_cmd = RL("")
-            if self._pointer != len(self._items) - 1:
-                output_cmd += RL("(-%d) " % (len(self._items) - 1 - self._pointer),
-                                 command_attribute)
-
-            if (len(output)+len(output_cmd)+len(output_end)) < max_length:
-
-                space_need_size = max_length - (len(output)+len(output_cmd)+len(output_end) + 1)
-                if space_need_size:
-                    empty_line = " " * space_need_size
-                    output_cmd += RL(empty_line)
-
-        return debugger_cli_common.rich_text_lines_frm_line_list([output + output_cmd + output_end])
+        return debugger_cli_common.rich_text_lines_frm_line_list(
+            [output + output_middle + output_end], additional_attr=curses.A_BOLD)

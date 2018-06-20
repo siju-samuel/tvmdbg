@@ -5,10 +5,14 @@ from __future__ import print_function
 
 import copy
 import re
+import six
 
 import numpy as np
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.util import debug_data
+
+if six.PY3:
+    xrange = range
 
 _NUMPY_OMISSION = "...,"
 _NUMPY_DEFAULT_EDGE_ITEMS = 3
@@ -92,14 +96,14 @@ def format_tensor(tensor,
         suffix = tensor_label.split(":")[-1]
         if suffix.isdigit():
             # Suffix is a number. Assume it is the output slot index.
-            font_attr_segs[0] = [(8, 8 + len(tensor_label), "bold")]
+            font_attr_segs[0] = [(8, 8 + len(tensor_label), "blue")]
         else:
             # Suffix is not a number. It is auxiliary information such as the debug
             # op type. In this case, highlight the suffix with a different color.
             debug_op_len = len(suffix)
             proper_len = len(tensor_label) - debug_op_len - 1
             font_attr_segs[0] = [
-                (8, 8 + proper_len, "bold"),
+                (8, 8 + proper_len, "blue"),
                 (8 + proper_len + 1, 8 + proper_len + 1 + debug_op_len, "yellow")
             ]
 

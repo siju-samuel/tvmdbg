@@ -10,7 +10,12 @@ from __future__ import print_function
 
 import argparse
 import copy
+import curses
 import re
+
+import six
+if six.PY3:
+    xrange = range
 
 from tvm.tools.debug.cli import cli_config
 from tvm.tools.debug.cli import cli_shared
@@ -20,6 +25,7 @@ from tvm.tools.debug.cli import evaluator
 from tvm.tools.debug.cli import ui_factory
 from tvm.tools.debug.util import debug_graphs
 from tvm.tools.debug.util import source_utils
+
 
 RL = debugger_cli_common.RichLine
 
@@ -88,12 +94,12 @@ def _add_main_menu(output,
         menu.append(
             debugger_cli_common.MenuItem(
                 "graphnode_inputs",
-                "graphnode_inputs -c -r %s" % node_name,
+                "graphnode_inputs -r %s" % node_name,
                 enabled=enable_graphnode_inputs))
         menu.append(
             debugger_cli_common.MenuItem(
                 "graphnode_outputs",
-                "graphnode_outputs -c -r %s" % node_name,
+                "graphnode_outputs -r %s" % node_name,
                 enabled=enable_graphnode_outputs))
     else:
         menu.append(
@@ -317,8 +323,6 @@ class DebugAnalyzer(object):
             type=str,
             help="Name of the node or an output tensor from the node.")
         arg_p.add_argument(
-            "-c", "--control", action="store_true", help="Include control inputs.")
-        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
@@ -347,8 +351,6 @@ class DebugAnalyzer(object):
             type=str,
             help="Name of the node or an output tensor from the node.")
         arg_p.add_argument(
-            "-c", "--control", action="store_true", help="Include control inputs.")
-        arg_p.add_argument(
             "-d",
             "--depth",
             dest="depth",
@@ -374,90 +376,6 @@ class DebugAnalyzer(object):
             command_parser.get_view_tensor_argparser(
                 "Print the value of a dumped tensor."))
 
-        # Parser for print_source.
-        arg_p = argparse.ArgumentParser(
-            description="Print a Python source file with overlaid debug "
-                        "information, including the nodes (ops) or Tensors created at the "
-                        "source lines.",
-            usage=argparse.SUPPRESS)
-        arg_p.add_argument(
-            "source_file_path",
-            type=str,
-            help="Path to the source file.")
-        arg_p.add_argument(
-            "-t",
-            "--tensors",
-            dest="tensors",
-            action="store_true",
-            help="Label lines with dumped Tensors, instead of ops.")
-        arg_p.add_argument(
-            "-m",
-            "--max_elements_per_line",
-            type=int,
-            default=10,
-            help="Maximum number of elements (ops or Tensors) to show per source "
-                 "line.")
-        arg_p.add_argument(
-            "-b",
-            "--line_begin",
-            type=int,
-            default=1,
-            help="Print source beginning at line number (1-based.)")
-        self._arg_parsers["print_source"] = arg_p
-
-        # Parser for list_source.
-        arg_p = argparse.ArgumentParser(
-            description="List source files responsible for constructing nodes and "
-                        "tensors present in the run().",
-            usage=argparse.SUPPRESS)
-        arg_p.add_argument(
-            "-p",
-            "--path_filter",
-            type=str,
-            default="",
-            help="Regular expression filter for file path.")
-        arg_p.add_argument(
-            "-n",
-            "--node_name_filter",
-            type=str,
-            default="",
-            help="Regular expression filter for node name.")
-        self._arg_parsers["list_source"] = arg_p
-
-        # Parser for eval.
-        arg_p = argparse.ArgumentParser(
-            description="""Evaluate an arbitrary expression. Can use tensor values
-        from the current debug dump. The debug tensor names should be enclosed
-        in pairs of backticks. Expressions with spaces should be enclosed in
-        a pair of double quotes or a pair of single quotes. By default, numpy
-        is imported as np and can be used in the expressions.""",
-            usage=argparse.SUPPRESS)
-        arg_p.add_argument(
-            "expression",
-            type=str,
-            help="""Expression to be evaluated.
-        1) in the simplest case, use <node_name>:<output_slot>.
-
-        2) if the tensor of the same name exists on more than one device, use
-          <device_name>:<node_name>:<output_slot>[:<debug_op>]..
-
-        3) if the tensor is executed multiple times in a given `GraphRuntime.DebugRun`
-        call, specify the execution index with a 0-based integer enclose in a
-        pair of brackets at the end.""")
-        arg_p.add_argument(
-            "-a",
-            "--all",
-            dest="print_all",
-            action="store_true",
-            help="Print the tensor in its entirety, i.e., do not use ellipses "
-                 "(may be slow for large results).")
-        arg_p.add_argument(
-            "-w",
-            "--write_path",
-            default="",
-            help="Path of the numpy file to write the evaluation result to, "
-                 "using numpy.save()")
-        self._arg_parsers["eval"] = arg_p
 
     def add_tensor_filter(self, filter_name, filter_callable):
         """Add a tensor filter.
@@ -635,7 +553,7 @@ class DebugAnalyzer(object):
                 line,
                 font_attr_segs=[(
                     0, len(dumped_tensor_name),
-                    debugger_cli_common.MenuItem("", "pt %s" % dumped_tensor_name))])
+                    debugger_cli_common.MenuItem("", "vt %s" % dumped_tensor_name))])
             dump_count += 1
 
         if parsed.tensor_filter:
@@ -894,7 +812,7 @@ class DebugAnalyzer(object):
 
         lines = ["Node %s" % node_name]
         font_attr_segs = {
-            0: [(len(lines[-1]) - len(node_name), len(lines[-1]), "bold")]
+            0: [(len(lines[-1]) - len(node_name), len(lines[-1]), "blue")]
         }
         lines.append("")
         lines.append("  Op: %s" % self._debug_dump.node_op_type(node_name))
@@ -989,7 +907,6 @@ class DebugAnalyzer(object):
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
-            parsed.control,
             parsed.op_type,
             do_outputs=False)
 
@@ -1166,7 +1083,6 @@ class DebugAnalyzer(object):
             parsed.recursive,
             parsed.node_name,
             parsed.depth,
-            parsed.control,
             parsed.op_type,
             do_outputs=True)
 
@@ -1245,7 +1161,7 @@ class DebugAnalyzer(object):
                     label = RL(" " * 4)
                     if self._debug_dump.debug_watch_keys(
                             debug_graphs.get_node_name(element)):
-                        attribute = debugger_cli_common.MenuItem("", "pt %s" % element)
+                        attribute = debugger_cli_common.MenuItem("", "vt %s" % element)
                     else:
                         attribute = cli_shared.COLOR_BLUE
 
@@ -1294,7 +1210,6 @@ class DebugAnalyzer(object):
                                      recursive,
                                      node_name,
                                      depth,
-                                     control,
                                      op_type,
                                      do_outputs=False):
         """Helper function used by graphnode_inputs and graphnode_outputs.
@@ -1307,8 +1222,6 @@ class DebugAnalyzer(object):
           node_name: The name of the node in question, as a str.
           depth: Maximum recursion depth, applies only if recursive == True, as an
             int.
-          control: Whether control inputs or control recipients are included, as a
-            boolean.
           op_type: Whether the op types of the nodes are to be included, as a
             boolean.
           do_outputs: Whether recipients, instead of input nodes are to be
@@ -1343,16 +1256,13 @@ class DebugAnalyzer(object):
         else:
             max_depth = 1
 
-        if control:
-            include_ctrls_str = ", control %s included" % short_type_str
-        else:
-            include_ctrls_str = ""
+        include_ctrls_str = ""
 
         line = "%s node \"%s\"" % (type_str, node_name)
-        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "bold")]
+        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "blue")]
         lines.append(line + " (Depth limit = %d%s):" % (max_depth, include_ctrls_str))
 
-        command_template = "lo -c -r %s" if do_outputs else "li -c -r %s"
+        command_template = "go -r %s" if do_outputs else "gi -r %s"
         self._dfs_from_node(
             lines,
             font_attr_segs,
@@ -1360,7 +1270,6 @@ class DebugAnalyzer(object):
             tracker,
             max_depth,
             1, [],
-            control,
             op_type,
             command_template=command_template)
 
@@ -1369,15 +1278,13 @@ class DebugAnalyzer(object):
         lines.append("Legend:")
         lines.append("  (d): recursion depth = d.")
 
-        if control:
-            lines.append("  (Ctrl): Control input.")
         if op_type:
             lines.append("  [Op]: Input node has op type Op.")
 
         # TODO(cais): Consider appending ":0" at the end of 1st outputs of nodes.
 
         return debugger_cli_common.RichTextLines(
-            lines, font_attr_segs=font_attr_segs)
+            lines, font_attr_segs=font_attr_segs, additional_attr=curses.A_BOLD)
 
     def _dfs_from_node(self,
                        lines,
@@ -1387,7 +1294,6 @@ class DebugAnalyzer(object):
                        max_depth,
                        depth,
                        unfinished,
-                       include_control=False,
                        show_op_type=False,
                        command_template=None):
         """Perform depth-first search (DFS) traversal of a node's input tree.
@@ -1421,12 +1327,6 @@ class DebugAnalyzer(object):
         # Make a shallow copy of the list because it may be extended later.
         all_inputs = copy.copy(tracker(node_name, is_control=False))
         is_ctrl = [False] * len(all_inputs)
-        if include_control:
-            # Sort control inputs or recipients in alphabetical order of the node
-            # names.
-            ctrl_inputs = sorted(tracker(node_name, is_control=True))
-            all_inputs.extend(ctrl_inputs)
-            is_ctrl.extend([True] * len(ctrl_inputs))
 
         if not all_inputs:
             if depth == 1:
@@ -1489,7 +1389,6 @@ class DebugAnalyzer(object):
                 max_depth,
                 depth + 1,
                 unfinished,
-                include_control=include_control,
                 show_op_type=show_op_type,
                 command_template=command_template)
 
@@ -1527,7 +1426,7 @@ class DebugAnalyzer(object):
             lines.append(line)
             font_attr_segs[len(lines) - 1] = [(
                 len(line) - len(non_ctrl), len(line),
-                debugger_cli_common.MenuItem(None, "ni -a -d -t %s" % non_ctrl))]
+                debugger_cli_common.MenuItem(None, "nd -a -d -t %s" % non_ctrl))]
 
         if ctrls and neighbors_display:
             lines.append("")
@@ -1537,7 +1436,7 @@ class DebugAnalyzer(object):
                 lines.append(line)
                 font_attr_segs[len(lines) - 1] = [(
                     len(line) - len(ctrl), len(line),
-                    debugger_cli_common.MenuItem(None, "ni -a -d -t %s" % ctrl))]
+                    debugger_cli_common.MenuItem(None, "nd -a -d -t %s" % ctrl))]
 
         return debugger_cli_common.RichTextLines(
             lines, font_attr_segs=font_attr_segs)
@@ -1593,7 +1492,7 @@ class DebugAnalyzer(object):
                         datum.output_slot, datum.debug_op,
                         (datum.timestamp - self._debug_dump.ts0) / 1000.0)
                 lines.append(line)
-                command = "pt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
+                command = "vt %s:%d -n %d" % (node_name, datum.output_slot, dump_count)
                 font_attr_segs[len(lines) - 1] = [(
                     2, len(line), debugger_cli_common.MenuItem(None, command))]
                 dump_count += 1
@@ -1639,48 +1538,33 @@ def create_analyzer_ui(debug_dump,
         "list_graphnodes",
         analyzer.list_graphnodes,
         analyzer.get_help("list_graphnodes"),
-        prefix_aliases=["lt"])
+        prefix_aliases=["lg"])
     cli.register_command_handler(
         "node_details",
         analyzer.node_details,
         analyzer.get_help("node_details"),
-        prefix_aliases=["ni"])
+        prefix_aliases=["nd"])
     cli.register_command_handler(
         "graphnode_inputs",
         analyzer.graphnode_inputs,
         analyzer.get_help("graphnode_inputs"),
-        prefix_aliases=["li"])
+        prefix_aliases=["gi"])
     cli.register_command_handler(
         "graphnode_outputs",
         analyzer.graphnode_outputs,
         analyzer.get_help("graphnode_outputs"),
-        prefix_aliases=["lo"])
+        prefix_aliases=["go"])
     cli.register_command_handler(
         "view_tensor",
         analyzer.view_tensor,
         analyzer.get_help("view_tensor"),
-        prefix_aliases=["pt"])
-    cli.register_command_handler(
-        "print_source",
-        analyzer.print_source,
-        analyzer.get_help("print_source"),
-        prefix_aliases=["ps"])
-    cli.register_command_handler(
-        "list_source",
-        analyzer.list_source,
-        analyzer.get_help("list_source"),
-        prefix_aliases=["ls"])
-    cli.register_command_handler(
-        "eval",
-        analyzer.evaluate_expression,
-        analyzer.get_help("eval"),
-        prefix_aliases=["ev"])
+        prefix_aliases=["vt"])
 
     dumped_tensor_names = []
     for datum in debug_dump.dumped_tensor_data:
         dumped_tensor_names.append("%s:%d" % (datum.node_name, datum.output_slot))
 
     # Tab completions for command "view_tensors".
-    cli.register_tab_comp_context(["view_tensor", "pt"], dumped_tensor_names)
+    cli.register_tab_comp_context(["view_tensor", "vt"], dumped_tensor_names)
 
     return cli
