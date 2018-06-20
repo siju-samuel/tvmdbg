@@ -3,6 +3,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import six
+if six.PY3:
+    xrange = range
+
 def parse_node_or_tensor_name(name):
     """Get the node name from a string that can be node or tensor name.
 

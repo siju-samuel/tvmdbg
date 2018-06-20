@@ -12,6 +12,8 @@ import sre_constants
 import traceback
 
 import six
+if six.PY3:
+    xrange = range
 
 HELP_INDENT = "  "
 
@@ -104,7 +106,7 @@ class RichLine(object):
         return len(self.text)
 
 
-def rich_text_lines_frm_line_list(rich_text_list, annotations=None):
+def rich_text_lines_frm_line_list(rich_text_list, annotations=None, additional_attr=None):
     """Convert a list of RichLine objects or strings to a RichTextLines object.
 
     Args:
@@ -123,7 +125,8 @@ def rich_text_lines_frm_line_list(rich_text_list, annotations=None):
                 font_attr_segs[i] = richline.font_attr_segs
         else:
             lines.append(richline)
-    return RichTextLines(lines, font_attr_segs, annotations=annotations)
+    return RichTextLines(lines, font_attr_segs, annotations=annotations,
+                         additional_attr=additional_attr)
 
 
 class RichTextLines(object):
@@ -137,7 +140,7 @@ class RichTextLines(object):
     lines only.
     """
 
-    def __init__(self, lines, font_attr_segs=None, annotations=None):
+    def __init__(self, lines, font_attr_segs=None, annotations=None, additional_attr=None):
         """Constructor of RichTextLines.
 
         Args:
@@ -186,6 +189,9 @@ class RichTextLines(object):
         if not self._annotations:
             self._annotations = {}
             # TODO(cais): Refactor to collections.defaultdict(list) to simplify code.
+        self._additional_attr = additional_attr
+        if not self._additional_attr:
+            self._additional_attr = {}
 
     @property
     def lines(self):
@@ -204,6 +210,15 @@ class RichTextLines(object):
           Dictionary of rich text line font attributes segments.
         """
         return self._font_attr_segs
+
+    @property
+    def font_additional_attr(self):
+        """Get the rich text line additional attributes.
+
+        Returns:
+          Rich text line additional attributes.
+        """
+        return self._additional_attr
 
     @property
     def annotations(self):
@@ -1102,7 +1117,7 @@ class CommandHistory(object):
 class MenuItem(object):
     """A class for an item in a text-based menu."""
 
-    def __init__(self, caption, content, enabled=True):
+    def __init__(self, caption, content, enabled=True, custom_color=None):
         """Menu constructor.
 
         TODO(cais): Nested menu is currently not supported. Support it.
@@ -1112,11 +1127,13 @@ class MenuItem(object):
           content: Content of the menu item. For a menu item that triggers
             a command, for example, content is the command string.
           enabled: (bool) whether this menu item is enabled.
+          custom_color: (str) color attribute for the menu item.
         """
 
         self._caption = caption
         self._content = content
         self._enabled = enabled
+        self._custom_color = custom_color
 
     @property
     def caption(self):
@@ -1140,6 +1157,15 @@ class MenuItem(object):
             a command, for example, content is the command string.
         """
         return self._content
+
+    @property
+    def get_custom_color(self):
+        """Get the custom color attribute for MenuItem.
+
+        Returns:
+          Custom color attribute.
+        """
+        return self._custom_color
 
     def is_enabled(self):
         """Get a MenuItem is enable or not.

@@ -268,11 +268,9 @@ def get_tvmdbg_logo():
 _HORIZONTAL_BAR = " ======================================"
 
 
-def get_run_start_intro(run_call_count,
-                        graph_node_count,
+def get_run_start_intro(graph_node_count,
                         outputs,
                         input_dict,
-                        tensor_filters,
                         is_callable_runner=False):
     """Generate formatted intro for run-start UI.
 
@@ -292,8 +290,7 @@ def get_run_start_intro(run_call_count,
     """
 
     output_lines = common.get_flattened_names(outputs)
-    run_call_count = run_call_count
-    tensor_filters = tensor_filters
+
     if not input_dict:
         input_dict_lines = [debugger_cli_common.RichLine("  (Empty)")]
     else:
@@ -303,7 +300,7 @@ def get_run_start_intro(run_call_count,
             input_dict_line = debugger_cli_common.RichLine("  ")
             input_dict_line += debugger_cli_common.RichLine(
                 input_key_name,
-                debugger_cli_common.MenuItem(None, "pf '%s'" % input_key_name))
+                debugger_cli_common.MenuItem(None, "pi '%s'" % input_key_name))
             # Surround the name string with quotes, because input_key_name may contain
             # spaces in some cases, e.g., SparseTensors.
             input_dict_lines.append(input_dict_line)
@@ -427,18 +424,18 @@ def get_error_intro(tvm_error):
     out = debugger_cli_common.rich_text_lines_frm_line_list(intro_lines)
 
     out.extend(
-        _recommend_command("ni -a -d -t %s" % op_name,
+        _recommend_command("nd -a -d -t %s" % op_name,
                            "Inspect information about the failing op.",
                            create_link=True))
     out.extend(
-        _recommend_command("li -r %s" % op_name,
+        _recommend_command("gi -r %s" % op_name,
                            "List inputs to the failing op, recursively.",
                            create_link=True))
 
     out.extend(
         _recommend_command(
-            "lt",
-            "List all tensors dumped during the failing run() call.",
+            "lg",
+            "List all graphnodes dumped during the failing run() call.",
             create_link=True))
 
     more_lines = [

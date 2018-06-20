@@ -10,6 +10,7 @@ import curses
 from curses import textpad
 import os
 import signal
+import six
 import sys
 import threading
 
@@ -19,6 +20,9 @@ from tvm.tools.debug.cli import command_parser
 from tvm.tools.debug.cli import curses_widgets
 from tvm.tools.debug.cli import debugger_cli_common
 from tvm.tools.debug.cli import tensor_format
+
+if six.PY3:
+    xrange = range
 
 _SCROLL_REFRESH = "refresh"
 _SCROLL_UP = "up"
@@ -31,7 +35,8 @@ _SCROLL_TO_LINE_INDEX = "scroll_to_line_index"
 
 _COLOR_READY_COLORTERMS = ["gnome-terminal", "xfce4-terminal"]
 _COLOR_ENABLED_TERM = "xterm-256color"
-_TITLE_SIZE_DEFAULT = 2
+_TITLE_SIZE_DEFAULT = 1
+_COMMAND_TEXT = "Command: "
 
 
 def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
@@ -69,8 +74,8 @@ class ScrollBar(object):
     event in the screen region it occupies.
     """
 
-    BASE_ATTR = cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE
-    BACKGROUND_BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_GRAY
+    BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK
+    BACKGROUND_BASE_ATTR = cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK
 
     def __init__(self,
                  min_x,
@@ -171,7 +176,7 @@ class ScrollBar(object):
             for i in xrange(1, self._scroll_bar_height - 1):
                 font_attr_segs = background_font_attr_segs
                 if i == block_y:
-                    font_attr_segs = foreground_font_attr_segs
+                    font_attr_segs = None
                 layout.append("  ", font_attr_segs=font_attr_segs)
             layout.append(down_text, font_attr_segs=foreground_font_attr_segs)
         else:
@@ -262,7 +267,7 @@ class CursesUI(base_ui.BaseUI):
     }
 
     _FOREGROUND_COLORS = {
-        cli_shared.COLOR_WHITE: curses.COLOR_BLUE,
+        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
         cli_shared.COLOR_RED: curses.COLOR_RED,
         cli_shared.COLOR_GREEN: curses.COLOR_GREEN,
         cli_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
@@ -273,8 +278,7 @@ class CursesUI(base_ui.BaseUI):
     }
     _BACKGROUND_COLORS = {
         "transparent": -1,
-        cli_shared.COLOR_WHITE: curses.COLOR_CYAN,
-        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
         cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
 
@@ -288,7 +292,7 @@ class CursesUI(base_ui.BaseUI):
     _INFO_TOAST_COLOR_PAIR = (
         cli_shared.COLOR_BLUE + "_on_" + cli_shared.COLOR_WHITE)
     _STATUS_BAR_COLOR_PAIR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        cli_shared.COLOR_WHITE + "_on_" + cli_shared.COLOR_BLACK)
     _UI_WAIT_COLOR_PAIR = (
         cli_shared.COLOR_MAGENTA + "_on_" + cli_shared.COLOR_WHITE)
     _NAVIGATION_WARNING_COLOR_PAIR = (
@@ -325,7 +329,6 @@ class CursesUI(base_ui.BaseUI):
         self._scroll_info = None
         self._textbox_curr_terminator = None
         self._textbox_pending_cmd_changed = None
-        self._title_line = None
         self._unwrapped_regex_match_lines = None
         self._title_color = "white_on_black"
         self._single_instance_lock = threading.Lock()
@@ -370,12 +373,6 @@ class CursesUI(base_ui.BaseUI):
         except ValueError:
             # Running in a child thread, can't catch signals.
             pass
-
-        self.register_command_handler(
-            "mouse",
-            self._mouse_mode_command_handler,
-            "Get or set the mouse mode of this CLI: (on|off)",
-            prefix_aliases=["m"])
 
     def _init_layout(self):
         """Initialize the layout of UI components.
@@ -956,26 +953,30 @@ class CursesUI(base_ui.BaseUI):
           title: (str) The title to display.
           title_color: (str) Color of the title, e.g., "yellow".
         """
-        title = title
-        tvm_dgb_box_top = "-------------------"
-        tvm_dgb_txt = "    TVM DEBUG      "
-        tvm_dgb_box_bottom = "-------------------"
-        self._title_line = ("-" * (self._max_x))
-        txt_begin = int((self._max_x - len(tvm_dgb_txt))/2)
-        tvm_dgb_box_top = (" " * txt_begin) + tvm_dgb_box_top + (" " * txt_begin)
-        tvm_dgb_txt = (" " * txt_begin) + tvm_dgb_txt + (" " * txt_begin)
-        tvm_dgb_box_bottom = (" " * txt_begin) + tvm_dgb_box_bottom + (" " * txt_begin)
-        if len(tvm_dgb_txt) < self._max_x:
+
+        tvm_dgb_box_top = "-----------------"
+        tvm_dgb_txt = "    TVM DEBUG    "
+        tvm_dgb_box_bottom = "-----------------"
+        space_need_half = int(((self._max_x) - len(tvm_dgb_txt))/2)
+        tvm_dgb_box_top = (" " * space_need_half) + tvm_dgb_box_top + (" " * (space_need_half))
+        tvm_dgb_txt = (" " * space_need_half) + tvm_dgb_txt + (" " * space_need_half)
+        #tvm_dgb_box_bottom = (" " * txt_begin) + tvm_dgb_box_bottom + (" " * txt_begin)
+        if len(tvm_dgb_txt) < (self._max_x):
             tvm_dgb_box_top += " "
             tvm_dgb_txt += " "
-            tvm_dgb_box_bottom += " "
+        #    #tvm_dgb_box_bottom += " "
+        tvm_dgb_box_top = tvm_dgb_box_top[:len(tvm_dgb_box_top)-1]
+        tvm_dgb_txt = tvm_dgb_txt[:len(tvm_dgb_txt)-1]
 
         self._screen_draw_text_line(
-            self._title_row, tvm_dgb_box_top, color=self._title_color)
+            self._title_row, tvm_dgb_box_top, attr=curses.A_NORMAL | curses.A_BOLD,
+            color=self._title_color)
         self._screen_draw_text_line(
-            self._title_row + 1, tvm_dgb_txt, color=self._title_color)
-        self._screen_draw_text_line(
-            self._title_row + 2, tvm_dgb_box_bottom, color=self._title_color)
+            self._title_row + 1, tvm_dgb_txt, attr=curses.A_NORMAL | curses.A_BOLD,
+            color=self._title_color)
+        #self._screen_draw_text_line(
+        #    self._title_row + 2, tvm_dgb_box_bottom, attr=curses.A_NORMAL | curses.A_BOLD,
+        #    color=self._title_color)
 
     def _auto_key_in(self, command, erase_existing=False):
         """Automatically key in a command to the command Textbox.
@@ -1179,9 +1180,11 @@ class CursesUI(base_ui.BaseUI):
         for i in xrange(len(output.lines)):
             if i in output.font_attr_segs:
                 self._screen_add_line_to_output_pad(
-                    pad, i, output.lines[i], color_segments=output.font_attr_segs[i])
+                    pad, i, output.lines[i], color_segments=output.font_attr_segs[i],
+                    additional_attr=output.font_additional_attr)
             else:
-                self._screen_add_line_to_output_pad(pad, i, output.lines[i])
+                self._screen_add_line_to_output_pad(pad, i, output.lines[i],
+                                                    additional_attr=output.font_additional_attr)
 
         return pad, rows, cols
 
@@ -1198,7 +1201,8 @@ class CursesUI(base_ui.BaseUI):
         self._screen_add_line_to_output_pad(
             self._nav_bar_pad, 0, self._nav_bar.lines[0][:nav_bar_width - 1],
             color_segments=(self._nav_bar.font_attr_segs[0]
-                            if 0 in self._nav_bar.font_attr_segs else None))
+                            if 0 in self._nav_bar.font_attr_segs else None),
+            additional_attr=self._nav_bar.font_additional_attr)
 
     def _display_main_menu(self, output):
         """Display main menu associated with screen output, if the menu exists.
@@ -1225,12 +1229,14 @@ class CursesUI(base_ui.BaseUI):
                 0,
                 wrapped_menu.lines[0],
                 color_segments=(wrapped_menu.font_attr_segs[0]
-                                if 0 in wrapped_menu.font_attr_segs else None))
+                                if 0 in wrapped_menu.font_attr_segs else None),
+                additional_attr=wrapped_menu.font_additional_attr)
         else:
             self._main_menu = None
             self._main_menu_pad = None
 
-    def _screen_add_line_to_output_pad(self, pad, row, txt, color_segments=None):
+    def _screen_add_line_to_output_pad(self, pad, row, txt, color_segments=None,
+        additional_attr=None):
         """Render a line in a text pad.
 
         Assumes: segments in color_segments are sorted in ascending order of the
@@ -1280,8 +1286,15 @@ class CursesUI(base_ui.BaseUI):
                 if (self._mouse_enabled and
                         isinstance(attr, debugger_cli_common.MenuItem)):
                     curses_attr |= curses.A_UNDERLINE
+                    if attr.get_custom_color:
+                        curses_attr |= self._color_pairs[attr.get_custom_color]
+                    else:
+                        curses_attr |= self._color_pairs.get(attr, self._default_color_pair)
                 else:
                     curses_attr |= self._color_pairs.get(attr, self._default_color_pair)
+                if additional_attr:
+                    curses_attr |= curses.A_BOLD
+                curses_attr |= curses.A_BOLD
             all_color_pairs.append(curses_attr)
 
             if curr_end < next_start:
@@ -1414,6 +1427,8 @@ class CursesUI(base_ui.BaseUI):
         """
 
         info = ""
+        scroll_status_info = ""
+        command_info = self._nav_history.get_latest_command_info()
         if self._output_pad_height > self._output_pad_screen_height + 1:
             # Display information about the scrolling of tall screen output.
             scroll_percentage = 100.0 * (min(
@@ -1421,116 +1436,29 @@ class CursesUI(base_ui.BaseUI):
                 float(self._output_pad_row) /
                 (self._output_pad_height - self._output_pad_screen_height - 1)))
             if self._output_pad_row == 0:
-                scroll_directions = "↓"
+                scroll_directions = "(PgDn)"
             elif self._output_pad_row >= (
                     self._output_pad_height - self._output_pad_screen_height - 1):
-                scroll_directions = "↑"
+                scroll_directions = "(PgUp)"
             else:
-                scroll_directions = "↕"
+                scroll_directions = "(PgDn/PgUp)"
 
-            if scroll_percentage < 10.00:
-                info += " "
-            info += "%.2f%% %s" % (scroll_percentage, scroll_directions)
-
-        self._output_array_pointer_indices = self._show_array_indices()
-
-        # Add array indices information to scroll message.
-        if self._output_array_pointer_indices:
-            if self._output_array_pointer_indices[0]:
-                info += _format_indices(self._output_array_pointer_indices[0])
-            info += "-"
-            if self._output_array_pointer_indices[-1]:
-                info += _format_indices(self._output_array_pointer_indices[-1])
-            info += " "
-
-        # Add mouse mode information.
-        mouse_mode_str = "Mouse: "
-        mouse_mode_str += "ON" if self._mouse_enabled else "OFF"
-        mouse_mode_str = ""
-
-        if len(info) + len(mouse_mode_str) + 5 < self._max_x:
-            info += " " * (self._max_x - len(info) - len(mouse_mode_str) - 4)
-            if mouse_mode_str:
-                info += " "
-                info += mouse_mode_str
-                info += "    "
+            if 10.00 > scroll_percentage:
+                scroll_percentage = " %.2f%%" % (scroll_percentage)
             else:
-                info += "    "
+                scroll_percentage = "%.2f%%" % (scroll_percentage)
+            scroll_status_info = " %s %s" % (scroll_directions, scroll_percentage)
+
+        if len(_COMMAND_TEXT + command_info + scroll_status_info) < self._max_x:
+            info = _COMMAND_TEXT + command_info
+                + " " * (self._max_x - len(_COMMAND_TEXT + command_info + scroll_status_info))
+                + scroll_status_info
         else:
-            info += " " * (self._max_x - len(info))
+            info = _COMMAND_TEXT + command_info[:self._max_x
+                - len(_COMMAND_TEXT + command_info + scroll_status_info) - 3]
+                + "..." + scroll_status_info
 
         return info
-
-    def _show_array_indices(self):
-        """Show array indices for the lines at the top and bottom of the output.
-
-        For the top line and bottom line of the output display area, show the
-        element indices of the array being displayed.
-
-        Returns:
-          If either the top of the bottom row has any matching array indices,
-          a dict from line index (0 being the top of the display area, -1
-          being the bottom of the display area) to array element indices. For
-          example:
-            {0: [0, 0], -1: [10, 0]}
-          Otherwise, None.
-        """
-
-        indices_top = self._show_array_index_at_line(0)
-
-        output_top = self._output_top_row
-        if self._main_menu_pad:
-            output_top += 1
-        bottom_line_index = (
-            self._output_pad_screen_location.bottom - output_top - 1)
-        indices_bottom = self._show_array_index_at_line(bottom_line_index)
-
-        if indices_top or indices_bottom:
-            return {0: indices_top, -1: indices_bottom}
-        return None
-
-    def _show_array_index_at_line(self, line_index):
-        """Show array indices for the specified line in the display area.
-
-        Uses the line number to array indices map in the annotations field of the
-        RichTextLines object being displayed.
-        If the displayed RichTextLines object does not contain such a mapping,
-        will do nothing.
-
-        Args:
-          line_index: (int) 0-based line index from the top of the display area.
-            For example,if line_index == 0, this method will display the array
-            indices for the line currently at the top of the display area.
-
-        Returns:
-          (list) The array indices at the specified line, if available. None, if
-            not available.
-        """
-
-        # Examine whether the index information is available for the specified line
-        # number.
-        pointer = self._output_pad_row + line_index
-        if (pointer in self._curr_wrapped_output.annotations and
-                "i0" in self._curr_wrapped_output.annotations[pointer]):
-            indices = self._curr_wrapped_output.annotations[pointer]["i0"]
-
-            array_indices_str = _format_indices(indices)
-            array_indices_info = "@" + array_indices_str
-
-            # TODO(cais): Determine line_index properly given menu pad status.
-            #   Test coverage?
-            output_top = self._output_top_row
-            if self._main_menu_pad:
-                output_top += 1
-
-            self._toast(
-                array_indices_info,
-                color=self._ARRAY_INDICES_COLOR_PAIR,
-                line_index=output_top + line_index)
-
-            return indices
-        else:
-            return None
 
     def _tab_complete(self, command_str):
         """Perform tab completion.
