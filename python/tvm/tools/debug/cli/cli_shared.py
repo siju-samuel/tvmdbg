@@ -265,25 +265,18 @@ def get_tvmdbg_logo():
     """Make an ASCII representation of the tvmdbg logo."""
 
     lines = [
-        RL(" ",COLOR_GRAY)
+        "",
+        " TTTTTTTT V     V MM   MM DDDD  BBBB   GGGG ",
+        "    TT    V     V M M M M D   D B   B G    ",
+        "    TT     V   V  M  M  M D   D BBBB  G   GG",
+        "    TT      V V   M     M D   D B   B G    G",
+        "    TT       V    M     M DDDD  BBBB   GGGG ",
+        "",
     ]
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@                                                          @@@  @@@            @@@@        ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@                                                          @@@  @@@          @@@@@@@@@@@   ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@  ",COLOR_BLUE)+ RL("@@@@@@@     ",COLOR_GRAY) + RL("@@@@@@@@@  @@@         @@@  @@@   @@@        @@@             @@@  @@@         @@     @@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@   ",COLOR_BLUE)+ RL("@@@@@      ",COLOR_GRAY) + RL("@@@@@@@@@   @@@        @@@  @@@@@@@@@@@@@@@@@@@@@@@          @@@  @@@         @@     @@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@@@            ",COLOR_BLUE) + RL("@@@          @@@      @@@   @@@@@   @@@@@@@@   @@@@@    @@@@ @@@  @@@ @@@@    @@@@@@@@@      ",COLOR_GRAY))
-    lines.append(RL("@@@@@@@@@@@@@@@@@@@    ",COLOR_BLUE) + RL("@@@          @@@      @@@   @@@@      @@@@@      @@@  @@@@@@@@@@  @@@@@@@@@     @@@@@        ",COLOR_GRAY))
-    lines.append(RL("        @@@@@@@@@@@    ",COLOR_BLUE) + RL("@@@           @@@    @@@    @@@        @@@       @@@  @@@    @@@  @@@    @@@  @@             ",COLOR_GRAY))
-    lines.append(RL("  @@@@@",COLOR_GRAY)+ RL("   @@@@@@@@@    ",COLOR_BLUE) + RL("@@@           @@@    @@@    @@@        @@@       @@@  @@@    @@@  @@@    @@@    @@@@@@@@@    ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL("@@@@           @@@  @@@     @@@        @@@       @@@  @@@    @@@  @@@    @@@   @@        @@  ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL("@@@@@@@@@       @@@@@@      @@@        @@@       @@@  @@@@@@@@@@  @@@@@@@@@    @@@@@@@@@@@   ",COLOR_GRAY))
-    lines.append(RL(" @@@@@@@",COLOR_GRAY)+ RL("  @@@@@@@@@    ",COLOR_BLUE) + RL(" @@@@@@@@        @@@@       @@@        @@@       @@@    @@@@ @@@  @@@ @@@@      @@@@@@@@@    ",COLOR_GRAY))
-    lines.append(RL(" ",COLOR_GRAY))
-
-    return debugger_cli_common.rich_text_lines_from_rich_line_list(lines)
+    return debugger_cli_common.RichTextLines(lines)
 
 
-_HORIZONTAL_BAR = "--------------------------------------------------------------------------------------------------------------------"
+_HORIZONTAL_BAR = " ======================================"
 
 
 def get_run_start_intro(run_call_count,
@@ -357,49 +350,48 @@ def get_run_start_intro(run_call_count,
             "run -t <T>",
             "Execute run() calls (T - 1) times without debugging, then "
             "execute run() once more with debugging and drop back to the CLI"))
-    # TODO(Pariksheet): Python run -f <filter_name> implementation not support now.
-    #out.extend(
-    #    _recommend_command(
-    #        "run -f <filter_name>",
-    #        "Keep executing run() calls until a dumped tensor passes a given, "
-    #        "registered filter (conditional breakpoint mode)"))
+    out.extend(
+        _recommend_command(
+            "run -f <filter_name>",
+            "Keep executing run() calls until a dumped tensor passes a given, "
+            "registered filter (conditional breakpoint mode)"))
 
-    #more_lines = ["    Registered filter(s):"]
-    #if tensor_filters:
-    #    filter_names = []
-    #    for filter_name in tensor_filters:
-    #        filter_names.append(filter_name)
-    #        command_menu_node = debugger_cli_common.MenuItem(
-    #            "", "run -f %s" % filter_name)
-    #        more_lines.append(RL("        * ") + RL(filter_name, command_menu_node))
-    #else:
-    #    more_lines.append("        (None)")
+    more_lines = ["    Registered filter(s):"]
+    if tensor_filters:
+        filter_names = []
+        for filter_name in tensor_filters:
+            filter_names.append(filter_name)
+            command_menu_node = debugger_cli_common.MenuItem(
+                "", "run -f %s" % filter_name)
+            more_lines.append(RL("        * ") + RL(filter_name, command_menu_node))
+    else:
+        more_lines.append("        (None)")
 
-    #out.extend(
-    #    debugger_cli_common.rich_text_lines_from_rich_line_list(more_lines))
+    out.extend(
+        debugger_cli_common.rich_text_lines_from_rich_line_list(more_lines))
 
     # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-    #out.extend(
-    #    _recommend_command(
-    #        "invoke_stepper",
-    #        "Use the node-stepper interface, which allows you to interactively "
-    #        "step through nodes involved in the graph run() call and "
-    #        "inspect/modify their values", create_link=True))
+#    out.extend(
+#        _recommend_command(
+#            "invoke_stepper",
+#            "Use the node-stepper interface, which allows you to interactively "
+#            "step through nodes involved in the graph run() call and "
+#            "inspect/modify their values", create_link=True))
 
     out.append("")
 
-    out.append_rich_line(RL("For more details, see ") +
-                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
-                         ".")
-    out.append("")
+#    out.append_rich_line(RL("For more details, see ") +
+#                         RL("help.", debugger_cli_common.MenuItem("", "help")) +
+#                         ".")
+#    out.append("")
 
     # Make main menu for the run-start intro.
     menu = debugger_cli_common.Menu()
     menu.append(debugger_cli_common.MenuItem("run", "run"))
     # TODO(Pariksheet): Python invoke_stepper implementation not support now.
-    #menu.append(debugger_cli_common.MenuItem(
-    #    "invoke_stepper", "invoke_stepper"))
-    #menu.append(debugger_cli_common.MenuItem("exit", "exit"))
+#    menu.append(debugger_cli_common.MenuItem(
+#        "invoke_stepper", "invoke_stepper"))
+    menu.append(debugger_cli_common.MenuItem("exit", "exit"))
     out.annotations[debugger_cli_common.MAIN_MENU_KEY] = menu
 
     return out
