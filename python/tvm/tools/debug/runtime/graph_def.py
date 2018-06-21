@@ -1,5 +1,3 @@
-# coding: utf-8
-# pylint: disable=fixme, too-few-public-methods, invalid-name
 """Graph defenition class which is used to exchange the nodes information between tvm and CLI."""
 from __future__ import absolute_import as _abs
 
@@ -26,7 +24,7 @@ class Node(object):
 
         name = node['name']
         op = node['op']
-        device = "/job:localhost/replica:0/task:0/device:" + ctx  # TODO, remove job/replica/task
+        device = "/job:localhost/replica:0/task:0/device:" + ctx
         input_lst = []
         attr = {}
         if 'inputs' in node:

@@ -1,16 +1,19 @@
-# coding: utf-8
-# pylint: disable=too-many-arguments
 """Widgets for Curses-based CLI."""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tvm.tools.debug.cli import debugger_cli_common
+import curses
+from tvm.tools.debug.ui import ui_common
 
-RL = debugger_cli_common.RichLine
+RL = ui_common.RichLine
+EXIT_TEXT = "exit"
+HOME_TEXT = "HOME"
+HELP_TEXT = "help"
+TVM_DBG_BOX_BOTTOM = "-----------------"
+NAVIGATION_MENU_COLOR_ATTR = "white_on_black"
 
-
-class NavigationHistoryItem(object):  # pylint: disable=too-few-public-methods
+class NavigationHistoryItem(object):
     """Individual item in navigation history."""
 
     def __init__(self, command, screen_output, scroll_position):
@@ -149,12 +152,47 @@ class CursesNavigationHistory(object):
         """
         return self._pointer + 1 < len(self._items)
 
+    def can_go_home(self):
+        """Test whether client can go home place.
+
+        Returns:
+          (`bool`) Whether going back home place is possible.
+        """
+        if self._pointer >= 0:
+            if self._items[self._pointer].command == "HOME":
+                return False
+            return True
+        else:
+            return False
+
+    def can_go_help(self):
+        """Test whether client can go help place.
+
+        Returns:
+          (`bool`) Whether going back help place is possible.
+        """
+        if self._pointer >= 0:
+            if self._items[self._pointer].command == "help":
+                return False
+            return True
+        else:
+            return False
+
+    def get_latest_command_info(self):
+        """Get the latest command information.
+
+        Returns:
+          (`string`) Return the recent command shortcut.
+        """
+        return self._items[self._pointer].command
+
     def render(self,
                max_length,
                backward_command,
                forward_command,
-               latest_command_attribute="black_on_white",
-               old_command_attribute="magenta_on_white"):
+               home_command,
+               help_command,
+               exit_command):
         """Render the rich text content of the single-line navigation bar.
 
         Args:
@@ -163,37 +201,52 @@ class CursesNavigationHistory(object):
             the shortcut menu item.
           forward_command: (`str`) command for going forward. Used to construct the
             shortcut menu item.
-           latest_command_attribute: font attribute for lastest command.
-           old_command_attribute: font attribute for old (non-latest) command.
 
         Returns:
-          (`debugger_cli_common.RichTextLines`) the navigation bar text with
+          (`ui_common.RichTextLines`) the navigation bar text with
             attributes.
 
         """
-        output = RL("| ")
-        output += RL(
-            self.BACK_ARROW_TEXT,
-            (debugger_cli_common.MenuItem(None, backward_command)
-             if self.can_go_back() else None))
-        output += RL(" ")
-        output += RL(
-            self.FORWARD_ARROW_TEXT,
-            (debugger_cli_common.MenuItem(None, forward_command)
-             if self.can_go_forward() else None))
+        output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
+        output += RL(HOME_TEXT,
+                     (ui_common.MenuItem(None, home_command,
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_home() else NAVIGATION_MENU_COLOR_ATTR))
+        output += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
 
-        if self._items:
-            command_attribute = (latest_command_attribute
-                                 if (self._pointer == (len(self._items) - 1))
-                                 else old_command_attribute)
-            output += RL(" | ")
-            if self._pointer != len(self._items) - 1:
-                output += RL("(-%d) " % (len(self._items) - 1 - self._pointer),
-                             command_attribute)
+        output += RL(self.BACK_ARROW_TEXT,
+                     (ui_common.MenuItem(None, backward_command,
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_back() else NAVIGATION_MENU_COLOR_ATTR))
+        output += RL(" ", NAVIGATION_MENU_COLOR_ATTR)
+        output += RL(self.FORWARD_ARROW_TEXT,
+                     (ui_common.MenuItem(None, forward_command,
+                                         custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                      if self.can_go_forward() else NAVIGATION_MENU_COLOR_ATTR))
 
-            if len(output) < max_length:
-                maybe_truncated_command = self._items[self._pointer].command[
-                    :(max_length - len(output))]
-                output += RL(maybe_truncated_command, command_attribute)
+        output_end = RL("| ", NAVIGATION_MENU_COLOR_ATTR)
+        output_end += RL(HELP_TEXT,
+                         (ui_common.MenuItem(None, help_command,
+                                             custom_color=NAVIGATION_MENU_COLOR_ATTR)
+                          if self.can_go_help() else NAVIGATION_MENU_COLOR_ATTR))
+        output_end += RL(" | ", NAVIGATION_MENU_COLOR_ATTR)
+        output_end += RL(EXIT_TEXT,
+                         ui_common.MenuItem(None, exit_command,
+                                            custom_color=NAVIGATION_MENU_COLOR_ATTR))
+        output_end += RL(" |", NAVIGATION_MENU_COLOR_ATTR)
 
-        return debugger_cli_common.rich_text_lines_from_rich_line_list([output])
+        output_middle = RL("", NAVIGATION_MENU_COLOR_ATTR)
+        if (len(output)+len(output_end)) < max_length:
+            space_need_size = max_length - len(output + output_end)
+            if space_need_size > len(TVM_DBG_BOX_BOTTOM):
+                space_need_size -= len(TVM_DBG_BOX_BOTTOM)
+                space_middle_size = int(space_need_size/2)
+                empty_line = (" " * (space_middle_size - (0 if space_need_size%2 else 1))
+                              + TVM_DBG_BOX_BOTTOM + " " * space_middle_size)
+                output_middle = RL(empty_line, NAVIGATION_MENU_COLOR_ATTR)
+            else:
+                empty_line = "-" * space_need_size
+                output_middle = RL(empty_line, NAVIGATION_MENU_COLOR_ATTR)
+
+        return ui_common.rich_text_lines_frm_line_list(
+            [output + output_middle + output_end], additional_attr=curses.A_BOLD)

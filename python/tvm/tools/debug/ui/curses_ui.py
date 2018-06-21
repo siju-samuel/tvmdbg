@@ -1,5 +1,5 @@
 # coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, too-many-return-statements, too-many-lines, protected-access
+# pylint: disable=too-many-lines
 """Curses-Based Command-Line Interface of TVM Debugger (tvmdbg)."""
 from __future__ import absolute_import
 from __future__ import division
@@ -13,14 +13,13 @@ import signal
 import sys
 import threading
 
-from six.moves import xrange  # pylint: disable=redefined-builtin
+from tvm.tools.debug.ui import ui_base
+from tvm.tools.debug.ui import ui_shared
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import curses_widgets
+from tvm.tools.debug.ui import ui_common
+from tvm.tools.debug.ui import tensor_data
 
-from tvm.tools.debug.cli import base_ui
-from tvm.tools.debug.cli import cli_shared
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import curses_widgets
-from tvm.tools.debug.cli import debugger_cli_common
-from tvm.tools.debug.cli import tensor_format
 
 _SCROLL_REFRESH = "refresh"
 _SCROLL_UP = "up"
@@ -33,9 +32,11 @@ _SCROLL_TO_LINE_INDEX = "scroll_to_line_index"
 
 _COLOR_READY_COLORTERMS = ["gnome-terminal", "xfce4-terminal"]
 _COLOR_ENABLED_TERM = "xterm-256color"
+_TITLE_SIZE_DEFAULT = 1
+_COMMAND_TEXT = "Command: "
 
 
-def _get_command_from_line_attr_segs(mouse_x, attr_segs):
+def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
     """Attempt to extract command from the attribute segments of a line.
 
     Args:
@@ -51,12 +52,12 @@ def _get_command_from_line_attr_segs(mouse_x, attr_segs):
         if seg[0] <= mouse_x < seg[1]:
             attributes = seg[2] if isinstance(seg[2], list) else [seg[2]]
             for attr in attributes:
-                if isinstance(attr, debugger_cli_common.MenuItem):
+                if isinstance(attr, ui_common.MenuItem):
                     return attr.content
     return None
 
 
-class ScrollBar(object):  # pylint: disable=too-few-public-methods
+class ScrollBar(object):
     """Vertical ScrollBar for Curses-based CLI.
 
     An object of this class has knowledge of the location of the scroll bar
@@ -70,7 +71,8 @@ class ScrollBar(object):  # pylint: disable=too-few-public-methods
     event in the screen region it occupies.
     """
 
-    BASE_ATTR = cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE
+    BASE_ATTR = ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK
+    BACKGROUND_BASE_ATTR = ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK
 
     def __init__(self,
                  min_x,
@@ -143,43 +145,44 @@ class ScrollBar(object):  # pylint: disable=too-few-public-methods
         """Get the RichTextLines layout of the scroll bar.
 
         Returns:
-          (debugger_cli_common.RichTextLines) The text layout of the scroll bar.
+          (ui_common.RichTextLines) The text layout of the scroll bar.
         """
         width = self._max_x - self._min_x + 1
         empty_line = " " * width
         foreground_font_attr_segs = [(0, width, self.BASE_ATTR)]
+        background_font_attr_segs = [(0, width, self.BACKGROUND_BASE_ATTR)]
 
         if self._output_num_rows > 1:
             block_y = self._block_y()
 
             if width == 1:
-                up_text = "U"
-                down_text = "D"
+                up_text = "^"
+                down_text = "v"
             elif width == 2:
-                up_text = "UP"
-                down_text = "DN"
+                up_text = "^ "
+                down_text = "v "
             elif width == 3:
-                up_text = "UP "
-                down_text = "DN "
+                up_text = " ^ "
+                down_text = " v "
             else:
-                up_text = " UP "
-                down_text = "DOWN"
+                up_text = " ^ "
+                down_text = " v "
 
-            layout = debugger_cli_common.RichTextLines(
+            layout = ui_common.RichTextLines(
                 [up_text], font_attr_segs={0: [(0, width, self.BASE_ATTR)]})
-            for i in xrange(1, self._scroll_bar_height - 1):
-                font_attr_segs = foreground_font_attr_segs if i == block_y else None
-                layout.append(empty_line, font_attr_segs=font_attr_segs)
+            for i in range(1, self._scroll_bar_height - 1):
+                font_attr_segs = background_font_attr_segs
+                if i == block_y:
+                    font_attr_segs = None
+                layout.append("  ", font_attr_segs=font_attr_segs)
             layout.append(down_text, font_attr_segs=foreground_font_attr_segs)
         else:
-            layout = debugger_cli_common.RichTextLines(
+            layout = ui_common.RichTextLines(
                 [empty_line] * self._scroll_bar_height)
 
         return layout
 
     def _get_click_command(self, mouse_y):
-        # TODO(cais): Support continuous scrolling when the mouse button is held
-        # down.
         if self._output_num_rows <= 1:
             return None
         elif mouse_y == self._min_y:
@@ -226,7 +229,7 @@ def _format_indices(indices):
     return repr(indices).replace(" ", "")
 
 
-class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
+class CursesUI(ui_base.BaseUI):
     """Curses-based Command-line UI.
 
     In this class, the methods with the prefix "_screen_" are the methods that
@@ -237,10 +240,13 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
     CLI_TAB_KEY = ord("\t")
     BACKSPACE_KEY = ord("\b")
     REGEX_SEARCH_PREFIX = "/"
-    TENSOR_INDICES_NAVIGATION_PREFIX = "@"
+    TENSOR_INDICES_NAV_PREFIX = "@"
 
     _NAVIGATION_FORWARD_COMMAND = "next"
     _NAVIGATION_BACK_COMMAND = "prev"
+    _NAVIGATION_EXIT_COMMAND = "exit"
+    _NAVIGATION_HELP_COMMAND = "help"
+    _NAVIGATION_HOME_COMMAND = "HOME"
 
     # Limit screen width to work around the limitation of the curses library that
     # it may return invalid x coordinates for large values.
@@ -256,36 +262,36 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
     }
 
     _FOREGROUND_COLORS = {
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
-        cli_shared.COLOR_RED: curses.COLOR_RED,
-        cli_shared.COLOR_GREEN: curses.COLOR_GREEN,
-        cli_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
-        cli_shared.COLOR_BLUE: curses.COLOR_BLUE,
-        cli_shared.COLOR_CYAN: curses.COLOR_CYAN,
-        cli_shared.COLOR_MAGENTA: curses.COLOR_MAGENTA,
-        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        ui_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        ui_shared.COLOR_RED: curses.COLOR_RED,
+        ui_shared.COLOR_GREEN: curses.COLOR_GREEN,
+        ui_shared.COLOR_YELLOW: curses.COLOR_YELLOW,
+        ui_shared.COLOR_BLUE: curses.COLOR_BLUE,
+        ui_shared.COLOR_CYAN: curses.COLOR_CYAN,
+        ui_shared.COLOR_MAGENTA: curses.COLOR_MAGENTA,
+        ui_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
     _BACKGROUND_COLORS = {
         "transparent": -1,
-        cli_shared.COLOR_WHITE: curses.COLOR_WHITE,
-        cli_shared.COLOR_BLACK: curses.COLOR_BLACK,
+        ui_shared.COLOR_WHITE: curses.COLOR_WHITE,
+        ui_shared.COLOR_BLACK: curses.COLOR_BLACK,
     }
 
     # Font attribute for search and highlighting.
     _SEARCH_HIGHLIGHT_FONT_ATTR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLACK + "_on_" + ui_shared.COLOR_WHITE)
     _ARRAY_INDICES_COLOR_PAIR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLACK + "_on_" + ui_shared.COLOR_WHITE)
     _ERROR_TOAST_COLOR_PAIR = (
-        cli_shared.COLOR_RED + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_RED + "_on_" + ui_shared.COLOR_WHITE)
     _INFO_TOAST_COLOR_PAIR = (
-        cli_shared.COLOR_BLUE + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_BLUE + "_on_" + ui_shared.COLOR_WHITE)
     _STATUS_BAR_COLOR_PAIR = (
-        cli_shared.COLOR_BLACK + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_WHITE + "_on_" + ui_shared.COLOR_BLACK)
     _UI_WAIT_COLOR_PAIR = (
-        cli_shared.COLOR_MAGENTA + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_MAGENTA + "_on_" + ui_shared.COLOR_WHITE)
     _NAVIGATION_WARNING_COLOR_PAIR = (
-        cli_shared.COLOR_RED + "_on_" + cli_shared.COLOR_WHITE)
+        ui_shared.COLOR_RED + "_on_" + ui_shared.COLOR_WHITE)
 
     _UI_WAIT_MESSAGE = "Processing..."
 
@@ -294,11 +300,11 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         Args:
           on_ui_exit: (Callable) Callback invoked when the UI exits.
-          config: An instance of `cli_config.CLIConfig()` carrying user-facing
+          config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
         """
 
-        base_ui.BaseUI.__init__(self, on_ui_exit=on_ui_exit, config=config)
+        ui_base.BaseUI.__init__(self, on_ui_exit=on_ui_exit, config=config)
 
         self._candidates_top_row = None
         self._cmd_ptr = None
@@ -317,19 +323,17 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         self._scroll_bar = None
         self._scroll_info = None
         self._textbox_curr_terminator = None
-        self._textbox_pending_command_changed = None
-        self._title_line = None
+        self._textbox_pending_cmd_changed = None
         self._unwrapped_regex_match_lines = None
+        self._title_color = "white_on_black"
         self._single_instance_lock = threading.Lock()
 
         self._screen_init()
         self._screen_refresh_size()
-        # TODO(cais): Error out if the size of the screen is too small.
-
         # Initialize some UI component size and locations.
         self._init_layout()
 
-        self._command_history_store = debugger_cli_common.CommandHistory()
+        self._command_history_store = ui_common.CommandHistory()
 
         # Active list of command history, used in history navigation.
         # _command_handler_registry holds all the history commands the CLI has
@@ -363,12 +367,6 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             # Running in a child thread, can't catch signals.
             pass
 
-        self.register_command_handler(
-            "mouse",
-            self._mouse_mode_command_handler,
-            "Get or set the mouse mode of this CLI: (on|off)",
-            prefix_aliases=["m"])
-
     def _init_layout(self):
         """Initialize the layout of UI components.
 
@@ -387,13 +385,13 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         # Row index of the Navigation Bar (i.e., the bar that contains forward and
         # backward buttons and displays the current command line).
-        self._nav_bar_row = 1
+        self._nav_bar_row = 1 + _TITLE_SIZE_DEFAULT
 
         # Top row index of the output pad.
         # A "pad" is a curses object that holds lines of text and not limited to
         # screen size. It can be rendered on the screen partially with scroll
         # parameters specified.
-        self._output_top_row = 2
+        self._output_top_row = 2 + _TITLE_SIZE_DEFAULT
 
         # Number of rows that the output pad has.
         self._output_num_rows = (
@@ -409,7 +407,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         self._candidates_bottom_row = self._output_scroll_row - 1
 
         # Maximum number of lines the candidates display can have.
-        self._candidates_max_lines = int(self._output_num_rows / 2)
+        # Daya: Review
+        self._candidates_max_lines = int(self._output_num_rows / 2) + 2
 
         self.max_output_lines = 10000
 
@@ -450,8 +449,12 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         for fg_color in self._FOREGROUND_COLORS:
             for bg_color in self._BACKGROUND_COLORS:
                 color_index += 1
-                curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
-                                 self._BACKGROUND_COLORS[bg_color])
+
+                if bg_color == ui_shared.COLOR_GRAY:
+                    curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color], 236)
+                else:
+                    curses.init_pair(color_index, self._FOREGROUND_COLORS[fg_color],
+                                     self._BACKGROUND_COLORS[bg_color])
 
                 color_name = fg_color
                 if bg_color != "transparent":
@@ -463,11 +466,11 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         try:
             color_index += 1
             curses.init_pair(color_index, 245, -1)
-            self._color_pairs[cli_shared.COLOR_GRAY] = curses.color_pair(color_index)
+            self._color_pairs[ui_shared.COLOR_GRAY] = curses.color_pair(color_index)
         except curses.error:
             # Use fall-back color(s):
-            self._color_pairs[cli_shared.COLOR_GRAY] = (
-                self._color_pairs[cli_shared.COLOR_GREEN])
+            self._color_pairs[ui_shared.COLOR_GRAY] = (
+                self._color_pairs[ui_shared.COLOR_GREEN])
 
         # A_BOLD or A_BLINK is not really a "color". But place it here for
         # convenience.
@@ -476,7 +479,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         self._color_pairs["underline"] = curses.A_UNDERLINE
 
         # Default color pair to use when a specified color pair does not exist.
-        self._default_color_pair = self._color_pairs[cli_shared.COLOR_WHITE]
+        self._default_color_pair = self._color_pairs[ui_shared.COLOR_BLUE]
 
     def _screen_launch(self):
         """Launch the curses screen."""
@@ -525,7 +528,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                init_command=None,
                title=None,
                title_color=None):
-        """Run the CLI: See the doc of base_ui.BaseUI.run_ui for more details."""
+        """Run the CLI: See the doc of ui_base.BaseUI.run_ui for more details."""
 
         # Only one instance of the Curses UI can be running at a time, since
         # otherwise they would try to both read from the same keystrokes, and write
@@ -539,7 +542,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             self._dispatch_command(init_command)
 
         if title is not None:
-            self._title(title, title_color=title_color)
+            self._title()
 
         # CLI main loop.
         exit_token = self._ui_loop()
@@ -572,7 +575,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             after its creation.
         """
 
-        # Display the tfdbg prompt.
+        # Display the tvmdbg prompt.
         self._addstr(self._max_y - self._command_textbox_height, 0,
                      self.CLI_PROMPT, curses.A_BOLD)
         self._stdscr.refresh()
@@ -603,8 +606,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
             try:
                 command, terminator, pending_command_changed = self._get_user_command()
-            except debugger_cli_common.CommandLineExit as ex:
-                return ex.exit_token
+            except ui_common.CommandLineExit as exception:
+                return exception.exit_token
 
             if not command and terminator != self.CLI_TAB_KEY:
                 continue
@@ -637,12 +640,12 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         # First, reset textbox state variables.
         self._textbox_curr_terminator = None
-        self._textbox_pending_command_changed = False
+        self._textbox_pending_cmd_changed = False
 
         command = self._screen_get_user_command()
         command = self._strip_terminator(command)
         return (command, self._textbox_curr_terminator,
-                self._textbox_pending_command_changed)
+                self._textbox_pending_cmd_changed)
 
     def _screen_get_user_command(self):
         return self._command_textbox.edit(validate=self._on_textbox_keypress)
@@ -707,7 +710,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         if command in self.CLI_EXIT_COMMANDS:
             # Explicit user command-triggered exit: EXPLICIT_USER_EXIT as the exit
             # token.
-            return debugger_cli_common.EXPLICIT_USER_EXIT
+            return ui_common.EXPLICIT_USER_EXIT
         elif (command == self._NAVIGATION_FORWARD_COMMAND or
               command == self._NAVIGATION_BACK_COMMAND):
             self._navigate_screen_output(command)
@@ -734,27 +737,27 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             self._command_pointer = 0
             self._pending_command = ""
             return None
-        elif command.startswith(self.TENSOR_INDICES_NAVIGATION_PREFIX):
+        elif command.startswith(self.TENSOR_INDICES_NAV_PREFIX):
             indices_str = command[1:].strip()
             if indices_str:
                 try:
                     indices = command_parser.parse_indices(indices_str)
-                    omitted, line_index, _, _ = tensor_format.locate_tensor_element(
+                    omitted, line_index, _, _ = tensor_data.locate_tensor_element(
                         self._curr_wrapped_output, indices)
                     if not omitted:
                         self._scroll_output(
                             _SCROLL_TO_LINE_INDEX, line_index=line_index)
-                except Exception as ex:  # pylint: disable=broad-except
-                    self._error_toast(str(ex))
+                except Exception as exception:  # pylint: disable=broad-except
+                    self._error_toast(str(exception))
             else:
                 self._error_toast("Empty indices.")
 
             return None
 
         try:
-            prefix, args, output_file_path = base_ui._parse_command(command)
-        except SyntaxError as ex:
-            self._error_toast(str(ex))
+            prefix, args, output_file_path = ui_base._parse_command(command)
+        except SyntaxError as exception:
+            self._error_toast(str(exception))
             return None
 
         if not prefix:
@@ -768,10 +771,10 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             try:
                 screen_output = self._command_handler_registry.dispatch_command(
                     prefix, args, screen_info=screen_info)
-            except debugger_cli_common.CommandLineExit as ex:
-                exit_token = ex.exit_token
+            except ui_common.CommandLineExit as exception:
+                exit_token = exception.exit_token
         else:
-            screen_output = debugger_cli_common.RichTextLines([
+            screen_output = ui_common.RichTextLines([
                 self.ERROR_MESSAGE_PREFIX + "Invalid command prefix \"%s\"" % prefix
             ])
 
@@ -807,7 +810,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         txt = self._command_textbox.gather()
         return txt.strip()
 
-    def _on_textbox_keypress(self, x):
+    def _on_textbox_keypress(self, key_code):
         """Text box key validator: Callback of key strokes.
 
         Handles a user's keypress in the input text box. Translates certain keys to
@@ -816,7 +819,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         the screen output.
 
         Args:
-          x: (int) Key code.
+          key_code: (int) Key code.
 
         Returns:
           (int) A translated key code. In most cases, this is identical to the
@@ -825,33 +828,33 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         Raises:
           TypeError: If the input x is not of type int.
-          debugger_cli_common.CommandLineExit: If a mouse-triggered command returns
+          ui_common.CommandLineExit: If a mouse-triggered command returns
             an exit token when dispatched.
         """
-        if not isinstance(x, int):
+        if not isinstance(key_code, int):
             raise TypeError("Key validator expected type int, received type %s" %
-                            type(x))
+                            type(key_code))
 
-        if x in self.CLI_CR_KEYS:
+        if key_code in self.CLI_CR_KEYS:
             # Make Enter key the terminator
-            self._textbox_curr_terminator = x
+            self._textbox_curr_terminator = key_code
             return self.CLI_TERMINATOR_KEY
-        elif x == self.CLI_TAB_KEY:
+        elif key_code == self.CLI_TAB_KEY:
             self._textbox_curr_terminator = self.CLI_TAB_KEY
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_PPAGE:
+        elif key_code == curses.KEY_PPAGE:
             self._scroll_output(_SCROLL_UP_A_LINE)
-            return x
-        elif x == curses.KEY_NPAGE:
+            return key_code
+        elif key_code == curses.KEY_NPAGE:
             self._scroll_output(_SCROLL_DOWN_A_LINE)
-            return x
-        elif x == curses.KEY_HOME:
+            return key_code
+        elif key_code == curses.KEY_HOME:
             self._scroll_output(_SCROLL_HOME)
-            return x
-        elif x == curses.KEY_END:
+            return key_code
+        elif key_code == curses.KEY_END:
             self._scroll_output(_SCROLL_END)
-            return x
-        elif x in [curses.KEY_UP, curses.KEY_DOWN]:
+            return key_code
+        elif key_code in [curses.KEY_UP, curses.KEY_DOWN]:
             # Command history navigation.
             if not self._active_command_history:
                 hist_prefix = self._screen_gather_textbox_str()
@@ -860,21 +863,21 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                         hist_prefix, self._command_history_limit))
 
             if self._active_command_history:
-                if x == curses.KEY_UP:
+                if key_code == curses.KEY_UP:
                     if self._command_pointer < len(self._active_command_history):
                         self._command_pointer += 1
-                elif x == curses.KEY_DOWN:
+                elif key_code == curses.KEY_DOWN:
                     if self._command_pointer > 0:
                         self._command_pointer -= 1
             else:
                 self._command_pointer = 0
 
-            self._textbox_curr_terminator = x
+            self._textbox_curr_terminator = key_code
 
             # Force return from the textbox edit(), so that the textbox can be
             # redrawn with a history command entered.
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_RESIZE:
+        elif key_code == curses.KEY_RESIZE:
             # Respond to terminal resize.
             self._screen_refresh_size()
             self._init_layout()
@@ -884,7 +887,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             # Force return from the textbox edit(), so that the textbox can be
             # redrawn.
             return self.CLI_TERMINATOR_KEY
-        elif x == curses.KEY_MOUSE and self._mouse_enabled:
+        elif key_code == curses.KEY_MOUSE and self._mouse_enabled:
             try:
                 _, mouse_x, mouse_y, _, mouse_event_type = _screen_getmouse()
             except curses.error:
@@ -896,20 +899,20 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                     scroll_command = self._scroll_bar._get_click_command(mouse_y)
                     if scroll_command is not None:
                         self._scroll_output(scroll_command)
-                    return x
+                    return key_code
                 else:
                     command = self._output_hyperlink_command(mouse_x, mouse_y)
                     if command:
                         self._screen_create_command_textbox()
                         exit_token = self._dispatch_command(command)
                         if exit_token is not None:
-                            raise debugger_cli_common.CommandLineExit(exit_token=exit_token)
+                            raise ui_common.CommandLineExit(exit_token=exit_token)
         # Mark the pending command as modified.
-        self._textbox_pending_command_changed = True
+        self._textbox_pending_cmd_changed = True
         # Invalidate active command history.
         self._command_pointer = 0
         self._active_command_history = []
-        return self._KEY_MAP.get(x, x)
+        return self._KEY_MAP.get(key_code, key_code)
 
     def _redraw_output(self):
         if self._curr_unwrapped_output is not None:
@@ -924,19 +927,19 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         if mouse_y == self._nav_bar_row and self._nav_bar:
             # Click was in the nav bar.
-            return _get_command_from_line_attr_segs(mouse_x,
-                                                    self._nav_bar.font_attr_segs[0])
+            return _get_cmd_from_line_attr_seg(mouse_x,
+                                               self._nav_bar.font_attr_segs[0])
         elif mouse_y == self._output_top_row and self._main_menu_pad:
             # Click was in the menu bar.
-            return _get_command_from_line_attr_segs(mouse_x,
-                                                    self._main_menu.font_attr_segs[0])
+            return _get_cmd_from_line_attr_seg(mouse_x,
+                                               self._main_menu.font_attr_segs[0])
         absolute_mouse_y = mouse_y + self._output_pad_row - output_top
         if absolute_mouse_y in self._curr_wrapped_output.font_attr_segs:
-            return _get_command_from_line_attr_segs(
+            return _get_cmd_from_line_attr_seg(
                 mouse_x, self._curr_wrapped_output.font_attr_segs[absolute_mouse_y])
         return None
 
-    def _title(self, title, title_color=None):
+    def _title(self):
         """Display title.
 
         Args:
@@ -944,13 +947,28 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
           title_color: (str) Color of the title, e.g., "yellow".
         """
 
-        # Pad input title str with "-" and space characters to make it pretty.
-        self._title_line = "--- %s " % title
-        if len(self._title_line) < self._max_x:
-            self._title_line += "-" * (self._max_x - len(self._title_line))
+        tvm_dgb_box_top = "-----------------"
+        tvm_dgb_txt = "    TVM DEBUG    "
+        space_need_half = int(((self._max_x) - len(tvm_dgb_txt))/2)
+        tvm_dgb_box_top = (" " * space_need_half) + tvm_dgb_box_top + (" " * (space_need_half))
+        tvm_dgb_txt = (" " * space_need_half) + tvm_dgb_txt + (" " * space_need_half)
+        #tvm_dgb_box_bottom = (" " * txt_begin) + tvm_dgb_box_bottom + (" " * txt_begin)
+        if len(tvm_dgb_txt) < (self._max_x):
+            tvm_dgb_box_top += " "
+            tvm_dgb_txt += " "
+        #    #tvm_dgb_box_bottom += " "
+        tvm_dgb_box_top = tvm_dgb_box_top[:len(tvm_dgb_box_top)-1]
+        tvm_dgb_txt = tvm_dgb_txt[:len(tvm_dgb_txt)-1]
 
         self._screen_draw_text_line(
-            self._title_row, self._title_line, color=title_color)
+            self._title_row, tvm_dgb_box_top, attr=curses.A_NORMAL | curses.A_BOLD,
+            color=self._title_color)
+        self._screen_draw_text_line(
+            self._title_row + 1, tvm_dgb_txt, attr=curses.A_NORMAL | curses.A_BOLD,
+            color=self._title_color)
+        #self._screen_draw_text_line(
+        #    self._title_row + 2, tvm_dgb_box_bottom, attr=curses.A_NORMAL | curses.A_BOLD,
+        #    color=self._title_color)
 
     def _auto_key_in(self, command, erase_existing=False):
         """Automatically key in a command to the command Textbox.
@@ -971,7 +989,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         """Erase existing text in command textpad."""
 
         existing_len = len(self._command_textbox.gather())
-        for _ in xrange(existing_len):
+        for _ in range(existing_len):
             self._command_textbox.do_command(self.BACKSPACE_KEY)
 
     def _screen_draw_text_line(self, row, line, attr=curses.A_NORMAL, color=None):
@@ -1019,7 +1037,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         # Wrap the output lines according to screen width.
         self._curr_wrapped_output, wrapped_line_indices = (
-            debugger_cli_common.wrap_rich_text_lines(output, self._max_x - 2))
+            ui_common.wrap_rich_text_lines(output, self._max_x - 2))
 
         # Append lines to curr_wrapped_output so that the user can scroll to a
         # state where the last text line is on the top of the output area.
@@ -1032,7 +1050,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             self._curr_wrapped_output.lines.append("Output cut off at %d lines!" %
                                                    self.max_output_lines)
             self._curr_wrapped_output.font_attr_segs[self.max_output_lines] = [
-                (0, len(output.lines[-1]), cli_shared.COLOR_MAGENTA)
+                (0, len(output.lines[-1]), ui_shared.COLOR_MAGENTA)
             ]
 
         self._display_nav_bar()
@@ -1057,9 +1075,6 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         highlighting requests (if any), scroll-to-next-match requests (if any),
         and screen refresh requests (if any).
 
-        TODO(cais): Separate these unrelated request to increase clarity and
-          maintainability.
-
         Args:
           output: A RichTextLines object that is the screen output text.
           is_refresh: (bool) Is this a refreshing display with existing output.
@@ -1072,16 +1087,16 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         if highlight_regex:
             try:
-                output = debugger_cli_common.regex_find(
+                output = ui_common.regex_find(
                     output, highlight_regex, font_attr=self._SEARCH_HIGHLIGHT_FONT_ATTR)
-            except ValueError as ex:
-                self._error_toast(str(ex))
+            except ValueError as exception:
+                self._error_toast(str(exception))
                 return
 
             if not is_refresh:
                 # Perform new regex search on the current output.
                 self._unwrapped_regex_match_lines = output.annotations[
-                    debugger_cli_common.REGEX_MATCH_LINES_KEY]
+                    ui_common.REGEX_MATCH_LINES_KEY]
             else:
                 # Continue scrolling down.
                 self._output_pad_row += 1
@@ -1112,8 +1127,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                 self._toast("Pattern not found", color=self._ERROR_TOAST_COLOR_PAIR)
         elif is_refresh:
             self._scroll_output(_SCROLL_REFRESH)
-        elif debugger_cli_common.INIT_SCROLL_POS_KEY in output.annotations:
-            line_index = output.annotations[debugger_cli_common.INIT_SCROLL_POS_KEY]
+        elif ui_common.INIT_SCROLL_POS_KEY in output.annotations:
+            line_index = output.annotations[ui_common.INIT_SCROLL_POS_KEY]
             self._scroll_output(_SCROLL_TO_LINE_INDEX, line_index=line_index)
         else:
             self._output_pad_row = 0
@@ -1135,7 +1150,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
           ValueError: If input argument "output" is invalid.
         """
 
-        if not isinstance(output, debugger_cli_common.RichTextLines):
+        if not isinstance(output, ui_common.RichTextLines):
             raise ValueError(
                 "Output is required to be an instance of RichTextLines, but is not.")
 
@@ -1151,58 +1166,66 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         # Create new output pad.
         pad = _screen_new_output_pad(rows, cols)
 
-        for i in xrange(len(output.lines)):
+        for i in range(len(output.lines)):
             if i in output.font_attr_segs:
                 self._screen_add_line_to_output_pad(
-                    pad, i, output.lines[i], color_segments=output.font_attr_segs[i])
+                    pad, i, output.lines[i], color_segments=output.font_attr_segs[i],
+                    additional_attr=output.font_additional_attr)
             else:
-                self._screen_add_line_to_output_pad(pad, i, output.lines[i])
+                self._screen_add_line_to_output_pad(pad, i, output.lines[i],
+                                                    additional_attr=output.font_additional_attr)
 
         return pad, rows, cols
 
     def _display_nav_bar(self):
-        nav_bar_width = self._max_x - 2
+        nav_bar_width = self._max_x
         self._nav_bar_pad = _screen_new_output_pad(1, nav_bar_width)
         self._nav_bar = self._nav_history.render(
             nav_bar_width,
             self._NAVIGATION_BACK_COMMAND,
-            self._NAVIGATION_FORWARD_COMMAND)
+            self._NAVIGATION_FORWARD_COMMAND,
+            self._NAVIGATION_HOME_COMMAND,
+            self._NAVIGATION_HELP_COMMAND,
+            self._NAVIGATION_EXIT_COMMAND)
         self._screen_add_line_to_output_pad(
             self._nav_bar_pad, 0, self._nav_bar.lines[0][:nav_bar_width - 1],
             color_segments=(self._nav_bar.font_attr_segs[0]
-                            if 0 in self._nav_bar.font_attr_segs else None))
+                            if 0 in self._nav_bar.font_attr_segs else None),
+            additional_attr=self._nav_bar.font_additional_attr)
 
     def _display_main_menu(self, output):
         """Display main menu associated with screen output, if the menu exists.
 
         Args:
-          output: (debugger_cli_common.RichTextLines) The RichTextLines output from
+          output: (ui_common.RichTextLines) The RichTextLines output from
             the annotations field of which the menu will be extracted and used (if
             the menu exists).
         """
 
-        if debugger_cli_common.MAIN_MENU_KEY in output.annotations:
+        if ui_common.MAIN_MENU_KEY in output.annotations:
             self._main_menu = output.annotations[
-                debugger_cli_common.MAIN_MENU_KEY].format_as_single_line(
+                ui_common.MAIN_MENU_KEY].format_as_single_line(
                     prefix="| ", divider=" | ", enabled_item_attrs=["underline"])
 
             self._main_menu_pad = _screen_new_output_pad(1, self._max_x - 2)
 
             # The unwrapped menu line may exceed screen width, in which case it needs
             # to be cut off.
-            wrapped_menu, _ = debugger_cli_common.wrap_rich_text_lines(
+            wrapped_menu, _ = ui_common.wrap_rich_text_lines(
                 self._main_menu, self._max_x - 3)
             self._screen_add_line_to_output_pad(
                 self._main_menu_pad,
                 0,
                 wrapped_menu.lines[0],
                 color_segments=(wrapped_menu.font_attr_segs[0]
-                                if 0 in wrapped_menu.font_attr_segs else None))
+                                if 0 in wrapped_menu.font_attr_segs else None),
+                additional_attr=wrapped_menu.font_additional_attr)
         else:
             self._main_menu = None
             self._main_menu_pad = None
 
-    def _screen_add_line_to_output_pad(self, pad, row, txt, color_segments=None):
+    def _screen_add_line_to_output_pad(self, pad, row, txt, color_segments=None,
+                                       additional_attr=None):
         """Render a line in a text pad.
 
         Assumes: segments in color_segments are sorted in ascending order of the
@@ -1250,10 +1273,17 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
             curses_attr = curses.A_NORMAL
             for attr in curr_attrs:
                 if (self._mouse_enabled and
-                        isinstance(attr, debugger_cli_common.MenuItem)):
+                        isinstance(attr, ui_common.MenuItem)):
                     curses_attr |= curses.A_UNDERLINE
+                    if attr.get_custom_color:
+                        curses_attr |= self._color_pairs[attr.get_custom_color]
+                    else:
+                        curses_attr |= self._color_pairs.get(attr, self._default_color_pair)
                 else:
                     curses_attr |= self._color_pairs.get(attr, self._default_color_pair)
+                if additional_attr:
+                    curses_attr |= curses.A_BOLD
+                curses_attr |= curses.A_BOLD
             all_color_pairs.append(curses_attr)
 
             if curr_end < next_start:
@@ -1274,16 +1304,16 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                      screen_location_right)
         self._scroll_bar = ScrollBar(
             self._max_x - 2,
-            3,
+            3 + _TITLE_SIZE_DEFAULT,
             self._max_x - 1,
-            self._output_num_rows + 1,
+            self._output_num_rows + _TITLE_SIZE_DEFAULT + 1,
             self._output_pad_row,
             self._output_pad_height - self._output_pad_screen_height)
 
         (scroll_pad, _, _) = self._display_lines(
-            self._scroll_bar.layout(), self._output_num_rows - 1)
+            self._scroll_bar.layout(), (self._output_num_rows + _TITLE_SIZE_DEFAULT) - 1)
         _refresh_pad(scroll_pad, 0, 0, self._output_top_row + 1,
-                     self._max_x - 2, self._output_num_rows + 1,
+                     self._max_x - 2, (self._output_num_rows + _TITLE_SIZE_DEFAULT) + 1,
                      self._max_x - 1)
 
     def _scroll_output(self, direction, line_index=None):
@@ -1356,6 +1386,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                                        self._output_pad_screen_location.right)
         self._screen_render_nav_bar()
         self._screen_render_menu_pad()
+        self._title()
 
         self._scroll_info = self._compile_ui_status_summary()
         self._screen_draw_text_line(
@@ -1385,6 +1416,8 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         """
 
         info = ""
+        scroll_status_info = ""
+        command_info = self._nav_history.get_latest_command_info()
         if self._output_pad_height > self._output_pad_screen_height + 1:
             # Display information about the scrolling of tall screen output.
             scroll_percentage = 100.0 * (min(
@@ -1392,110 +1425,30 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
                 float(self._output_pad_row) /
                 (self._output_pad_height - self._output_pad_screen_height - 1)))
             if self._output_pad_row == 0:
-                scroll_directions = " (PgDn)"
+                scroll_directions = "(PgDn)"
             elif self._output_pad_row >= (
                     self._output_pad_height - self._output_pad_screen_height - 1):
-                scroll_directions = " (PgUp)"
+                scroll_directions = "(PgUp)"
             else:
-                scroll_directions = " (PgDn/PgUp)"
+                scroll_directions = "(PgDn/PgUp)"
 
-            info += "--- Scroll%s: %.2f%% " % (scroll_directions, scroll_percentage)
+            if scroll_percentage < 10.00:
+                scroll_percentage = " %.2f%%" % (scroll_percentage)
+            else:
+                scroll_percentage = "%.2f%%" % (scroll_percentage)
+            scroll_status_info = " %s %s" % (scroll_directions, scroll_percentage)
 
-        self._output_array_pointer_indices = self._show_array_indices()
-
-        # Add array indices information to scroll message.
-        if self._output_array_pointer_indices:
-            if self._output_array_pointer_indices[0]:
-                info += _format_indices(self._output_array_pointer_indices[0])
-            info += "-"
-            if self._output_array_pointer_indices[-1]:
-                info += _format_indices(self._output_array_pointer_indices[-1])
-            info += " "
-
-        # Add mouse mode information.
-        mouse_mode_str = "Mouse: "
-        mouse_mode_str += "ON" if self._mouse_enabled else "OFF"
-
-        if len(info) + len(mouse_mode_str) + 5 < self._max_x:
-            info += "-" * (self._max_x - len(info) - len(mouse_mode_str) - 4)
-            info += " "
-            info += mouse_mode_str
-            info += " ---"
+        if len(_COMMAND_TEXT + command_info + scroll_status_info) < self._max_x:
+            info = _COMMAND_TEXT + command_info +\
+                   " " * (self._max_x - len(_COMMAND_TEXT + command_info + scroll_status_info)) + \
+                   scroll_status_info
         else:
-            info += "-" * (self._max_x - len(info))
+            info = _COMMAND_TEXT + command_info[:self._max_x - \
+                   len(_COMMAND_TEXT + command_info + scroll_status_info) - 3] + \
+                   "..." + scroll_status_info
 
         return info
 
-    def _show_array_indices(self):
-        """Show array indices for the lines at the top and bottom of the output.
-
-        For the top line and bottom line of the output display area, show the
-        element indices of the array being displayed.
-
-        Returns:
-          If either the top of the bottom row has any matching array indices,
-          a dict from line index (0 being the top of the display area, -1
-          being the bottom of the display area) to array element indices. For
-          example:
-            {0: [0, 0], -1: [10, 0]}
-          Otherwise, None.
-        """
-
-        indices_top = self._show_array_index_at_line(0)
-
-        output_top = self._output_top_row
-        if self._main_menu_pad:
-            output_top += 1
-        bottom_line_index = (
-            self._output_pad_screen_location.bottom - output_top - 1)
-        indices_bottom = self._show_array_index_at_line(bottom_line_index)
-
-        if indices_top or indices_bottom:
-            return {0: indices_top, -1: indices_bottom}
-        return None
-
-    def _show_array_index_at_line(self, line_index):
-        """Show array indices for the specified line in the display area.
-
-        Uses the line number to array indices map in the annotations field of the
-        RichTextLines object being displayed.
-        If the displayed RichTextLines object does not contain such a mapping,
-        will do nothing.
-
-        Args:
-          line_index: (int) 0-based line index from the top of the display area.
-            For example,if line_index == 0, this method will display the array
-            indices for the line currently at the top of the display area.
-
-        Returns:
-          (list) The array indices at the specified line, if available. None, if
-            not available.
-        """
-
-        # Examine whether the index information is available for the specified line
-        # number.
-        pointer = self._output_pad_row + line_index
-        if (pointer in self._curr_wrapped_output.annotations and
-                "i0" in self._curr_wrapped_output.annotations[pointer]):
-            indices = self._curr_wrapped_output.annotations[pointer]["i0"]
-
-            array_indices_str = _format_indices(indices)
-            array_indices_info = "@" + array_indices_str
-
-            # TODO(cais): Determine line_index properly given menu pad status.
-            #   Test coverage?
-            output_top = self._output_top_row
-            if self._main_menu_pad:
-                output_top += 1
-
-            self._toast(
-                array_indices_info,
-                color=self._ARRAY_INDICES_COLOR_PAIR,
-                line_index=output_top + line_index)
-
-            return indices
-        else:
-            return None
 
     def _tab_complete(self, command_str):
         """Perform tab completion.
@@ -1515,7 +1468,7 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
           appended by the common prefix of the candidates.
         """
 
-        context, prefix, except_last_word = base_ui._analyze_tab_complete_input(
+        context, prefix, except_last_word = ui_base._analyze_tab_complete_input(
             command_str)
         candidates, common_prefix = self._tab_completion_registry.get_completions(
             context, prefix)
@@ -1550,13 +1503,13 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
 
         candidates_prefix = "Candidates: "
         candidates_line = candidates_prefix + " ".join(candidates)
-        candidates_output = debugger_cli_common.RichTextLines(
+        candidates_output = ui_common.RichTextLines(
             candidates_line,
             font_attr_segs={
                 0: [(len(candidates_prefix), len(candidates_line), "yellow")]
             })
 
-        candidates_output, _ = debugger_cli_common.wrap_rich_text_lines(
+        candidates_output, _ = ui_common.wrap_rich_text_lines(
             candidates_output, self._max_x - 3)
 
         # Calculate how many lines the candidate text should occupy. Limit it to
@@ -1585,10 +1538,10 @@ class CursesUI(base_ui.BaseUI):  # pylint: disable=too-many-instance-attributes
         """
 
         pad, _, _ = self._display_lines(
-            debugger_cli_common.RichTextLines(
+            ui_common.RichTextLines(
                 message,
                 font_attr_segs={
-                    0: [(0, len(message), color or cli_shared.COLOR_WHITE)]}),
+                    0: [(0, len(message), color or ui_shared.COLOR_WHITE)]}),
             0)
 
         right_end = min(len(message), self._max_x - 2)

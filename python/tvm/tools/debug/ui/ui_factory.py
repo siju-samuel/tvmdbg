@@ -12,7 +12,7 @@ def get_ui(ui_type,
            on_ui_exit=None,
            available_ui_types=None,
            config=None):
-    """Create a `base_ui.BaseUI` subtype.
+    """Create a `ui_base.BaseUI` subtype.
 
     This factory method attempts to fallback to other available ui_types on
     ImportError. For example, if `ui_type` is `curses`, but `curses` cannot be
@@ -24,11 +24,11 @@ def get_ui(ui_type,
       on_ui_exit: (`Callable`) the callback to be called when the UI exits.
       available_ui_types: (`None` or `list` of `str`) Manually-set available
         ui_types.
-      config: An instance of `cli_config.CLIConfig()` carrying user-facing
+      config: An instance of `ui_config.CLIConfig()` carrying user-facing
         configurations.
 
     Returns:
-      A `base_ui.BaseUI` subtype object.
+      A `ui_base.BaseUI` subtype object.
 
     Raises:
       ValueError: on invalid ui_type or on exhausting or fallback ui_types.

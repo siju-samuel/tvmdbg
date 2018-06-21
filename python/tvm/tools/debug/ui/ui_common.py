@@ -1,6 +1,6 @@
-# coding: utf-8
-# pylint: disable=fixme, invalid-name, too-many-arguments, too-many-locals, too-many-statements, too-many-branches, too-many-return-statements, too-many-lines, protected-access
+# pylint: disable=too-many-lines
 """Building Blocks of TVM Debugger Command-Line Interface."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -12,7 +12,7 @@ import sre_constants
 import traceback
 
 import six
-from six.moves import xrange  # pylint: disable=redefined-builtin
+
 
 HELP_INDENT = "  "
 
@@ -44,7 +44,7 @@ class CommandLineExit(Exception):
         return self._exit_token
 
 
-class RichLine(object):  # pylint: disable=too-few-public-methods
+class RichLine(object):
     """Rich single-line text.
 
     Attributes:
@@ -63,8 +63,6 @@ class RichLine(object):  # pylint: disable=too-few-public-methods
             entire text.  Extending this object via concatenation allows creation
             of text with varying attributes.
         """
-        # TODO(ebreck) Make .text and .font_attr protected members when we no
-        # longer need public access.
         self.text = text
         if font_attr:
             self.font_attr_segs = [(0, len(text), font_attr)]
@@ -105,7 +103,7 @@ class RichLine(object):  # pylint: disable=too-few-public-methods
         return len(self.text)
 
 
-def rich_text_lines_from_rich_line_list(rich_text_list, annotations=None):
+def rich_text_lines_frm_line_list(rich_text_list, annotations=None, additional_attr=None):
     """Convert a list of RichLine objects or strings to a RichTextLines object.
 
     Args:
@@ -124,7 +122,8 @@ def rich_text_lines_from_rich_line_list(rich_text_list, annotations=None):
                 font_attr_segs[i] = richline.font_attr_segs
         else:
             lines.append(richline)
-    return RichTextLines(lines, font_attr_segs, annotations=annotations)
+    return RichTextLines(lines, font_attr_segs, annotations=annotations,
+                         additional_attr=additional_attr)
 
 
 class RichTextLines(object):
@@ -138,7 +137,7 @@ class RichTextLines(object):
     lines only.
     """
 
-    def __init__(self, lines, font_attr_segs=None, annotations=None):
+    def __init__(self, lines, font_attr_segs=None, annotations=None, additional_attr=None):
         """Constructor of RichTextLines.
 
         Args:
@@ -181,12 +180,13 @@ class RichTextLines(object):
         self._font_attr_segs = font_attr_segs
         if not self._font_attr_segs:
             self._font_attr_segs = {}
-            # TODO(cais): Refactor to collections.defaultdict(list) to simplify code.
 
         self._annotations = annotations
         if not self._annotations:
             self._annotations = {}
-            # TODO(cais): Refactor to collections.defaultdict(list) to simplify code.
+        self._additional_attr = additional_attr
+        if not self._additional_attr:
+            self._additional_attr = {}
 
     @property
     def lines(self):
@@ -205,6 +205,15 @@ class RichTextLines(object):
           Dictionary of rich text line font attributes segments.
         """
         return self._font_attr_segs
+
+    @property
+    def font_additional_attr(self):
+        """Get the rich text line additional attributes.
+
+        Returns:
+          Rich text line additional attributes.
+        """
+        return self._additional_attr
 
     @property
     def annotations(self):
@@ -371,13 +380,9 @@ class RichTextLines(object):
           file_path: (str) path of the file to write to.
         """
 
-        with open(file_path, "w") as fo:
+        with open(file_path, "w") as file_opened:
             for line in self._lines:
-                fo.write(line + "\n")
-
-    # TODO(cais): Add a method to allow appending to a line in RichTextLines with
-    # both text and font_attr_segs.
-
+                file_opened.write(line + "\n")
 
 def regex_find(orig_screen_output, regex, font_attr):
     """Perform regex match in rich text lines.
@@ -412,7 +417,7 @@ def regex_find(orig_screen_output, regex, font_attr):
         raise ValueError("Invalid regular expression: \"%s\"" % regex)
 
     regex_match_lines = []
-    for i in xrange(len(new_screen_output.lines)):
+    for i in range(len(new_screen_output.lines)):
         line = new_screen_output.lines[i]
         find_it = re_prog.finditer(line)
 
@@ -432,6 +437,46 @@ def regex_find(orig_screen_output, regex, font_attr):
     new_screen_output.annotations[REGEX_MATCH_LINES_KEY] = regex_match_lines
     return new_screen_output
 
+def _do_wrapping(inp, out, i, cols, row_counter):
+    line = inp.lines[i]
+    wlines = []  # Wrapped lines.
+
+    osegs = []
+    if i in inp.font_attr_segs:
+        osegs = inp.font_attr_segs[i]
+
+    idx = 0
+    while idx < len(line):
+        if idx + cols > len(line):
+            rlim = len(line)
+        else:
+            rlim = idx + cols
+
+        wlines.append(line[idx:rlim])
+        for seg in osegs:
+            if (seg[0] < rlim) and (seg[1] >= idx):
+                # Calculate left bound within wrapped line.
+                if seg[0] >= idx:
+                    left_bound = seg[0] - idx
+                else:
+                    left_bound = 0
+
+                # Calculate right bound within wrapped line.
+                if seg[1] < rlim:
+                    right_bound = seg[1] - idx
+                else:
+                    right_bound = rlim - idx
+
+                if right_bound > left_bound:  # Omit zero-length segments.
+                    wseg = (left_bound, right_bound, seg[2])
+                    if row_counter not in out.font_attr_segs:
+                        out.font_attr_segs[row_counter] = [wseg]
+                    else:
+                        out.font_attr_segs[row_counter].append(wseg)
+
+        idx += cols
+        row_counter += 1
+    return wlines
 
 def wrap_rich_text_lines(inp, cols):
     """Wrap RichTextLines according to maximum number of columns.
@@ -466,7 +511,7 @@ def wrap_rich_text_lines(inp, cols):
     out = RichTextLines([])
 
     row_counter = 0  # Counter for new row index
-    for i in xrange(len(inp.lines)):  # pylint: disable=too-many-nested-blocks
+    for i in range(len(inp.lines)):
         new_line_indices.append(out.num_lines())
 
         line = inp.lines[i]
@@ -483,44 +528,7 @@ def wrap_rich_text_lines(inp, cols):
             row_counter += 1
         else:
             # Wrap.
-            wlines = []  # Wrapped lines.
-
-            osegs = []
-            if i in inp.font_attr_segs:
-                osegs = inp.font_attr_segs[i]
-
-            idx = 0
-            while idx < len(line):
-                if idx + cols > len(line):
-                    rlim = len(line)
-                else:
-                    rlim = idx + cols
-
-                wlines.append(line[idx:rlim])
-                for seg in osegs:
-                    if (seg[0] < rlim) and (seg[1] >= idx):
-                        # Calculate left bound within wrapped line.
-                        if seg[0] >= idx:
-                            left_bound = seg[0] - idx
-                        else:
-                            left_bound = 0
-
-                        # Calculate right bound within wrapped line.
-                        if seg[1] < rlim:
-                            right_bound = seg[1] - idx
-                        else:
-                            right_bound = rlim - idx
-
-                        if right_bound > left_bound:  # Omit zero-length segments.
-                            wseg = (left_bound, right_bound, seg[2])
-                            if row_counter not in out.font_attr_segs:
-                                out.font_attr_segs[row_counter] = [wseg]
-                            else:
-                                out.font_attr_segs[row_counter].append(wseg)
-
-                idx += cols
-                row_counter += 1
-
+            wlines = _do_wrapping(inp, out, i, cols, row_counter)
             out.lines.extend(wlines)
 
     # Copy over keys of annotation that are not row indices.
@@ -685,17 +693,18 @@ class CommandHandlerRegistry(object):
         handler = self._handlers[resolved_prefix]
         try:
             output = handler(argv, screen_info=screen_info)
-        except CommandLineExit as ex:
-            raise ex
-        except SystemExit as ex:
+        except CommandLineExit as exception:
+            raise exception
+        except SystemExit as exception:
             # Special case for syntax errors caught by argparse.
             lines = ["Syntax error for command: %s" % prefix,
                      "For help, do \"help %s\"" % prefix]
             output = RichTextLines(lines)
 
-        except BaseException as ex:  # pylint: disable=broad-except
+        except BaseException as exception:
             lines = ["Error occurred during handling of command: %s %s:" %
-                     (resolved_prefix, " ".join(argv)), "%s: %s" % (type(ex), str(ex))]
+                     (resolved_prefix, " ".join(argv)),
+                     "%s: %s" % (type(exception), str(exception))]
 
             # Include traceback of the exception.
             lines.append("")
@@ -836,9 +845,6 @@ class TabCompletionRegistry(object):
 
     def __init__(self):
         self._comp_dict = {}
-
-    # TODO(cais): Rename method names with "comp" to "*completion*" to avoid
-    # confusion.
 
     def register_tab_comp_context(self, context_words, comp_items):
         """Register a tab-completion context.
@@ -1093,27 +1099,24 @@ class CommandHistory(object):
 
         return commands[-n:]
 
-    # TODO(cais): Lookup by regex.
-
-
 class MenuItem(object):
     """A class for an item in a text-based menu."""
 
-    def __init__(self, caption, content, enabled=True):
+    def __init__(self, caption, content, enabled=True, custom_color=None):
         """Menu constructor.
-
-        TODO(cais): Nested menu is currently not supported. Support it.
 
         Args:
           caption: (str) caption of the menu item.
           content: Content of the menu item. For a menu item that triggers
             a command, for example, content is the command string.
           enabled: (bool) whether this menu item is enabled.
+          custom_color: (str) color attribute for the menu item.
         """
 
         self._caption = caption
         self._content = content
         self._enabled = enabled
+        self._custom_color = custom_color
 
     @property
     def caption(self):
@@ -1137,6 +1140,15 @@ class MenuItem(object):
             a command, for example, content is the command string.
         """
         return self._content
+
+    @property
+    def get_custom_color(self):
+        """Get the custom color attribute for MenuItem.
+
+        Returns:
+          Custom color attribute.
+        """
+        return self._custom_color
 
     def is_enabled(self):
         """Get a MenuItem is enable or not.

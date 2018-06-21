@@ -1,7 +1,4 @@
-# coding: utf-8
-# pylint: disable=fixme, too-many-locals, no-member, too-many-lines, too-many-instance-attributes, too-many-arguments, invalid-name
 """Classes and functions to handle debug-dump data of TVM Debugger."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -11,72 +8,21 @@ import glob
 import json
 import os
 import re
-
-import numpy as np
 import six
 
-from tvm.tools.debug.util import debug_graphs
+from tvm.tools.debug.util import graph_dump
+from tvm.tools.debug.util import data_dump
 from tvm.tools.debug.runtime import graph_def
 
-# TODO(cais): Tie these string constants in with C++?
 METADATA_FILE_PREFIX = "_tvmdbg_"
-CORE_METADATA_TAG = "core_metadata_"
 GRAPH_FILE_TAG = "graph_"
 DEVICE_TAG = "device_"
 HASH_TAG = "hash"
-
 OUTPUTS_INFO_FILE_TAG = "outputs_info_"
 INPUT_KEYS_INFO_FILE_TAG = "input_keys_info_"
 
-
 def _glob(glob_pattern):
     return glob.glob(glob_pattern)
-
-
-class InconvertibleTensorProto(object):# pylint: disable=too-few-public-methods
-    """Represents a TensorProto that cannot be converted to np.ndarray."""
-
-    def __init__(self, tensor_proto, initialized=True):
-        """Constructor.
-
-        Args:
-          tensor_proto: the `TensorProto` object that cannot be represented as a
-            `np.ndarray` object.
-          initialized: (`bool`) whether the Tensor is initialized.
-        """
-        self._tensor_proto = tensor_proto
-        self._initialized = initialized
-
-    def __str__(self):
-        output = "" if self._initialized else "Uninitialized tensor:\n"
-        output += str(self._tensor_proto)
-        return output
-
-#    @property
-#    def initialized(self):
-#        return self._initialized
-
-
-def load_tensor_from_event_file(event_file_path):
-    """Load a tensor from an event file.
-
-    Assumes that the event file contains a `Event` protobuf and the `Event`
-    protobuf contains a `Tensor` value.
-
-    Args:
-      event_file_path: (`str`) path to the event file.
-
-    Returns:
-      The tensor value loaded from the event file, as a `numpy.ndarray`. For
-      uninitialized Tensors, returns `None`. For Tensors of data types that
-      cannot be converted to `numpy.ndarray` (e.g., `tf.resource`), return
-      `None`.
-    """
-
-    content = np.load(event_file_path)
-
-    return content
-
 
 def _load_graph_def_from_event_file(ctx, event_file_path):
     with open(event_file_path) as json_data:
@@ -84,22 +30,13 @@ def _load_graph_def_from_event_file(ctx, event_file_path):
         json_data.close()
     return graph_def.GraphDef(ctx, json_nodes)
 
-def _load_log_message_from_event_file(event_file_path):
+def _load_log_msg_from_evt_file(event_file_path):
     with open(event_file_path, "r") as event_file:
         message = event_file.read()
     return message
 
 def _is_graph_file(file_name):
     return file_name.startswith(METADATA_FILE_PREFIX + GRAPH_FILE_TAG)
-
-
-def _is_run_outputs_info_file(file_name):
-    return file_name == METADATA_FILE_PREFIX + OUTPUTS_INFO_FILE_TAG
-
-
-def _is_run_input_keys_info_file(file_name):
-    return file_name == METADATA_FILE_PREFIX + INPUT_KEYS_INFO_FILE_TAG
-
 
 def _get_tensor_name(node_name, output_slot):
     """Get tensor name given node name and output slot index.
@@ -111,9 +48,7 @@ def _get_tensor_name(node_name, output_slot):
     Returns:
       Name of the tensor, as a string.
     """
-
     return "%s:%d" % (node_name, output_slot)
-
 
 def _get_tensor_watch_key(node_name, output_slot, debug_op):
     """Get the string representation of a debug watch on a tensor.
@@ -131,292 +66,14 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
     """
     return "%s:%s" % (_get_tensor_name(node_name, output_slot), debug_op)
 
-
-def has_inf_or_nan(datum, tensor):
-    """A predicate for whether a tensor consists of any bad numerical values.
-
-    This predicate is common enough to merit definition in this module.
-    Bad numerical values include `nan`s and `inf`s.
-    The signature of this function follows the requirement of the method
-    `DebugDumpDir.find()`.
-
-    Args:
-      datum: (`DebugTensorDatum`) Datum metadata.
-      tensor: (`numpy.ndarray` or None) Value of the tensor. None represents
-        an uninitialized tensor.
-
-    Returns:
-      (`bool`) True if and only if tensor consists of any nan or inf values.
-    """
-
-    _ = datum  # Datum metadata is unused in this predicate.
-
-    if isinstance(tensor, InconvertibleTensorProto):
-        # Uninitialized tensor doesn't have bad numerical values.
-        # Also return False for data types that cannot be represented as numpy
-        # arrays.
-        return False
-    elif (np.issubdtype(tensor.dtype, np.floating) or
-          np.issubdtype(tensor.dtype, np.complex) or
-          np.issubdtype(tensor.dtype, np.integer)):
-        return np.any(np.isnan(tensor)) or np.any(np.isinf(tensor))
-    return False
-
-
-_CoreMetadata = collections.namedtuple("CoreMetadata", [
-    "global_step", "session_run_index", "executor_step_index", "input_names",
-    "output_names", "target_nodes"
-])
-
-
-def _extract_core_metadata_from_event_proto(event):
-    json_metadata = json.loads(event.log_message.message)
-    return _CoreMetadata(json_metadata["global_step"],
-                         json_metadata["session_run_index"],
-                         json_metadata["executor_step_index"],
-                         json_metadata["input_names"],
-                         json_metadata["output_names"],
-                         json_metadata["target_nodes"])
-
-
-def as_text(bytes_or_text, encoding='utf-8'):
-    """Returns the given argument as a unicode string.
-
-    Args:
-      bytes_or_text: A `bytes`, `str`, or `unicode` object.
-      encoding: A string indicating the charset for decoding unicode.
-
-    Returns:
-      A `unicode` (Python 2) or `str` (Python 3) object.
-
-    Raises:
-      TypeError: If `bytes_or_text` is not a binary or unicode string.
-    """
-    if isinstance(bytes_or_text, six.text_type):
-        return bytes_or_text
-    elif isinstance(bytes_or_text, bytes):
-        return bytes_or_text.decode(encoding)
-    else:
-        raise TypeError('Expected binary or unicode string, got %r' % bytes_or_text)
-
-
-def device_name_to_device_path(device_name):
-    """Convert device name to device path."""
-    device_name_items = as_text(device_name).split("/")
-    device_name_items = [item.replace(":", "_") for item in device_name_items]
-    return METADATA_FILE_PREFIX + DEVICE_TAG + ",".join(device_name_items)
-
-
-def device_path_to_device_name(device_dir):
-    """Parse device name from device path.
-
-    Args:
-      device_dir: (str) a directory name for the device.
-
-    Returns:
-      (str) parsed device name.
-    """
-    path_items = os.path.basename(device_dir)[
-        len(METADATA_FILE_PREFIX) + len(DEVICE_TAG):].split(",")
-    return "/".join([
-        path_item.replace("device_", "device:").replace("_", ":", 1)
-        for path_item in path_items])
-
-
-class DebugTensorDatum(object):
-    """A single tensor dumped by TVM Debugger (tvmdbg).
-
-    Contains metadata about the dumped tensor, including `timestamp`,
-    `node_name`, `output_slot`, `debug_op`, and path to the dump file
-    (`file_path`).
-
-    This type does not hold the generally space-expensive tensor value (numpy
-    array). Instead, it points to the file from which the tensor value can be
-    loaded (with the `get_tensor` method) if needed.
-    """
-
-    def __init__(self, dump_root, debug_dump_rel_path):
-        """`DebugTensorDatum` constructor.
-
-        Args:
-          dump_root: (`str`) Debug dump root directory. This path should not include
-            the path component that represents the device name (see also below).
-          debug_dump_rel_path: (`str`) Path to a debug dump file, relative to the
-            `dump_root`. The first item of this relative path is assumed to be
-            a path representing the name of the device that the Tensor belongs to.
-            See `device_path_to_device_name` for more details on the device path.
-            For example, suppose the debug dump root
-            directory is `/tmp/tvmdbg_1` and the dump file is at
-            `/tmp/tvmdbg_1/<device_path>/>ns_1/node_a_0_DebugIdentity_123456789`,
-            then the value of the debug_dump_rel_path should be
-            `<device_path>/ns_1/node_a_0_DebugIdenity_1234456789`.
-
-        Raises:
-          ValueError: If the base file name of the dump file does not conform to
-            the dump file naming pattern:
-            `node_name`_`output_slot`_`debug_op`_`timestamp`
-        """
-
-        path_components = os.path.normpath(debug_dump_rel_path).split(os.sep)
-        self._device_name = device_path_to_device_name(path_components[0])
-        base = path_components[-1]
-        if base.count("_") < 3:
-            raise ValueError(
-                "Dump file path does not conform to the naming pattern: %s" % base)
-
-        self._extended_timestamp = base.split("_")[-1]
-        # It may include an index suffix at the end if file path collision happened
-        # due to identical timestamps.
-        if "-" in self._extended_timestamp:
-            self._timestamp = int(
-                self._extended_timestamp[:self._extended_timestamp.find("-")])
-        else:
-            self._timestamp = int(self._extended_timestamp)
-
-        self._debug_op = base.split("_")[-2]
-        self._output_slot = int(base.split("_")[-3])
-
-        node_base_name = "_".join(base.split("_")[:-3])
-        self._node_name = "/".join(path_components[1:-1] + [node_base_name])
-
-        self._file_path = os.path.join(dump_root, debug_dump_rel_path)
-        self._dump_size_bytes = (os.stat(self._file_path).st_size if
-                                 os.path.exists(self._file_path) else None)
-
-    def __str__(self):
-        return "{DebugTensorDatum (%s) %s:%d @ %s @ %d}" % (self.device_name,
-                                                            self.node_name,
-                                                            self.output_slot,
-                                                            self.debug_op,
-                                                            self.timestamp)
-
-    def __repr__(self):
-        return self.__str__()
-
-    def get_tensor(self):
-        """Get tensor from the dump (`Event`) file.
-
-        Returns:
-          The tensor loaded from the dump (`Event`) file.
-        """
-
-        return load_tensor_from_event_file(self.file_path)
-
-    # TODO(cais): Add time unit suffix to timestamp and t0 (us).
-    @property
-    def timestamp(self):
-        """Timestamp of when this tensor value was dumped.
-
-        Returns:
-          (`int`) The timestamp in microseconds.
-        """
-
-        return self._timestamp
-
-    @property
-    def extended_timestamp(self):
-        """Extended timestamp, possibly with an index suffix.
-
-        The index suffix, e.g., "-1", is for disambiguating multiple dumps of the
-        same tensor with the same timestamp, which can occur if the dumping events
-        are spaced by shorter than the temporal resolution of the timestamps.
-
-        Returns:
-          (`str`) The extended timestamp.
-        """
-
-        return self._extended_timestamp
-
-    @property
-    def debug_op(self):
-        """Name of the debug op.
-
-        Returns:
-          (`str`) debug op name (e.g., `DebugIdentity`).
-        """
-
-        return self._debug_op
-
-    @property
-    def device_name(self):
-        """Name of the device that the tensor belongs to.
-
-        Returns:
-          (`str`) device name.
-        """
-
-        return self._device_name
-
-    @property
-    def node_name(self):
-        """Name of the node from which the tensor value was dumped.
-
-        Returns:
-          (`str`) name of the node watched by the debug op.
-        """
-
-        return self._node_name
-
-    @property
-    def output_slot(self):
-        """Output slot index from which the tensor value was dumped.
-
-        Returns:
-          (`int`) output slot index watched by the debug op.
-        """
-
-        return self._output_slot
-
-    @property
-    def tensor_name(self):
-        """Name of the tensor watched by the debug op.
-
-        Returns:
-          (`str`) `Tensor` name, in the form of `node_name`:`output_slot`
-        """
-
-        return _get_tensor_name(self.node_name, self.output_slot)
-
-    @property
-    def watch_key(self):
-        """Watch key identities a debug watch on a tensor.
-
-        Returns:
-          (`str`) A watch key, in the form of `tensor_name`:`debug_op`.
-        """
-
-        return _get_tensor_watch_key(self.node_name, self.output_slot,
-                                     self.debug_op)
-
-    @property
-    def file_path(self):
-        """Path to the file which stores the value of the dumped tensor."""
-
-        return self._file_path
-
-    @property
-    def dump_size_bytes(self):
-        """Size of the dump file.
-
-        Unit: byte.
-
-        Returns:
-          If the dump file exists, size of the dump file, in bytes.
-          If the dump file does not exist, None.
-        """
-
-        return self._dump_size_bytes
-
-
 class WatchKeyDoesNotExistInDebugDumpDirError(ValueError):
     """Watch key doesn't exist in dumping directory error information."""
     pass
 
-
-class DebugDumpDir(object):# pylint: disable=too-many-public-methods
+class DebugDumpDir(object):
     """Data set from a debug-dump directory on filesystem.
 
-    An instance of `DebugDumpDir` contains all `DebugTensorDatum` instances
+    An instance of `DebugDumpDir` contains all `data_dump.DebugTensorDatum` instances
     in a tvmdbg dump root directory.
     """
 
@@ -435,11 +92,8 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           ValueError: If more than one core metadata file is found under the dump
             root directory.
         """
-
         if not os.path.isdir(dump_root):
             raise IOError("Dump root directory %s does not exist" % dump_root)
-
-        self._core_metadata = []
 
         self._merge_node_names = {}
         self._debug_graphs = {}
@@ -450,12 +104,9 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         # Find the list of devices.
         self._dump_root = dump_root
         self._ctx = ctx
-        self._load_core_metadata()
         self._load_outputs_info()
         self._load_inputs_info()
         self._load_all_device_dumps(partition_graphs, validate)
-
-        self._python_graph = None
 
     def _load_all_device_dumps(self, partition_graphs, validate):
         """Load the dump data for all devices."""
@@ -472,7 +123,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._watch_key_to_rel_time = {}
         self._watch_key_to_dump_size_bytes = {}
         for device_dir in device_dirs:
-            device_name = device_path_to_device_name(device_dir)
+            device_name = data_dump.device_path_to_device_name(device_dir)
             self._device_names.append(device_name)
             self._load_device_dumps(device_name, device_dir)
         self._load_partition_graphs(partition_graphs, validate)
@@ -482,9 +133,9 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             self._create_tensor_watch_maps(device_name)
 
     def _load_device_dumps(self, device_name, device_root):
-        """Load `DebugTensorDatum` instances from the dump root of a given device.
+        """Load `data_dump.DebugTensorDatum` instances from the dump root of a given device.
 
-        Populates a map {device_name: a list of `DebugTensorDatum`}, where the list
+        Populates a map {device_name: a list of `data_dump.DebugTensorDatum`}, where the list
         is sorted by ascending timestamp.
 
         This sorting order reflects the order in which the TVM executor
@@ -495,15 +146,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         problematic properties, i.e., all zero values, or bad numerical values such
         as nan and inf.
 
-        In addition, creates a map from node name to debug watches. In this Map,
-        the key is the watched node name; the value is a dictionary.
-        Of this dictionary, the key is the watched_output_slot.
-
-        This method attempts to load the debug watches from the tensor dump files
-        first, before loading the full set of debug watches from the partition
-        graphs as done later. This is necessary because sometimes the partition
-        graphs may not be available, e.g., when the run errors out.
-
         Args:
           device_name: (`str`) name of the device.
           device_root: (`str`) dump root directory of the given device.
@@ -511,17 +153,16 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         Raises:
           ValueError: If GraphDef for the device is not available.
         """
-
         self._dump_tensor_data[device_name] = []
         self._debug_watches[device_name] = collections.defaultdict(
             lambda: collections.defaultdict(set))
 
         for root, _, files in os.walk(device_root):
-            for file in files:
-                if _is_graph_file(file):
-                    self._dump_graph_file_paths[device_name] = os.path.join(root, file)
+            for dump_file in files:
+                if _is_graph_file(dump_file):
+                    self._dump_graph_file_paths[device_name] = os.path.join(root, dump_file)
                 else:
-                    datum = self._dump_file_name_to_datum(root, file)
+                    datum = self._dump_file_name_to_datum(root, dump_file)
                     self._dump_tensor_data[device_name].append(datum)
                     self._debug_watches[device_name][datum.node_name][
                         datum.output_slot].add(datum.debug_op)
@@ -537,18 +178,8 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
 
     def _calculate_t0(self):
         """Calculate the first timestamp across all devices."""
-        t0s = [t0 for t0 in six.itervalues(self._t0s) if t0 is not None]
+        t0s = [ts0 for ts0 in six.itervalues(self._t0s) if ts0 is not None]
         self._t0 = min(t0s) if t0s else None
-
-    def _load_core_metadata(self):
-        """core_metadata_files = _glob(os.path.join(
-            self._dump_root, METADATA_FILE_PREFIX + CORE_METADATA_TAG + "*"))
-        for core_metadata_file in core_metadata_files:
-          with gfile.Open(core_metadata_file, "rb") as f:
-            event = event_pb2.Event()
-            event.ParseFromString(f.read())
-            self._core_metadata.append(
-                _extract_core_metadata_from_event_proto(event))"""
 
     def _load_outputs_info(self):
         outputs_info_files = _glob(os.path.join(
@@ -556,7 +187,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._run_outputs_info = []
         for outputs_info_file in outputs_info_files:
             self._run_outputs_info.append(
-                _load_log_message_from_event_file(outputs_info_file))
+                _load_log_msg_from_evt_file(outputs_info_file))
 
     def _load_inputs_info(self):
         inputs_info_files = _glob(os.path.join(
@@ -564,35 +195,33 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         self._run_input_keys_info = []
         for inputs_info_file in inputs_info_files:
             self._run_input_keys_info.append(
-                _load_log_message_from_event_file(inputs_info_file))
+                _load_log_msg_from_evt_file(inputs_info_file))
 
     def _dump_file_name_to_datum(self, dir_name, file_name):
-        """Obtain a DebugTensorDatum from the directory and file name.
+        """Obtain a data_dump.DebugTensorDatum from the directory and file name.
 
         Args:
           dir_name: (`str`) Name of the directory in which the dump file resides.
           file_name: (`str`) Base name of the dump file.
 
         Returns:
-          (`DebugTensorDatum`) The `DebugTensorDatum` loaded from the dump file.
+          (`data_dump.DebugTensorDatum`) The `data_dump.DebugTensorDatum` loaded from the dump file.
         """
-
         # Calculate the relative path of the dump file with respect to the root.
         debug_dump_rel_path = os.path.join(
             os.path.relpath(dir_name, self._dump_root), file_name)
-        return DebugTensorDatum(self._dump_root, debug_dump_rel_path)
+        return data_dump.DebugTensorDatum(self._dump_root, debug_dump_rel_path)
 
     def _create_tensor_watch_maps(self, device_name):
         """Create maps from tensor watch keys to datum and to timestamps.
 
-        Create a map from watch key (tensor name + debug op) to `DebugTensorDatum`
+        Create a map from watch key (tensor name + debug op) to `data.dump.DebugTensorDatum`
         item. Also make a map from watch key to relative timestamp.
-        "relative" means (absolute timestamp - t0).
+        "relative" means (absolute timestamp - ts0).
 
         Args:
           device_name: (str) name of the device.
         """
-
         self._watch_key_to_datum[device_name] = {}
         self._watch_key_to_rel_time[device_name] = {}
         self._watch_key_to_dump_size_bytes[device_name] = {}
@@ -615,68 +244,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                 self._watch_key_to_dump_size_bytes[device_name][datum.watch_key].append(
                     datum.dump_size_bytes)
 
-    def set_python_graph(self, python_graph):
-        """Provide Python `Graph` object to the wrapper.
-
-        Unlike the partition graphs, which are protobuf `GraphDef` objects, `Graph`
-        is a Python object and carries additional information such as the traceback
-        of the construction of the nodes in the graph.
-
-        Args:
-          python_graph: (ops.Graph) The Python Graph object.
-        """
-
-        self._python_graph = python_graph
-        self._node_traceback = {}
-        if self._python_graph:
-            for operation in self._python_graph.get_operations():
-                self._node_traceback[operation.name] = operation.traceback
-
-    @property
-    def python_graph(self):
-        """Get the Python graph.
-
-        Returns:
-          If the Python graph has been set, returns a `tvm.Graph` object. Otherwise,
-          returns None.
-        """
-
-        return self._python_graph
-
-    @property
-    def core_metadata(self):
-        """Metadata about the `Session.run()` call from the core runtime.
-
-        Of the three counters available in the return value, `global_step` is
-        supplied by the caller of the debugged `Session.run()`, while
-        `session_run_index` and `executor_step_index` are determined by the state
-        of the core runtime, automatically. For the same output list, input keys and
-        debug tensor watch options, the same executor will be used and
-        `executor_step_index` should increase by one at a time. However, runs with
-        different output lists, input keys and debug_tensor watch options that all
-        share the same `Session` object can lead to gaps in `session_run_index`.
-
-        Returns:
-          If core metadata are loaded, a `namedtuple` with the fields:
-            `global_step`: A global step count supplied by the caller of
-              `Session.run()`. It is optional to the caller. If the caller did not
-              supply this parameter, its value will be -1.
-            `session_run_index`: A sorted index for Run() calls to the underlying
-              TVM `Session` object.
-            `executor_step_index`: A counter for invocations of a given runtime
-              executor. The same executor is re-used for the same output tensors,
-              target nodes, input input keys and debug tensor watch options.
-            `input_names`: Names of the input (input) Tensors.
-            `output_names`: Names of the output (output) Tensors.
-            `target_nodes`: Names of the target nodes.
-          If the core metadata have not been loaded, `None`.
-          If more than one core metadata files exist, return a list of the
-            `nametuple` described above.
-        """
-
-        output = self._core_metadata
-        return output[0] if len(output) == 1 else output
-
     @property
     def dumped_tensor_data(self):
         """Retrieve dumped tensor data."""
@@ -689,7 +256,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         return sorted(data, key=lambda x: x.extended_timestamp)
 
     @property
-    def t0(self):
+    def ts0(self):
         """Absolute timestamp of the first dumped tensor across all devices.
 
         Returns:
@@ -725,12 +292,11 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           ValueError: If the partition GraphDef of one or more devices fail to be
             loaded.
         """
-
         if partition_graphs:
-            partition_graphs_and_device_names = [
+            partition_graphs_dev_names = [
                 (partition_graph, None) for partition_graph in partition_graphs]
         else:
-            partition_graphs_and_device_names = []
+            partition_graphs_dev_names = []
             for device_name in self._device_names:
                 partition_graph = None
                 if device_name in self._dump_graph_file_paths:
@@ -741,27 +307,27 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                     partition_graph = _find_partition_graph(partition_graphs,
                                                             device_name)
                 if partition_graph:
-                    partition_graphs_and_device_names.append((partition_graph,
-                                                              device_name))
+                    partition_graphs_dev_names.append((partition_graph,
+                                                       device_name))
                 else:
                     print("Failed to load partition graphs from disk.")
 
-        for partition_graph, maybe_device_name in partition_graphs_and_device_names:
-            debug_graph = debug_graphs.DebugGraph(partition_graph,
-                                                  device_name=maybe_device_name)
+        for partition_graph, maybe_device_name in partition_graphs_dev_names:
+            debug_graph = graph_dump.DebugGraph(partition_graph,
+                                                device_name=maybe_device_name)
             self._debug_graphs[debug_graph.device_name] = debug_graph
             self._collect_node_devices(debug_graph)
 
             if validate and debug_graph.device_name in self._dump_tensor_data:
                 self._validate_dump_with_graphs(debug_graph.device_name)
 
-    def _collect_node_devices(self, debug_graph):
-        for node_name in debug_graph.node_devices:
+    def _collect_node_devices(self, graph_dmp):
+        for node_name in graph_dmp.node_devices:
             if node_name in self._node_devices:
                 self._node_devices[node_name] = self._node_devices[node_name].union(
-                    debug_graph.node_devices[node_name])
+                    graph_dmp.node_devices[node_name])
             else:
-                self._node_devices[node_name] = debug_graph.node_devices[node_name]
+                self._node_devices[node_name] = graph_dmp.node_devices[node_name]
 
     def _validate_dump_with_graphs(self, device_name):
         """Validate the dumped tensor data against the partition graphs.
@@ -789,14 +355,13 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             if datum.node_name not in debug_graph.node_inputs:
                 raise ValueError("Node name '%s' is not found in partition graphs of "
                                  "device %s." % (datum.node_name, device_name))
-
         pending_inputs = {}
         for node in debug_graph.node_inputs:
             pending_inputs[node] = []
             inputs = debug_graph.node_inputs[node]
             for inp in inputs:
-                inp_node = debug_graphs.get_node_name(inp)
-                inp_output_slot = debug_graphs.get_output_slot(inp)
+                inp_node = graph_dump.get_node_name(inp)
+                inp_output_slot = graph_dump.get_output_slot(inp)
                 # Inputs from Enter and NextIteration nodes are not validated because
                 # DebugNodeInserter::InsertNodes() in the debugger core skips creating
                 # control edges from debug ops watching these types of nodes.
@@ -853,17 +418,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         if not pending:
             return True
 
-#        for datum in self._dump_tensor_data[device_name][start_i:]:
-#            if datum.timestamp > timestamp:
-#                break
-#            if (datum.timestamp == timestamp and
-#                    (datum.node_name, datum.output_slot) in pending):
-#                pending.remove((datum.node_name, datum.output_slot))
-#                if not pending:
-#                    return True
-#
-#        return not pending
-        # Todo(Pariksheet) : Time stamp need to rework
         if not self._dump_tensor_data:
             return False
         if not device_name:
@@ -892,25 +446,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         return [self._debug_graphs[key].debug_graph_def
                 for key in self._debug_graphs]
 
-#    def reconstructed_non_debug_partition_graphs(self):
-#        """Reconstruct partition graphs with the debugger-inserted ops stripped.
-#
-#        The reconstructed partition graphs are identical to the original (i.e.,
-#        non-debugger-decorated) partition graphs except in the following respects:
-#          1) The exact names of the runtime-inserted internal nodes may differ.
-#             These include _Send, _Recv, _HostSend, _HostRecv, _Retval ops.
-#          2) As a consequence of 1, the nodes that receive input directly from such
-#             send- and recv-type ops will have different input names.
-#          3) The parallel_iteration attribute of while-loop Enter ops are set to 1.
-#
-#        Returns:
-#          A dict mapping device names (`str`s) to reconstructed `tvm.GraphDef`s.
-#        """
-#        non_debug_graphs = dict()
-#        for key in self._debug_graphs:
-#            non_debug_graphs[key] = self._debug_graphs[key].non_debug_graph_def
-#        return non_debug_graphs
-
     @property
     def run_outputs_info(self):
         """Get a str representation of the outputs used in the Session.run() call.
@@ -922,7 +457,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             `list` of `str` from `repr(outputs)`.
           If the information is not available, `None`.
         """
-
         output = self._run_outputs_info
         return output[0] if len(output) == 1 else output
 
@@ -937,7 +471,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             `list` of `str` obtained from `repr(input_dict)`.
           If the information is not available, `None`.
         """
-
         output = self._run_input_keys_info
         return output[0] if len(output) == 1 else output
 
@@ -1047,50 +580,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             return self._debug_graphs[device_name].node_ctrl_inputs[node_name]
         return self._debug_graphs[device_name].node_inputs[node_name]
 
-#    def transitive_inputs(self,
-#                          node_name,
-#                          include_control=True,
-#                          include_reversed_ref=False,
-#                          device_name=None, ):
-#        """Get the transitive inputs of given node according to partition graphs.
-#
-#        Args:
-#          node_name: Name of the node.
-#          include_control: Include control inputs (True by default).
-#          include_reversed_ref: Whether a ref input, say from A to B, is to be also
-#            considered as an input from B to A. The rationale is that ref inputs
-#            generally let the recipient (e.g., B in this case) mutate the value of
-#            the source (e.g., A in this case). So the reverse direction of the ref
-#            edge reflects the direction of information flow.
-#          device_name: (`str`) name of the device. If there is only one device or if
-#            node_name exists on only one device, this argument is optional.
-#
-#        Returns:
-#          (`list` of `str`) all transitive inputs to the node, as a list of node
-#            names.
-#
-#        Raises:
-#          LookupError: If node inputs and control inputs have not been loaded
-#             from partition graphs yet.
-#        """
-#        if not self._debug_graphs:
-#            raise LookupError(
-#                "Node inputs are not loaded from partition graphs yet.")
-#
-#        device_name = self._infer_device_name(device_name, node_name)
-#
-#        input_lists = [self._debug_graphs[device_name].node_inputs]
-#        if include_control:
-#            input_lists.append(self._debug_graphs[device_name].node_ctrl_inputs)
-#        if include_reversed_ref:
-#            input_lists.append(
-#                self._debug_graphs[device_name].node_reversed_ref_inputs)
-#        tracer = debug_graphs.DFSGraphTracer(
-#            input_lists,
-#            skip_node_names=self._get_merge_node_names(device_name))
-#        tracer.trace(node_name)
-#        return tracer.inputs()
-
     def _get_merge_node_names(self, device_name):
         """Lazily get a list of Merge nodes on a given device."""
         if device_name not in self._device_names:
@@ -1104,85 +593,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                 node for node in debug_graph.node_op_types
                 if debug_graph.node_op_types[node] == "Merge"]
         return self._merge_node_names[device_name]
-
-#    def find_some_path(self,
-#                       src_node_name,
-#                       dst_node_name,
-#                       include_control=True,
-#                       include_reversed_ref=False,
-#                       device_name=None):
-#        """Find a path between a source node and a destination node.
-#
-#        Limitation: the source and destination are required to be on the same
-#        device, i.e., this method does not yet take into account Send/Recv nodes
-#        across devices.
-#
-#        TODO(cais): Make this method work across device edges by tracing Send/Recv
-#          nodes.
-#
-#        Args:
-#          src_node_name: (`str`) name of the source node or name of an output tensor
-#            of the node.
-#          dst_node_name: (`str`) name of the destination node or name of an output
-#            tensor of the node.
-#          include_control: (`bool`) whrther control edges are considered in the
-#            graph tracing.
-#          include_reversed_ref: Whether a ref input, say from A to B, is to be also
-#            considered as an input from B to A. The rationale is that ref inputs
-#            generally let the recipient (e.g., B in this case) mutate the value of
-#            the source (e.g., A in this case). So the reverse direction of the ref
-#            edge reflects the direction of information flow.
-#          device_name: (`str`) name of the device. If there is only one device or if
-#            node_name exists on only one device, this argument is optional.
-#
-#        Returns:
-#          A path from the src_node_name to dst_node_name, as a `list` of `str`, if
-#          it exists. The list includes src_node_name as the first item and
-#          dst_node_name as the last.
-#          If such a path does not exist, `None`.
-#
-#        Raises:
-#          ValueError: If the source and destination nodes are not on the same
-#            device.
-#        """
-#        src_device_name = self._infer_device_name(device_name, src_node_name)
-#        dst_device_name = self._infer_device_name(device_name, dst_node_name)
-#
-#        if src_device_name != dst_device_name:
-#            raise ValueError(
-#                "Source (%s) and destination (%s) are not on the same device: "
-#                "%s vs. %s" % (src_node_name, dst_node_name, src_device_name,
-#                               dst_device_name))
-#
-#        input_lists = [self._debug_graphs[dst_device_name].node_inputs]
-#        debug_graph = self._debug_graphs[dst_device_name]
-#        if include_control:
-#            input_lists.append(debug_graph.node_ctrl_inputs)
-#        if include_reversed_ref:
-#            input_lists.append(debug_graph.node_reversed_ref_inputs)
-#        tracer = debug_graphs.DFSGraphTracer(
-#            input_lists,
-#            skip_node_names=self._get_merge_node_names(dst_device_name),
-#            destination_node_name=src_node_name)
-#        # Here the value of destination_node_name is src_node_name, because we
-#        # are tracing the graph from output to its inputs (i.e., going backwards
-#        # on the graph).
-#
-#        try:
-#            tracer.trace(dst_node_name)
-#        except debug_graphs.GraphTracingReachedDestination:
-#            # Prune nodes not on the path.
-#            inputs = [dst_node_name] + tracer.inputs()
-#            depth_list = [0] + tracer.depth_list()
-#
-#            path = []
-#            curr_depth = depth_list[-1]
-#            for inp, depth in zip(reversed(inputs), reversed(depth_list)):
-#                if depth == curr_depth:
-#                    path.append(inp)
-#                    curr_depth -= 1
-#            return path
-#        return []
 
     def node_recipients(self, node_name, is_control=False, device_name=None):
         """Get recipient of the given node's output according to partition graphs.
@@ -1201,7 +611,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           LookupError: If node inputs and control inputs have not been loaded
              from partition graphs yet.
         """
-
         if not self._debug_graphs:
             raise LookupError(
                 "Node recipients are not loaded from partition graphs yet.")
@@ -1314,7 +723,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           `LookupError`: If debug watch information has not been loaded from
             partition graphs yet.
         """
-
         try:
             device_name = self._infer_device_name(device_name, node_name)
         except ValueError:
@@ -1333,7 +741,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
         return watch_keys
 
     def watch_key_to_data(self, debug_watch_key, device_name=None):
-        """Get all `DebugTensorDatum` instances corresponding to a debug watch key.
+        """Get all `data_dump.DebugTensorDatum` instances corresponding to a debug watch key.
 
         Args:
           debug_watch_key: (`str`) debug watch key.
@@ -1342,7 +750,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             is optional.
 
         Returns:
-          A list of `DebugTensorDatum` instances that correspond to the debug watch
+          A list of `data_dump.DebugTensorDatum` instances that correspond to the debug watch
           key. If the watch key does not exist, returns an empty list.
 
         Raises:
@@ -1384,7 +792,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
               # returns a bool
             ```
 
-            where `debug_tensor_datum` is an instance of `DebugTensorDatum`, which
+            where `debug_tensor_datum` is an instance of `data_dump.DebugTensorDatum`, which
             carries the metadata, such as the `Tensor`'s node name, output slot
             timestamp, debug op name, etc.; and `tensor` is the dumped tensor value
             as a `numpy.ndarray`.
@@ -1396,7 +804,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
             names matching the regular expression.
 
         Returns:
-          A list of all `DebugTensorDatum` objects in this `DebugDumpDir` object
+          A list of all `data_dump.DebugTensorDatum` objects in this `DebugDumpDir` object
            for which predicate returns True, sorted in ascending order of the
            timestamp.
         """
@@ -1441,7 +849,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           WatchKeyDoesNotExistInDebugDumpDirError: If the tensor does not exist in
             the debug-dump data.
         """
-
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
         if watch_key not in self._watch_key_to_datum[device_name]:
@@ -1473,7 +880,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           WatchKeyDoesNotExistInDebugDumpDirError: If the tensor does not exist in
             the debug-dump data.
         """
-
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
         try:
             device_name = self._infer_device_name(device_name, node_name)
@@ -1491,7 +897,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
                            device_name=None):
         """Get the relative timestamp from for a debug-dumped tensor.
 
-        Relative timestamp means (absolute timestamp - `t0`), where `t0` is the
+        Relative timestamp means (absolute timestamp - `ts0`), where `ts0` is the
         absolute timestamp of the first dumped tensor in the dump root. The tensor
         may be dumped multiple times in the dump root directory, so a list of
         relative timestamps (`numpy.ndarray`) is returned.
@@ -1511,14 +917,12 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           WatchKeyDoesNotExistInDebugDumpDirError: If the tensor watch key does not
             exist in the debug dump data.
         """
-
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
         if watch_key not in self._watch_key_to_datum[device_name]:
             raise WatchKeyDoesNotExistInDebugDumpDirError(
                 "Watch key \"%s\" does not exist in the debug dump" % watch_key)
 
-        # TODO(cais): Figure out whether this should be relative to the global t0.
         return self._watch_key_to_rel_time[device_name][watch_key]
 
     def get_dump_sizes_bytes(self,
@@ -1545,7 +949,6 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           WatchKeyDoesNotExistInDebugDumpDirError: If the tensor watch key does not
             exist in the debug dump data.
         """
-
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
         if watch_key not in self._watch_key_to_datum[device_name]:
@@ -1569,11 +972,7 @@ class DebugDumpDir(object):# pylint: disable=too-many-public-methods
           LookupError: If Python graph is not available for traceback lookup.
           KeyError: If the node cannot be found in the Python graph loaded.
         """
-
-        if self._python_graph is None:
-            raise LookupError("Python graph is not available for traceback lookup")
-
-        node_name = debug_graphs.get_node_name(element_name)
+        node_name = graph_dump.get_node_name(element_name)
         if node_name not in self._node_traceback:
             raise KeyError("Cannot find node \"%s\" in Python graph" % node_name)
 

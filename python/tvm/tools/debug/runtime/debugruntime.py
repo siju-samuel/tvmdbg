@@ -1,11 +1,10 @@
-# pylint: disable=unused-argument
 """Debug runtime functions."""
 
 import os
 import json
 import numpy as np
 from tvm import ndarray as nd
-from tvm.tools.debug.wrappers import local_cli_wrapper as tvmdbg
+from tvm.tools.debug.wrappers import ui_wrapper as tvmdbg
 
 class DebugGraphModule(object):
     """Wrapper debug runtime module.
@@ -53,6 +52,7 @@ class DebugGraphModule(object):
         params : dict of str to NDArray
            Additonal arguments
         """
+        params = params
         if key:
             self.cli_obj.set_input(key.replace("/", "_"), value)
 

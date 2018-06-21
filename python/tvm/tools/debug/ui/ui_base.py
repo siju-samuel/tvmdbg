@@ -5,9 +5,9 @@ from __future__ import print_function
 
 import argparse
 
-from tvm.tools.debug.cli import cli_config
-from tvm.tools.debug.cli import command_parser
-from tvm.tools.debug.cli import debugger_cli_common
+from tvm.tools.debug.ui import ui_config
+from tvm.tools.debug.ui import command_parser
+from tvm.tools.debug.ui import ui_common
 
 
 def _parse_command(command):
@@ -42,16 +42,16 @@ def _analyze_tab_complete_input(text):
 
     Returns:
       context: (str) the context str. For example,
-        If text == "print_tensor softmax", returns "print_tensor".
+        If text == "view_tensor softmax", returns "view_tensor".
         If text == "print", returns "".
         If text == "", returns "".
       prefix: (str) the prefix to be tab-completed, from the last word.
-        For example, if text == "print_tensor softmax", returns "softmax".
+        For example, if text == "view_tensor softmax", returns "softmax".
         If text == "print", returns "print".
         If text == "", returns "".
       except_last_word: (str) the input text, except the last word.
-        For example, if text == "print_tensor softmax", returns "print_tensor".
-        If text == "print_tensor -a softmax", returns "print_tensor -a".
+        For example, if text == "view_tensor softmax", returns "view_tensor".
+        If text == "view_tensor -a softmax", returns "view_tensor -a".
         If text == "print", returns "".
         If text == "", returns "".
     """
@@ -90,25 +90,25 @@ class BaseUI(object):
 
         Args:
           on_ui_exit: (`Callable`) the callback to be called when the UI exits.
-          config: An instance of `cli_config.CLIConfig()` carrying user-facing
+          config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
         """
 
         self._on_ui_exit = on_ui_exit
 
         self._command_handler_registry = (
-            debugger_cli_common.CommandHandlerRegistry())
+            ui_common.CommandHandlerRegistry())
 
-        self._tab_completion_registry = debugger_cli_common.TabCompletionRegistry()
+        self._tab_completion_registry = ui_common.TabCompletionRegistry()
 
         # Create top-level tab-completion context and register the exit and help
         # commands.
         self._tab_completion_registry.register_tab_comp_context(
             [""], self.CLI_EXIT_COMMANDS +
-            [debugger_cli_common.CommandHandlerRegistry.HELP_COMMAND] +
-            debugger_cli_common.CommandHandlerRegistry.HELP_COMMAND_ALIASES)
+            [ui_common.CommandHandlerRegistry.HELP_COMMAND] +
+            ui_common.CommandHandlerRegistry.HELP_COMMAND_ALIASES)
 
-        self._config = config or cli_config.CLIConfig()
+        self._config = config or ui_config.CLIConfig()
         self._config_argparser = argparse.ArgumentParser(
             description="config command", usage=argparse.SUPPRESS)
         subparsers = self._config_argparser.add_subparsers()
@@ -116,11 +116,6 @@ class BaseUI(object):
         set_parser.add_argument("property_name", type=str)
         set_parser.add_argument("property_value", type=str)
         set_parser = subparsers.add_parser("show")
-        self.register_command_handler(
-            "config",
-            self._config_command_handler,
-            self._config_argparser.format_help(),
-            prefix_aliases=["cfg"])
 
     def set_help_intro(self, help_intro):
         """Set an introductory message to the help output of the command registry.
