@@ -47,15 +47,16 @@ class GraphRuntime : public ModuleNode {
       TVM_CCALL(TVMArrayFree(t));
     }
   }
+
   /*!
    * \brief Get member function to front-end
    * \param name The name of the function.
    * \param sptr_to_self The pointer to the module node.
    * \return The corresponding member function.
    */
-  PackedFunc GetFunction(
+  virtual PackedFunc GetFunction(
       const std::string& name,
-      const std::shared_ptr<ModuleNode>& sptr_to_self) final;
+      const std::shared_ptr<ModuleNode>& sptr_to_self);
 
   /*!
    * \return The type key of the executor.
@@ -63,11 +64,8 @@ class GraphRuntime : public ModuleNode {
   const char* type_key() const final{
     return "GraphRuntime";
   };
+
   void Run();
-
-  void DebugRun(int index);
-
-  void DebugRun();
 
   /*!
    * \brief Initialize the graph executor with graph and context.
@@ -99,13 +97,6 @@ class GraphRuntime : public ModuleNode {
    */
   void GetInput(int index, DLTensor* data_out);
 
-
-  /*!
-   * \brief Set the debug buffer to copy the output of each operation.
-   * \param data The data pointer.
-   */
-  void SetDebugBuffer(void* data);
-
   /*!
    * \brief Copy index-th output to data_out.
    * \param index The output index.
@@ -123,6 +114,22 @@ class GraphRuntime : public ModuleNode {
    * \param param_blob A binary blob of parameter.
    */
   void LoadParams(const std::string& param_blob);
+
+  std::vector<DLTensor>& data_entry() {
+      return data_entry_;
+  }
+  std::vector<std::function<void()> >& op_execs() {
+        return op_execs_;
+  }
+
+  size_t NumOutputs(int index) {
+      return (nodes_[index].op_type == "null") ? 1: nodes_[index].param.num_outputs;
+  }
+
+  // Get node entry index.
+  uint32_t GetEntryId(uint32_t nid, uint32_t index) const {
+    return node_row_ptr_[nid] + index;
+  }
 
  private:
   // Node entry
@@ -309,13 +316,10 @@ class GraphRuntime : public ModuleNode {
                                     const std::vector<DLTensor>& args,
                                     size_t num_inputs);
   // Get node entry index.
-  uint32_t entry_id(uint32_t nid, uint32_t index) const {
-    return node_row_ptr_[nid] + index;
-  }
-  // Get node entry index.
   uint32_t entry_id(const NodeEntry& e) const {
-    return entry_id(e.node_id, e.index);
+    return GetEntryId(e.node_id, e.index);
   }
+
   // Number of node entries
   uint32_t num_node_entries() const {
     return node_row_ptr_.back();
@@ -324,6 +328,7 @@ class GraphRuntime : public ModuleNode {
   uint32_t num_nodes() const {
     return static_cast<uint32_t>(nodes_.size());
   }
+
   // The graph nodes.
   std::vector<Node> nodes_;
   // The argument nodes.
@@ -344,8 +349,6 @@ class GraphRuntime : public ModuleNode {
   std::vector<DLTensor> data_entry_;
   /*! \brief operator on each node */
   std::vector<std::function<void()> > op_execs_;
-  /*! \brief debug buffer storage pool */
-  std::vector<TVMDbgTensor*> debug_buffers_;
 };
 
 }  // namespace runtime

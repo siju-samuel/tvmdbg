@@ -294,10 +294,10 @@ def create(graph_json_str, libmod, ctx):
         assert libmod.type_key == "rpc"
         assert rpc_base._SessTableIndex(libmod) == ctx._rpc_sess._tbl_index
         hmod = rpc_base._ModuleHandle(libmod)
-        fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime.remote_create")
+        fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime_debug.remote_create")
         device_type = device_type % rpc_base.RPC_SESS_MASK
         func_obj = fcreate(graph_json_str, hmod, device_type, device_id)
         return GraphModuleDebug(func_obj, ctx, graph_json_str)
-    fcreate = get_global_func("tvm.graph_runtime.create")
+    fcreate = get_global_func("tvm.graph_runtime_debug.create")
     func_obj = fcreate(graph_json_str, libmod, device_type, device_id)
     return GraphModuleDebug(func_obj, ctx, graph_json_str)

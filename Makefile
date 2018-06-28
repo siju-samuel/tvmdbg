@@ -62,7 +62,7 @@ OPENGL_SRC = $(wildcard src/runtime/opengl/*.cc)
 VULKAN_SRC = $(wildcard src/runtime/vulkan/*.cc)
 SGX_SRC = $(wildcard src/runtime/sgx/untrusted/*.cc)
 RPC_SRC = $(wildcard src/runtime/rpc/*.cc)
-GRAPH_SRC = $(wildcard src/runtime/graph/*.cc)
+GRAPH_SRC = $(wildcard src/runtime/graph/*.cc src/runtime/graph/debug/*.cc)
 RUNTIME_SRC = $(wildcard src/runtime/*.cc)
 
 # TOPI
