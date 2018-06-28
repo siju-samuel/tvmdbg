@@ -55,6 +55,18 @@ struct CUDAShuffle {
   }
 };
 
+TVM_REGISTER_GLOBAL("tvm.intrin.rule.cuda.floor")
+.set_body(DispatchExtern<CUDAMath>);
+
+TVM_REGISTER_GLOBAL("tvm.intrin.rule.cuda.ceil")
+.set_body(DispatchExtern<CUDAMath>);
+
+TVM_REGISTER_GLOBAL("tvm.intrin.rule.cuda.trunc")
+.set_body(DispatchExtern<CUDAMath>);
+
+TVM_REGISTER_GLOBAL("tvm.intrin.rule.cuda.round")
+.set_body(DispatchExtern<CUDAMath>);
+
 TVM_REGISTER_GLOBAL("tvm.intrin.rule.cuda.exp")
 .set_body(DispatchExtern<CUDAFastMath>);
 

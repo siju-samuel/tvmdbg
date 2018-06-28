@@ -15,6 +15,7 @@
 #include "../elemwise_op_common.h"
 #include "topi/nn/flatten.h"
 #include "topi/transform.h"
+#include "topi/detail/constant_utils.h"
 
 namespace nnvm {
 namespace top {
@@ -240,10 +241,8 @@ will return a new array with shape ``(2,1,1,1,1,1,3,4)``.
 .set_attr<FGradient>(
   "FGradient", [](const NodePtr& n,
                   const std::vector<NodeEntry>& ograds){
-    const ExpandDimsParam& param = nnvm::get<ExpandDimsParam>(n->attrs.parsed);
     return std::vector<NodeEntry> {
-      MakeNode("sum", n->attrs.name + "_grad", {ograds[0]},
-               {{"axis", std::to_string(param.axis)}})
+      MakeNode("collapse_sum", n->attrs.name + "_grad", {ograds[0], n->inputs[0]})
     };
 })
 .set_support_level(1);
@@ -879,186 +878,105 @@ Examples::
     return Array<Tensor>{ topi::flip(inputs[0], param.axis) };
 });
 
-// take
-DMLC_REGISTER_PARAMETER(TakeParam);
+// SliceLike
+DMLC_REGISTER_PARAMETER(SliceLikeParam);
 
-inline bool TakeInferShape(const NodeAttrs& attrs,
-                           std::vector<TShape>* in_shape,
-                           std::vector<TShape>* out_shape) {
-  const TShape& dshape = (*in_shape)[0];
-  const TShape& indicesshape = (*in_shape)[1];
-  if (dshape.ndim() == 0) return false;
-  if (indicesshape.ndim() == 0) return false;
-
-  const TakeParam& param = nnvm::get<TakeParam>(attrs.parsed);
-  TShape oshape((!param.axis ? 0: dshape.ndim() - 1) + indicesshape.ndim());
-  if (!param.axis) {
-    for (size_t j = 0; j < indicesshape.ndim(); ++j) {
-      oshape[j] = indicesshape[j];
-    }
-  } else {
-    int axis = param.axis.value();
-    if (axis < 0) {
-      axis += dshape.ndim();
-    }
-    CHECK_LT(axis, dshape.ndim());
-
-    size_t posi = 0;
-    for (size_t i = 0; i < dshape.ndim(); ++i) {
-      if (static_cast<int>(i) == axis) {
-        for (size_t j = 0; j < indicesshape.ndim(); ++j) {
-          oshape[posi++] = indicesshape[j];
-        }
-      } else {
-        oshape[posi++] = dshape[i];
-      }
-    }
-  }
-  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 0, dshape);
-  NNVM_ASSIGN_INPUT_SHAPE(attrs, *in_shape, 1, indicesshape);
-  NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
-  return dshape.Size() != 0;
-}
-
-inline bool TakeInferType(const NodeAttrs& attrs,
-                          std::vector<int>* in_attrs,
-                          std::vector<int>* out_attrs) {
+inline bool SliceLikeShape(const nnvm::NodeAttrs& attrs,
+                          std::vector<TShape>* in_attrs,
+                          std::vector<TShape>* out_attrs) {
   CHECK_EQ(in_attrs->size(), 2U);
   CHECK_EQ(out_attrs->size(), 1U);
-  CHECK_EQ((*in_attrs)[1], kInt32);
-  NNVM_ASSIGN_INPUT_TYPE(attrs, *in_attrs, 0, (*in_attrs)[0]);
-  NNVM_ASSIGN_INPUT_TYPE(attrs, *in_attrs, 1, static_cast<int>(kInt32));
-  NNVM_ASSIGN_OUTPUT_TYPE(attrs, *out_attrs, 0, (*in_attrs)[0]);
-  return true;
-}
-
-inline bool TakeCorrectLayout(const NodeAttrs& attrs,
-                              std::vector<Layout> *ilayouts,
-                              const std::vector<Layout> *last_ilayouts,
-                              std::vector<Layout> *olayouts) {
-  CHECK_EQ(ilayouts->size(), last_ilayouts->size());
-  CHECK_EQ(olayouts->size(), 1U);
-
-  for (size_t i = 0; i < ilayouts->size(); ++i) {
-    const Layout& input = last_ilayouts->at(i).defined() ?
-                          last_ilayouts->at(i) : ilayouts->at(i);
-    NNVM_ASSIGN_LAYOUT(*ilayouts, i, input);
+  const SliceLikeParam& param = nnvm::get<SliceLikeParam>(attrs.parsed);
+  const TShape& src_shape = in_attrs->at(0);
+  const TShape& target_shape = in_attrs->at(1);
+  Tuple<dim_t> end_idx;
+  end_idx = Tuple<dim_t>(src_shape);
+  if (param.axis.ndim() == 0) {
+    for (size_t i = 0; i < src_shape.ndim(); ++i) {
+      if (i < target_shape.ndim()) {
+        end_idx[i] = target_shape[i];
+        CHECK_LE(end_idx[i], src_shape[i])
+          << "End index of axis " << i << " exceeds input shape: "
+          << end_idx[i] << " vs " << src_shape[i];
+      }
+    }
+  } else {
+    for (auto i : param.axis) {
+      if (i < 0) {
+        i = src_shape.ndim() + i;
+      }
+      CHECK_LT(i, target_shape.ndim())
+        << "Axis " << i << " exceeds dimension "
+        << target_shape.ndim()<< " of target_shape.";
+      end_idx[i] = target_shape[i];
+      CHECK_LE(end_idx[i], src_shape[i])
+        << "End index of axis " << i << " exceeds input shape: "
+        << end_idx[i] << " vs " << src_shape[i];
+    }
   }
-
+  TShape out_shape = TShape(std::move(end_idx));
+  NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_attrs, 0, out_shape);
   return true;
 }
 
-NNVM_REGISTER_OP(take)
-.describe(R"code(Take elements from an array along an axis.
-
-  When axis is not None, this function does the same thing as 'fancy' indexing
-  (indexing arrays using arrays); however, it can be easier to use if you need
-  elements along a given axis.
-
-  **Note** that when axis is none the flattened input array is used.
-
-  )code" NNVM_ADD_FILELINE)
-.add_argument("data", "Tensor", "Array to be indexed")
-.add_arguments(TakeParam::__FIELDS__())
-.set_attr_parser(ParamParser<TakeParam>)
-.set_attr<FInferShape>("FInferShape", TakeInferShape)
-.set_attr<FInferType>("FInferType", TakeInferType)
-.set_attr<FCorrectLayout>("FCorrectLayout", TakeCorrectLayout)
+NNVM_REGISTER_OP(slice_like)
+.describe(R"code(Slice the first input respect to the second input.
+)code" NNVM_ADD_FILELINE)
+.add_argument("data", "Tensor", "Input data to be sliced.")
+.add_argument("slice_like", "Tensor", "Tensor with target shape")
 .set_num_inputs(2)
 .set_num_outputs(1)
-.set_support_level(1)
-.set_attr<FTVMCompute>(
-    "FTVMCompute", [](const NodeAttrs& attrs,
-                      const Array<Tensor>& inputs,
-                      const Array<Tensor>& out_info) {
-      const TakeParam& param = nnvm::get<TakeParam>(attrs.parsed);
-      if (!param.axis) {
-        return Array<Tensor>{
-            topi::take(inputs[0], inputs[1])};
-      } else {
-        return Array<Tensor>{
-            topi::take(inputs[0], inputs[1], param.axis.value())};
-      }
-  });
-
-// strided_slice
-DMLC_REGISTER_PARAMETER(StridedSliceParam);
-
-inline void StridedSliceParamParser(nnvm::NodeAttrs* attrs) {
-  StridedSliceParam param;
-  param.Init(attrs->dict);
-  attrs->parsed = std::move(param);
-}
-
-inline bool StridedSliceInferShape(const NodeAttrs& attrs,
-                            std::vector<TShape>* in_shape,
-                            std::vector<TShape>* out_shape) {
-  const StridedSliceParam& param = nnvm::get<StridedSliceParam>(attrs.parsed);
-  const TShape& dshape = (*in_shape)[0];
-  if (dshape.ndim() == 0) return false;
-  TShape oshape = dshape;
-  dim_t num_axis = param.begin.ndim();
-  CHECK_EQ(dshape.ndim(), static_cast<size_t>(num_axis));
-  int begin;
-  int end;
-  int stride;
-  for (dim_t i = 0; i < num_axis; ++i) {
-      if (param.stride[i] > 0) {
-          begin = param.begin[i];
-          end = param.end[i];
-          stride = param.stride[i];
-      } else {
-          int begin_range = -1;
-          int end_range = dshape[i] - 1;
-          begin = param.begin[i] < 0 ? dshape[i] + param.begin[i] : param.begin[i];
-          end = param.end[i] < 0 ? dshape[i] + param.end[i] : param.end[i];
-          begin = begin < begin_range ? begin_range : begin > end_range ? end_range : begin;
-          end = end < begin_range ? begin_range : end > end_range ? end_range : end;
-          stride = -param.stride[i];
-          begin = dshape[i] - begin - 1;
-          end = std::max((int)dshape[i] - end - 1, begin);
-      }
-      oshape[i] = (std::max(end, (int)dshape[i]) - begin) / stride;
-  }
-  NNVM_ASSIGN_OUTPUT_SHAPE(attrs, *out_shape, 0, oshape);
-  return true;
-}
-
-// Intentionally not add ParamGetAttrDict for indices_or_sections.
-NNVM_REGISTER_OP(strided_slice)
-.describe(R"code(Strided slice of an array.
-)code" NNVM_ADD_FILELINE)
-.add_argument("data", "Tensor", "Array to be splitted")
-.add_arguments(StridedSliceParam::__FIELDS__())
-.set_attr_parser(StridedSliceParamParser)
-.set_attr<FInferShape>("FInferShape", StridedSliceInferShape)
-.set_attr<FInferType>("FInferType", ElemwiseType<1, 1>)
-.set_num_inputs(1)
-.set_num_outputs(1)
+.add_arguments(SliceLikeParam::__FIELDS__())
+.set_attr_parser(ParamParser<SliceLikeParam>)
+.set_attr<FGetAttrDict>("FGetAttrDict", ParamGetAttrDict<SliceLikeParam>)
+.set_attr<FInferShape>("FInferShape", SliceLikeShape)
+.set_attr<FInferType>("FInferType", ElemwiseType<2, 1>)
+.set_attr<FCorrectLayout>("FCorrectLayout", ElemwiseBinaryKeepLeftLayout)
 .set_attr<FTVMCompute>(
   "FTVMCompute", [](const NodeAttrs& attrs,
                     const Array<Tensor>& inputs,
                     const Array<Tensor>& out_info) {
-    const StridedSliceParam& param = nnvm::get<StridedSliceParam>(attrs.parsed);
-    Array<Expr> begin;
-    Array<Expr> end;
-    Array<Expr> stride;
-
-    for (auto i : param.begin) {
-        begin.push_back(tvm::make_const(tvm::Int(32), i));
+    const auto& param = nnvm::get<SliceLikeParam>(attrs.parsed);
+    Array<Expr> src_shape = inputs[0]->shape;
+    Array<Expr> target_shape = inputs[1]->shape;
+    Array<Expr> begin_idx, end_idx, strides;
+    for (size_t i = 0; i < src_shape.size(); ++i) {
+      begin_idx.push_back(make_const(tvm::Int(32), 0));
+      strides.push_back(make_const(tvm::Int(32), 1));
     }
-
-    for (auto i : param.end) {
-        end.push_back(tvm::make_const(tvm::Int(32), i));
+    end_idx = Array<Expr>(src_shape);
+    if (param.axis.ndim() == 0) {
+      for (size_t i = 0; i < src_shape.size(); ++i) {
+        if (i < target_shape.size()) {
+          end_idx.Set(i, target_shape[i]);
+          CHECK_LE(topi::GetConstInt(end_idx[i]),
+                   topi::GetConstInt(src_shape[i]))
+            << "End index of axis " << i << " exceeds input shape: "
+            << topi::GetConstInt(end_idx[i]) << " vs "
+            << topi::GetConstInt(src_shape[i]);
+        }
+      }
+    } else {
+      for (int axis : param.axis) {
+        if (axis < 0) {
+          axis = static_cast<int>(src_shape.size()) + axis;
+        }
+        end_idx.Set(static_cast<size_t>(axis), target_shape[axis]);
+        CHECK_LE(topi::GetConstInt(end_idx[axis]),
+                 topi::GetConstInt(src_shape[axis]))
+          << "End index of axis " << axis << " exceeds input shape: "
+          << topi::GetConstInt(end_idx[axis]) << " vs "
+          << topi::GetConstInt(src_shape[axis]);
+      }
     }
-
-    for (auto i : param.stride) {
-        stride.push_back(tvm::make_const(tvm::Int(32), i));
-    }
-
-    return Array<Tensor>{topi::strided_slice(inputs[0], begin, end, stride)};
+    return Array<Tensor>{
+      topi::strided_slice(inputs[0], begin_idx, end_idx, strides)
+    };
 })
-.set_support_level(1);
+.set_attr<FListInputNames>("FListInputNames", [](const NodeAttrs& attrs) {
+    return std::vector<std::string>{"data", "slice_like"};
+})
+.set_support_level(4);
 
 }  // namespace top
 }  // namespace nnvm

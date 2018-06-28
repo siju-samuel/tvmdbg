@@ -52,6 +52,31 @@ reg.register_schedule("_assign", _fschedule_broadcast)
 reg.register_pattern("copy", OpPattern.ELEMWISE)
 reg.register_schedule("copy", _fschedule_broadcast)
 
+# cast
+@reg.register_compute("cast")
+def compute_cast(attrs, inputs, _):
+    """Compute definition of cast"""
+    dtype = attrs.get_string("dtype")
+    return topi.cast(inputs[0], dtype)
+reg.register_pattern("cast", OpPattern.ELEMWISE)
+reg.register_schedule("cast", _fschedule_broadcast)
+
+# floor
+reg.register_pattern("floor", OpPattern.ELEMWISE)
+reg.register_schedule("floor", _fschedule_broadcast)
+
+# ceil
+reg.register_pattern("ceil", OpPattern.ELEMWISE)
+reg.register_schedule("ceil", _fschedule_broadcast)
+
+# round
+reg.register_pattern("round", OpPattern.ELEMWISE)
+reg.register_schedule("round", _fschedule_broadcast)
+
+# trunc
+reg.register_pattern("trunc", OpPattern.ELEMWISE)
+reg.register_schedule("trunc", _fschedule_broadcast)
+
 # exp
 reg.register_pattern("exp", OpPattern.ELEMWISE)
 reg.register_schedule("exp", _fschedule_broadcast)
@@ -108,6 +133,14 @@ reg.register_schedule("__pow_scalar__", _fschedule_broadcast)
 reg.register_pattern("__rpow_scalar__", OpPattern.ELEMWISE)
 reg.register_schedule("__rpow_scalar__", _fschedule_broadcast)
 
+# lshift_scalar
+reg.register_pattern("__lshift_scalar__", OpPattern.ELEMWISE)
+reg.register_schedule("__lshift_scalar__", _fschedule_broadcast)
+
+# rshift_scalar
+reg.register_pattern("__rshift_scalar__", OpPattern.ELEMWISE)
+reg.register_schedule("__rshift_scalar__", _fschedule_broadcast)
+
 # elemwise_add
 reg.register_pattern("elemwise_add", OpPattern.BROADCAST)
 reg.register_schedule("elemwise_add", _fschedule_broadcast)
@@ -154,7 +187,7 @@ def compute_elemwise_sum(attrs, inputs, _):
     """Compute definition of elemwise sum"""
     num_args = attrs.get_int("num_args")
     assert num_args == len(inputs), "Number of tensors does not match num_args."
-    return topi.tensor.elemwise_sum(inputs, num_args)
+    return topi.tensor.elemwise_sum(inputs)
 reg.register_pattern("elemwise_sum", OpPattern.ELEMWISE)
 reg.register_schedule("elemwise_sum", _fschedule_elemwise)
 
@@ -219,7 +252,7 @@ reg.register_schedule("ones_like", _fschedule_elemwise)
 @reg.register_compute("greater")
 def compute_greater(_, inputs, out_info):
     """Compute definition of greater"""
-    return topi.tensor.greater(inputs[0], inputs[1], 'float32')
+    return topi.greater(inputs[0], inputs[1]).astype('float32')
 reg.register_pattern("greater", OpPattern.ELEMWISE)
 reg.register_schedule("greater", _fschedule_elemwise)
 
@@ -227,7 +260,7 @@ reg.register_schedule("greater", _fschedule_elemwise)
 @reg.register_compute("less")
 def compute_less(_, inputs, out_info):
     """Compute definition of less"""
-    return topi.tensor.less(inputs[0], inputs[1], 'float32')
+    return topi.less(inputs[0], inputs[1]).astype('float32')
 reg.register_pattern("less", OpPattern.ELEMWISE)
 reg.register_schedule("less", _fschedule_elemwise)
 

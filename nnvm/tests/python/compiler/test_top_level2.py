@@ -58,7 +58,7 @@ def test_dilated_conv2d():
         np.testing.assert_allclose(out.asnumpy(), c_np, rtol=1e-5)
 
 
-def test_grouped_conv2d():
+def test_grouped_conv2d_nchw():
     x = sym.Variable("x")
     y = sym.conv2d(x, channels=32, kernel_size=(3,3), groups=32,
                    name="y", padding=(1,1))
@@ -78,6 +78,28 @@ def test_grouped_conv2d():
         c_np = topi.testing.depthwise_conv2d_python_nchw(
             data.asnumpy(), kernel.asnumpy(), (1,1), 'SAME')
         c_np = c_np + bias.asnumpy().reshape(kshape[0], 1, 1)
+        np.testing.assert_allclose(out.asnumpy(), c_np, rtol=1e-5)
+
+def test_grouped_conv2d_nhwc():
+    x = sym.Variable("x")
+    y = sym.conv2d(x, channels=32, kernel_size=(3,3), groups=32,
+                   name="y", padding=(1,1), layout="NHWC", kernel_layout ='HWOI')
+    dtype = "float32"
+    dshape = (1, 18, 18, 32)
+    kshape = (3, 3, 32, 1)
+    oshape = (1, 18, 18, 32)
+    shape_dict = {"x": dshape}
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(y, target, shape_dict)
+        m = graph_runtime.create(graph, lib, ctx)
+        data = tvm.nd.array(np.random.uniform(size=dshape).astype(dtype))
+        kernel = tvm.nd.array(np.random.uniform(size=kshape).astype(dtype))
+        bias = tvm.nd.array(np.random.uniform(size=kshape[2]).astype(dtype))
+        m.run(x=data, y_weight=kernel, y_bias=bias)
+        out = m.get_output(0, tvm.nd.empty(oshape, dtype))
+        c_np = topi.testing.depthwise_conv2d_python_nhwc(
+            data.asnumpy(), kernel.asnumpy(), (1,1), 'SAME')
+        c_np = c_np + bias.asnumpy().reshape(1, 1, kshape[2])
         np.testing.assert_allclose(out.asnumpy(), c_np, rtol=1e-5)
 
 
@@ -210,7 +232,7 @@ def test_global_avg_pool2d():
         np.testing.assert_allclose(out.asnumpy(), b_np, rtol=1e-5)
 
 
-def test_upsampling():
+def test_upsampling_nearest_neighbor():
     x = sym.Variable("x")
     scale = 2
     y = sym.upsampling(x, scale=scale, name="y")
@@ -225,18 +247,58 @@ def test_upsampling():
         data = tvm.nd.array(a_np)
         m.run(x=data)
         out = m.get_output(0, tvm.nd.empty(oshape, dtype))
-        b_np = topi.testing.upsampling_python(a_np, scale)
+        b_np = topi.testing.upsampling_python(a_np, scale, "NCHW")
         np.testing.assert_allclose(out.asnumpy(), b_np, rtol=1e-5)
 
+def test_upsampling_bilinear():
+    x = sym.Variable("x")
+    scale = 2
+    y = sym.upsampling(x, scale=scale, method="BILINEAR", name="y", layout="NCHW")
+    dtype = "float32"
+    dshape = (1, 4, 32, 32)
+    oshape = (1, 4, 32*scale, 32*scale)
+    shape_dict = {"x": dshape}
+    dtype_dict = {"x": dtype}
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(y, target, shape_dict, dtype_dict)
+        m = graph_runtime.create(graph, lib, ctx)
+        a_np = np.random.uniform(size=dshape).astype(dtype)
+        data = tvm.nd.array(a_np)
+        m.run(x=data)
+        out = m.get_output(0, tvm.nd.empty(oshape, dtype))
+        b_np = topi.testing.bilinear_resize_python(a_np, (32*scale, 32*scale), "NCHW")
+        np.testing.assert_allclose(out.asnumpy(), b_np, rtol=1e-5, atol=1e-5)
+
+def test_resize_bilinear():
+    x = sym.Variable("x")
+    scale = 2
+    y = sym.upsampling(x, scale=scale, method="BILINEAR", name="y", layout="NHWC")
+    dtype = "float32"
+    dshape = (1, 32, 32, 4)
+    oshape = (1, 32*scale, 32*scale, 4)
+    shape_dict = {"x": dshape}
+    dtype_dict = {"x": dtype}
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(y, target, shape_dict, dtype_dict)
+        m = graph_runtime.create(graph, lib, ctx)
+        a_np = np.random.uniform(size=dshape).astype(dtype)
+        data = tvm.nd.array(a_np)
+        m.run(x=data)
+        out = m.get_output(0, tvm.nd.empty(oshape, dtype))
+        b_np = topi.testing.bilinear_resize_python(a_np, (32*scale, 32*scale), "NHWC")
+        np.testing.assert_allclose(out.asnumpy(), b_np, rtol=1e-5, atol=1e-5)
 
 if __name__ == "__main__":
     test_conv2d()
     test_dilated_conv2d()
-    test_grouped_conv2d()
+    test_grouped_conv2d_nchw()
+    test_grouped_conv2d_nhwc()
     test_conv2d_transpose()
     test_max_pool2d()
     test_avg_pool2d()
     test_avg_pool2d_no_count_pad()
     test_global_max_pool2d()
     test_global_avg_pool2d()
-    test_upsampling()
+    test_upsampling_nearest_neighbor()
+    test_upsampling_bilinear()
+    test_resize_bilinear()

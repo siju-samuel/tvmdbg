@@ -97,6 +97,12 @@ def test_forward_rrelu():
     mx_sym = mx.sym.LeakyReLU(data, act_type='rrelu', lower_bound=0.3, upper_bound=0.7)
     verify_mxnet_frontend_impl(mx_sym, (1, 3, 100, 100), (1, 6, 100, 100))
 
+def test_forward_prelu():
+    data = mx.sym.var('data')
+    data = mx.sym.concat(data, -data, dim=1)  # negative part explicitly
+    mx_sym = mx.sym.LeakyReLU(data, act_type='prelu')
+    verify_mxnet_frontend_impl(mx_sym, (1, 3, 100, 100), (1, 6, 100, 100))
+
 def test_forward_softrelu():
     data = mx.sym.var('data')
     data = mx.sym.concat(data, -data, dim=1)  # negative part explicitly
@@ -120,12 +126,31 @@ def test_forward_clip():
     mx_sym = mx.sym.clip(data, a_min=0, a_max=1)
     verify_mxnet_frontend_impl(mx_sym, (1, 3, 100, 100), (1, 6, 100, 100))
 
+def test_forward_split():
+    data = mx.sym.var('data')
+    mx_sym = mx.sym.split(data, axis=1, num_outputs=4, squeeze_axis=False)
+    verify_mxnet_frontend_impl(mx_sym, (1, 4, 2, 1), (1, 1, 2, 1))
+
+def test_forward_split_squeeze():
+    data = mx.sym.var('data')
+    mx_sym = mx.sym.split(data, axis=1, num_outputs=4, squeeze_axis=True)
+    verify_mxnet_frontend_impl(mx_sym, (1, 4, 2, 1), (1, 2, 1))
+
+def test_forward_expand_dims():
+    data = mx.sym.var('data')
+    mx_sym = mx.sym.expand_dims(data, axis=1)
+    verify_mxnet_frontend_impl(mx_sym, (2, 3, 4), (2, 1, 3, 4))
+
 if __name__ == '__main__':
     test_forward_mlp()
     test_forward_vgg()
     test_forward_resnet()
     test_forward_elu()
     test_forward_rrelu()
+    test_forward_prelu()
     test_forward_softrelu()
     test_forward_fc_flatten()
     test_forward_clip()
+    test_forward_split()
+    test_forward_split_squeeze()
+    test_forward_expand_dims()

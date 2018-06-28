@@ -2,12 +2,9 @@
  *  Copyright (c) 2017 by Contributors
  * \file opencl_device_api.cc
  */
-#include "./opencl_common.h"
-
-#if TVM_OPENCL_RUNTIME
-
 #include <tvm/runtime/registry.h>
 #include <dmlc/thread_local.h>
+#include "./opencl_common.h"
 
 namespace tvm {
 namespace runtime {
@@ -33,6 +30,7 @@ void OpenCLWorkspace::GetAttr(
   CHECK_LT(index, devices.size())
       << "Invalid device id " << index;
   switch (kind) {
+    case kExist: break;
     case kMaxThreadsPerBlock: {
       size_t value;
       OPENCL_CALL(clGetDeviceInfo(
@@ -43,7 +41,7 @@ void OpenCLWorkspace::GetAttr(
     }
     case kWarpSize: {
       /* TODO: the warp size of OpenCL device is not always 1
-               e.g. Intel GPU has a sub group concept which contains 8 - 32 work items,
+               e.g. Intel Graphics has a sub group concept which contains 8 - 32 work items,
                corresponding to the number of SIMD entries the heardware configures.
                We need to figure out a way to query this information from the hardware.
       */
@@ -83,7 +81,16 @@ void OpenCLWorkspace::GetAttr(
       *rv = static_cast<int32_t>(value);
       break;
     }
-    case kExist: break;
+    case kMaxThreadDimensions: {
+      size_t dims[3];
+      OPENCL_CALL(clGetDeviceInfo(
+          devices[index], CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(dims), dims, nullptr));
+
+      std::stringstream ss;  // use json string to return multiple int values;
+      ss << "[" << dims[0] <<", " << dims[1] << ", " << dims[2] << "]";
+      *rv = ss.str();
+      break;
+    }
   }
 }
 
@@ -234,16 +241,18 @@ void OpenCLWorkspace::Init() {
   this->platform_id = platform_matched[0];
   LOG(INFO) << "Initialize OpenCL platform \'"
             << cl::GetPlatformInfo(this->platform_id, CL_PLATFORM_NAME) << '\'';
-  std::vector<cl_device_id> devices_matched =
-      cl::GetDeviceIDs(this->platform_id, "gpu");
-  if (devices_matched.size() == 0) {
-    LOG(WARNING) << "No OpenCL device any device matched given the options: gpu mode";
-    LOG(WARNING) << "Now try OpenCL cpu mode";
-    devices_matched = cl::GetDeviceIDs(this->platform_id, "cpu");
-    if (devices_matched.size() == 0) {
-      LOG(WARNING) << "No OpenCL device any device matched given the options: cpu mode";
-      return;
+  std::string device_types[] = {"accelerator", "gpu", "cpu"};
+  std::vector<cl_device_id> devices_matched;
+  for (auto type : device_types) {
+    devices_matched = cl::GetDeviceIDs(this->platform_id, type);
+    if (devices_matched.size() > 0) {
+      break;
     }
+    LOG(INFO) << "No OpenCL device any device matched given the options: " << type << " mode";
+  }
+  if (devices_matched.size() == 0) {
+    LOG(WARNING) << "No OpenCL device";
+    return;
   }
   this->devices = devices_matched;
   cl_int err_code;
@@ -277,5 +286,3 @@ TVM_REGISTER_GLOBAL("device_api.opencl")
 }  // namespace cl
 }  // namespace runtime
 }  // namespace tvm
-
-#endif  // TVM_OPENCL_RUNTIME

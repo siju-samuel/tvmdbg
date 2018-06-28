@@ -2,11 +2,9 @@
  *  Copyright (c) 2017 by Contributors
  * \file metal_device_api.mm
  */
-#include "./metal_common.h"
-
-#if TVM_METAL_RUNTIME
 #include <tvm/runtime/registry.h>
 #include <dmlc/thread_local.h>
+#include "./metal_common.h"
 
 namespace tvm {
 namespace runtime {
@@ -44,6 +42,7 @@ void MetalWorkspace::GetAttr(
     case kDeviceName: return;
     case kMaxClockRate: return;
     case kMultiProcessorCount: return;
+    case kMaxThreadDimensions: return;
     case kExist: break;
   }
 }
@@ -289,5 +288,3 @@ TVM_REGISTER_GLOBAL("device_api.metal")
 }  // namespace metal
 }  // namespace runtime
 }  // namespace tvm
-
-#endif  // TVM_METAL_RUNTIME

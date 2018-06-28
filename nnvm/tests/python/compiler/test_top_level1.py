@@ -6,19 +6,22 @@ import nnvm.symbol as sym
 import nnvm.compiler
 from nnvm.testing.config import ctx_list
 
-
 def helper(symbol, inputs, dtype,
-           np_forward, np_backward=None, need_input=True, need_head_grads=True):
+           np_forward, np_backward=None,
+           need_input=True, need_head_grads=True,
+           rnd_min=-1, rnd_max=1):
     ishapes = {}
+    itypes = {}
     input_syms = []
     np_inputs = {}
     for (name, shape, s) in inputs:
         ishapes.update({name: shape})
-        np_inputs.update({name: np.random.uniform(size=shape).astype(dtype)})
+        itypes.update({name: dtype})
+        np_inputs.update({name: np.random.uniform(rnd_min, rnd_max, size=shape).astype(dtype)})
         input_syms.append(s)
 
     for target, ctx in ctx_list():
-        graph, lib, _ = nnvm.compiler.build(symbol, target, ishapes)
+        graph, lib, _ = nnvm.compiler.build(symbol, target, ishapes, itypes)
         m = graph_runtime.create(graph, lib, ctx)
         m.run(**np_inputs)
         y_np = np_forward(**np_inputs)
@@ -165,7 +168,7 @@ def test_log():
     dtype = "float32"
     dshape = (1, 3, 32, 32)
     inputs = [('x', dshape, x)]
-    helper(y, inputs, dtype, forward, backward)
+    helper(y, inputs, dtype, forward, backward, rnd_min=0.001)
 
 
 def test_tanh():
@@ -278,7 +281,7 @@ def test_batchnorm():
         ('moving_var', (20,), moving_mean)
     ]
 
-    helper(y, inputs,  dtype, forward)
+    helper(y, inputs,  dtype, forward, rnd_min=0.001)
 
 
 def verify_concatenate(ishape, axis):
@@ -326,107 +329,6 @@ def test_split():
     verify_split((5, 3), [3], axis=0)
     verify_split((5, 9, 3), [3, 4], axis=1)
 
-def verify_stridedslice(ishape, begin, end, stride):
-    x = sym.Variable("x")
-    y = sym.strided_slice(x, begin = begin, end = end, stride = stride)
-    dtype = "float32"
-    x_np = np.random.uniform(size=ishape).astype(dtype)
-    res = x_np[begin[0]:end[0]:stride[0], begin[1]:end[1]:stride[1], begin[2]:end[2]:stride[2]]
-
-    for target, ctx in ctx_list():
-        # set input
-        graph, lib, _ = nnvm.compiler.build(y, target, {"x": ishape})
-        m = graph_runtime.create(graph, lib, ctx)
-        m.run(x=x_np)
-        out = m.get_output(0, tvm.nd.empty(res.shape))
-        np.testing.assert_allclose(out.asnumpy(), res, atol=1e-5, rtol=1e-5)
-
-def test_stridedslice():
-    verify_stridedslice((3, 4, 3), [1, 1, 0], [4, 4, 3], [2, 1, 1])
-    verify_stridedslice((3, 4, 3), [1, -1, 0], [4, -5, 3], [2, -1, 1])
-
-
-def verify_take(src_shape, indices_src, axis=None):
-    src_dtype = "float32"
-    indices_dtype = "int32"
-    indices_src = np.array(indices_src, dtype=indices_dtype)
-    a = sym.Variable("a")
-    indices = sym.Variable("indices")
-    if axis is None:
-        out = sym.take(a, indices)
-    else:
-        out = sym.take(a, indices, axis=axis)
-    for target, ctx in ctx_list():
-        # set input
-        shape_dict = {"a":src_shape, "indices":indices_src.shape}
-        type_dict = {"a":src_dtype, "indices":indices_dtype}
-        graph, lib, _ = nnvm.compiler.build(out, target, shape=shape_dict, dtype=type_dict)
-        m = graph_runtime.create(graph, lib, ctx)
-
-        shape_size = 1
-        for i in range(len(src_shape)):
-            shape_size = shape_size * src_shape[i]
-        a_src = np.arange(shape_size, dtype=src_dtype).reshape((src_shape))
-        if axis is None:
-            out_np = np.take(a_src, indices_src)
-        else:
-            out_np = np.take(a_src, indices_src, axis=axis)
-        m.run(a=a_src, indices=indices_src)
-        out = m.get_output(0, tvm.nd.empty(out_np.shape, dtype=src_dtype))
-        #print("out_np:", out_np.shape, "\n", out_np)
-        #print("out:", out.shape, "\n", out.asnumpy())
-        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
-
-def test_take():
-    verify_take((1,4), [0], 0)
-    verify_take((4,), [[[1,0],[0,1]]], 0)
-    verify_take((2,2), [[[1,0],[0,1]]], 1)
-    verify_take((3,3,3), [[[1,0]]], 2)
-    verify_take((4,3,5,6), [[2,1,0,0]], -2)
-
-
-
-def verify_take(src_shape, indices_src, axis=None):
-    src_dtype = "float32"
-    indices_dtype = "int32"
-    indices_src = np.array(indices_src, dtype=indices_dtype)
-    a = sym.Variable("a")
-    indices = sym.Variable("indices")
-    if axis is None:
-        out = sym.take(a, indices)
-    else:
-        out = sym.take(a, indices, axis=axis)
-    for target, ctx in ctx_list():
-        # set input
-        shape_dict = {"a":src_shape, "indices":indices_src.shape}
-        type_dict = {"a":src_dtype, "indices":indices_dtype}
-        graph, lib, _ = nnvm.compiler.build(out, target, shape=shape_dict, dtype=type_dict)
-        m = graph_runtime.create(graph, lib, ctx)
-
-        shape_size = 1
-        for i in range(len(src_shape)):
-            shape_size = shape_size * src_shape[i]
-        a_src = np.arange(shape_size, dtype=src_dtype).reshape((src_shape))
-        if axis is None:
-            out_np = np.take(a_src, indices_src)
-        else:
-            out_np = np.take(a_src, indices_src, axis=axis)
-        #print("out_np:", out_np.shape, "\n", out_np)
-        m.run(a=a_src, indices=indices_src)
-        out = m.get_output(0, tvm.nd.empty(out_np.shape, dtype=src_dtype))
-        #print("out:", out.shape, "\n", out.asnumpy())
-        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
-
-def test_take():
-    verify_take((4,), [1])
-    verify_take((4,), [[0,1,2,3]])
-    verify_take((3,3,3), [[11,25]])
-    verify_take((4,), [[0,1],[2,3]])
-    verify_take((4,), [1], 0)
-    verify_take((2,2), [[[1,0],[0,1]]], 0)
-    verify_take((2,2), [[[1,0],[0,1]]], 1)
-    verify_take((4,3,5,6), [[2,1,0,0]], -2)
-
 
 def verify_squeeze(dshape, axis):
     x = sym.Variable("x")
@@ -466,9 +368,67 @@ def test_pad():
     inputs = [('x', (1, 3, 28, 28), x)]
     helper(y, inputs, dtype, forward)
 
+def verify_lrn(ishape, size, axis, bias, alpha, beta):
+    x = sym.Variable("x")
+    y = sym.lrn(x, size=size, axis=axis, bias=bias, alpha=alpha, beta=beta)
+    dtype = "float32"
+    x_np = np.random.uniform(size=ishape).astype(dtype)
+
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(y, target, {"x": ishape})
+        m = graph_runtime.create(graph, lib, ctx)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(ishape))
+        out_np = topi.testing.lrn_python(x_np, size, axis, bias, alpha, beta)
+        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
+
+    #Checking LRN op followed by elementwise op relu
+    z = sym.relu(y)
+    x_np = np.random.uniform(low=-10.0, high=10.0, size=ishape).astype(dtype)
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(z, target, {"x": ishape})
+        m = graph_runtime.create(graph, lib, ctx)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(ishape))
+        out_np = topi.testing.lrn_python(x_np, size, axis, bias, alpha, beta)
+        out_np = (out_np > 0) * out_np
+        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
+
+def verify_l2_normalize(ishape, eps, axis):
+    x = sym.Variable("x")
+    y = sym.l2_normalize(x, eps=eps, axis=axis)
+    dtype = "float32"
+    x_np = np.random.uniform(size=ishape).astype(dtype)
+
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(y, target, {"x": ishape})
+        m = graph_runtime.create(graph, lib, ctx)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(ishape))
+        out_np = topi.testing.l2_normalize_python(x_np, eps, axis)
+        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
+
+    #Checking L2 normalization op followed by elementwise op relu
+    z = sym.relu(y)
+    x_np = np.random.uniform(low=-10.0, high=10.0, size=ishape).astype(dtype)
+    for target, ctx in ctx_list():
+        graph, lib, _ = nnvm.compiler.build(z, target, {"x": ishape})
+        m = graph_runtime.create(graph, lib, ctx)
+        m.run(x=x_np)
+        out = m.get_output(0, tvm.nd.empty(ishape))
+        out_np = topi.testing.l2_normalize_python(x_np, eps, axis)
+        out_np = (out_np > 0) * out_np
+        np.testing.assert_allclose(out.asnumpy(), out_np, atol=1e-5, rtol=1e-5)
+
+def test_lrn():
+    verify_lrn((1, 3, 20, 20), 3, 1, 1.0, 1.0, 0.5)
+    verify_lrn((1, 3, 20, 20), 3, 1, 2.0, 1.0, 0.75)
+
+def test_l2_normalize():
+    verify_l2_normalize((1, 3, 20, 20), 0.001, (1,))
+    verify_l2_normalize((1, 3, 20, 20), 0.001, (1, 2))
 
 if __name__ == "__main__":
-    test_stridedslice()
     test_split()
     test_concatenate()
     test_log_softmax()
@@ -486,4 +446,5 @@ if __name__ == "__main__":
     test_softmax()
     test_squeeze()
     test_pad()
-    test_take()
+    test_lrn()
+    test_l2_normalize()

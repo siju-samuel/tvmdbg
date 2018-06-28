@@ -23,8 +23,12 @@
 #include <topi/nn/mapping.h>
 #include <topi/nn/pooling.h>
 #include <topi/nn/softmax.h>
+#include <topi/nn/upsampling.h>
+#include <topi/nn/l2_normalize.h>
+#include <topi/nn/local_response_norm.h>
 
 #include <topi/vision/reorg.h>
+#include <topi/image/resize.h>
 #include <topi/vision/yolo2/region.h>
 #include <topi/generic/default.h>
 #include <topi/generic/extern.h>
@@ -37,6 +41,7 @@
 #include <topi/cuda/reduction.h>
 #include <topi/cuda/softmax.h>
 #include <topi/cuda/vision.h>
+#include <topi/cuda/normalization.h>
 
 #include <topi/x86/bnn.h>
 #include <topi/x86/default.h>
@@ -44,22 +49,12 @@
 
 #include <topi/rocm/dense.h>
 #include <topi/rocm/vision.h>
-
-namespace tvm {
-namespace runtime {
-template<>
-struct extension_class_info<tvm::Target> {
-  static const int code = 28;
-};
-}  // namespace tvm
-} // namespace runtime
+#include <topi/rocm/normalization.h>
 
 namespace topi {
 
 using namespace tvm;
 using namespace tvm::runtime;
-
-TVM_REGISTER_EXT_TYPE(tvm::Target);
 
 /*! \brief Canonicalize an argument that may be Array<Expr> or int to Array<Expr> */
 Array<Expr> ArrayOrInt(TVMArgValue arg) {
@@ -72,51 +67,55 @@ Array<Expr> ArrayOrInt(TVMArgValue arg) {
   }
 }
 
+inline bool IsTensorType(TVMArgValue arg) {
+  return (arg.type_code() == kNodeHandle &&
+          arg.node_sptr()->is_type<tvm::TensorNode>());
+}
+
+
 TVM_REGISTER_GLOBAL("topi.TEST_create_target")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = tvm::Target::create(args[0]);
   });
 
 /* Ops from broadcast.h */
+#define TOPI_REGISTER_BCAST_OP(OpName, Op)                              \
+  TVM_REGISTER_GLOBAL(OpName)                                           \
+  .set_body([](TVMArgs args, TVMRetValue *rv) {                         \
+      bool lhs_is_tensor = IsTensorType(args[0]);                       \
+      bool rhs_is_tensor = IsTensorType(args[1]);                       \
+      if (lhs_is_tensor && rhs_is_tensor) {                             \
+        *rv = Op(args[0].operator tvm::Tensor(),                        \
+                 args[1].operator tvm::Tensor());                       \
+      } else if (!lhs_is_tensor && rhs_is_tensor) {                     \
+        *rv = Op(args[0].operator tvm::Expr(),                          \
+                 args[1].operator tvm::Tensor());                       \
+      } else if (lhs_is_tensor && !rhs_is_tensor) {                     \
+        *rv = Op(args[0].operator tvm::Tensor(),                        \
+                 args[1].operator tvm::Expr());                         \
+      } else if (!lhs_is_tensor && !rhs_is_tensor) {                    \
+        *rv = Op(args[0].operator tvm::Expr(),                          \
+                 args[1].operator tvm::Expr());                         \
+      }                                                                 \
+    });                                                                 \
+
 TVM_REGISTER_GLOBAL("topi.broadcast_to")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = broadcast_to(args[0], args[1]);
   });
 
-TVM_REGISTER_GLOBAL("topi.broadcast_add")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_add(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_sub")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_sub(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_mul")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_mul(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_div")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_div(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_maximum")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_maximum(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_minimum")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_minimum(args[0], args[1]);
-   });
-
-TVM_REGISTER_GLOBAL("topi.broadcast_pow")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = broadcast_pow(args[0], args[1]);
-  });
+TOPI_REGISTER_BCAST_OP("topi.add", topi::add);
+TOPI_REGISTER_BCAST_OP("topi.subtract", topi::subtract);
+TOPI_REGISTER_BCAST_OP("topi.multiply", topi::multiply);
+TOPI_REGISTER_BCAST_OP("topi.divide", topi::divide);
+TOPI_REGISTER_BCAST_OP("topi.mod", topi::mod);
+TOPI_REGISTER_BCAST_OP("topi.maximum", topi::maximum);
+TOPI_REGISTER_BCAST_OP("topi.minimum", topi::minimum);
+TOPI_REGISTER_BCAST_OP("topi.power", topi::power);
+TOPI_REGISTER_BCAST_OP("topi.left_shift", topi::left_shift);
+TOPI_REGISTER_BCAST_OP("topi.right_shift", topi::right_shift);
+TOPI_REGISTER_BCAST_OP("topi.greater", topi::greater);
+TOPI_REGISTER_BCAST_OP("topi.less", topi::less);
 
 /* Ops from elemwise.h */
 TVM_REGISTER_GLOBAL("topi.exp")
@@ -154,25 +153,6 @@ TVM_REGISTER_GLOBAL("topi.negative")
   *rv = negative(args[0]);
   });
 
-TVM_REGISTER_GLOBAL("topi.pow")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  *rv = pow(args[0], args[1]);
-  });
-
-TVM_REGISTER_GLOBAL("topi.left_shift")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  Tensor lhs = args[0];
-  Expr rhs = args[1];
-  *rv = lhs >> rhs;
-  });
-
-TVM_REGISTER_GLOBAL("topi.right_shift")
-.set_body([](TVMArgs args, TVMRetValue *rv) {
-  Tensor lhs = args[0];
-  Expr rhs = args[1];
-  *rv = lhs << rhs;
-  });
-
 TVM_REGISTER_GLOBAL("topi.clip")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = clip(args[0], args[1], args[2]);
@@ -181,6 +161,21 @@ TVM_REGISTER_GLOBAL("topi.clip")
 TVM_REGISTER_GLOBAL("topi.cast")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = cast(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.elemwise_sum")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = elemwise_sum(args[0]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.full")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = full(args[0], args[1], args[2]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.full_like")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = full_like(args[0], args[1]);
   });
 
 /* Ops from nn.h */
@@ -285,6 +280,12 @@ TVM_REGISTER_GLOBAL("topi.strided_slice")
   *rv = strided_slice(args[0], args[1], args[2], args[3]);
   });
 
+/* Ops from nn/upsampling.h */
+TVM_REGISTER_GLOBAL("topi.nn.upsampling")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = nn::upsampling(args[0], args[1], args[2], args[3]);
+  });
+
 /* Ops from nn/batch_norm.h */
 TVM_REGISTER_GLOBAL("topi.nn.batch_norm_inference")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
@@ -362,14 +363,36 @@ TVM_REGISTER_GLOBAL("topi.nn.log_softmax")
   *rv = nn::log_softmax(args[0]);
   });
 
+/* Ops from nn/l2_normalize.h */
+TVM_REGISTER_GLOBAL("topi.nn.l2_normalize")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = nn::l2_normalize(args[0], static_cast<double>(args[1]), args[2]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.nn.lrn")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = nn::lrn(args[0], args[1], args[2],
+                static_cast<double>(args[3]),
+                static_cast<double>(args[4]),
+                static_cast<double>(args[5]));
+  });
+
 TVM_REGISTER_GLOBAL("topi.vision.reorg")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = vision::reorg(args[0], args[1]);
   });
+
 TVM_REGISTER_GLOBAL("topi.vision.yolo2.region")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = vision::yolo2::region(args[0], args[1], args[2], args[3], args[4], args[5]);
   });
+
+/* Ops from image/resize.h */
+TVM_REGISTER_GLOBAL("topi.image.resize")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = image::resize(args[0], args[1], args[2], args[3], args[4]);
+  });
+
 /* Generic schedules */
 TVM_REGISTER_GLOBAL("topi.generic.default_schedule")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
@@ -430,6 +453,17 @@ TVM_REGISTER_GLOBAL("topi.rocm.schedule_region")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = topi::rocm::schedule_region(args[0], args[1]);
   });
+
+TVM_REGISTER_GLOBAL("topi.rocm.schedule_lrn")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::rocm::schedule_lrn(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.rocm.schedule_l2_normalize")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::rocm::schedule_l2_normalize(args[0], args[1]);
+  });
+
 /* CUDA schedules */
 TVM_REGISTER_GLOBAL("topi.cuda.dense_cuda")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
@@ -474,6 +508,16 @@ TVM_REGISTER_GLOBAL("topi.cuda.schedule_softmax")
 TVM_REGISTER_GLOBAL("topi.cuda.schedule_region")
 .set_body([](TVMArgs args, TVMRetValue *rv) {
   *rv = topi::cuda::schedule_region(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.cuda.schedule_lrn")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::cuda::schedule_lrn(args[0], args[1]);
+  });
+
+TVM_REGISTER_GLOBAL("topi.cuda.schedule_l2_normalize")
+.set_body([](TVMArgs args, TVMRetValue *rv) {
+  *rv = topi::cuda::schedule_l2_normalize(args[0], args[1]);
   });
 
 /*! \brief Builder function for instantiating schedules. */
