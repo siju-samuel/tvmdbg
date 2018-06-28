@@ -208,10 +208,12 @@ with open("imagenet_tensorflow.params", "wb") as fo:
 # Execute on TVM
 # ---------------------------------------------
 # The process is no different from other example
-from tvm.contrib import graph_runtime
+#from tvm.contrib import graph_runtime
+from tvm.tools.debug.runtime import debugruntime as graph_runtime
 ctx = tvm.cpu(0)
 out_dtype = 'float32'
-m = graph_runtime.create(graph, lib, ctx, debug=True)
+#m = graph_runtime.create(graph, lib, ctx, debug=True)
+m = graph_runtime.create(graph, lib, ctx)
 
 ######################################################################
 # Predition
