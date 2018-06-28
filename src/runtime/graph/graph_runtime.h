@@ -65,6 +65,7 @@ class GraphRuntime : public ModuleNode {
   };
   void Run();
 
+  void DebugRun(int index);
 
   void DebugRun();
 

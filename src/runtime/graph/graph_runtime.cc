@@ -33,6 +33,26 @@ void GraphRuntime::Run() {
   }
 }
 
+void GraphRuntime::DebugRun(int index) {
+  struct timeval tp;
+  // Execute each op and copy the outs
+  if (op_execs_[index]) {
+    gettimeofday(&tp, NULL);
+    int64_t start_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
+    op_execs_[index]();
+    gettimeofday(&tp, NULL);
+    int64_t end_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
+    size_t num_outputs = (nodes_[index].op_type == "null") ? 1: nodes_[index].param.num_outputs;
+    for (size_t j = 0; j < num_outputs; j++) {
+        uint32_t eid = this->entry_id(index, j);
+        TVM_CCALL(TVMArrayCopyFromTo(&data_entry_[eid],
+                                    &debug_buffers_[eid]->out_tensor,
+                                     nullptr));
+        debug_buffers_[eid]->time_stamp = (end_time - start_time);
+    }
+  }
+}
+
 void GraphRuntime::DebugRun() {
   struct timeval tp;
   // Execute each op and copy the outs
