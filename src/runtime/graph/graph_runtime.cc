@@ -132,32 +132,6 @@ void GraphRuntime::GetInput(int index, DLTensor* data_out) {
 }
 
 /*!
- * \brief Check whether the data contains NAN or INF.
- * \param data The data pointer.
- * \param check_flag The flag which denotes whether to check NAN or INF.
- */
-void GraphRuntime::CheckNanOrInf(DLTensor* data, int check_flag) {
-  if (check_flag == CHECK_NONE) {
-      return;
-  }
-  size_t size = 1;
-  for (tvm_index_t i = 0; i < data->ndim; ++i) {
-     size *= data->shape[i];
-  }
-  size *= (data->dtype.bits * data->dtype.lanes + 7) / 8;
-  for (size_t i=0; (i < size); ++i) {
-      if ((check_flag && CHECK_NAN) && std::isnan(((float *)data->data)[i])) {
-          printf("\nERROR: NAN FOUND at index=%ld, val=%f", i, ((float *)data->data)[i]);
-          break;
-      }
-      if ((check_flag && CHECK_INF) && std::isinf(((float *)data->data)[i])) {
-          printf("\nERROR: INF FOUND at index=%ld, val=%f", i, ((float *)data->data)[i]);
-          break;
-      }
-  }
-}
-
-/*!
  * \brief Set the debug buffer to copy the output of each operation.
  * \param data The data pointer.
  */
