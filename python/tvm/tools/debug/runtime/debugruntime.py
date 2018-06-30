@@ -19,7 +19,14 @@ class GraphModuleDebugDumpDatum():
         self._nodes_list = nodes_list
         self._dump_path = dump_path
         self._out_stats = node_stats
+        self._ts_list = []
         self.ctx = ctx
+
+    def get_nodes_list(self):
+        return self._nodes_list
+
+    def add_timestamp(self, ts):
+        self._ts_list.append(ts)
 
     def dump_output(self):
         """Dump the outputs to a temporary folder
@@ -32,12 +39,14 @@ class GraphModuleDebugDumpDatum():
 
         """
         eid = 0
-        for node in self._nodes_list:
+        order = 0
+        for node, ts in zip(self._nodes_list, self._ts_list):
             num_outputs = 1 if node['op'] == 'param' else int(node['attrs']['num_outputs'])
             for j in range(num_outputs):
                 ndbuffer = self._out_stats[eid]
                 eid += 1
-                key = node['name'] + "_" + str(j) + "__000000" + str(ndbuffer.time_stamp) + ".npy"
+                order += ts
+                key = node['name'] + "_" + str(j) + "__000000" + str(order) + ".npy"
                 key = key.replace("/", "_")
                 dump_file = str(self._dump_path + key)
                 np.save(dump_file, ndbuffer.asnumpy())
@@ -152,6 +161,12 @@ class GraphModuleDebug(graph_runtime.GraphModule):
             dbg_out_buffer_list.append(nd.empty(shapes_list[1][i], dltype_list[1][i]))
         return dbg_out_buffer_list
 
+    def _debug_run_op_exec(self, index=None):
+        nodes_count = len(self.debug_datum.get_nodes_list())
+        for i in range(nodes_count):
+            ts = self._debug_run(i)
+            self.debug_datum.add_timestamp(ts)
+
     def _debug_cli_run(self):
         """Invoke cli and when user execute any command get_run_start_resp will return response"""
         cli_command = self.ui.get_run_command()
@@ -159,7 +174,7 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         retvals = True
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
             self.set_debug_buffer()
-            retvals = self._debug_run()
+            retvals = self._debug_run_op_exec()
             self.debug_datum.dump_output()
             self.ui.run_end(cli_command, retvals)
 

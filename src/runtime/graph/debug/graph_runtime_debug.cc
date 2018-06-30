@@ -20,36 +20,29 @@ namespace runtime {
 #define CHECK_INF 0x2
 
 /*!
- * \brief Tiny graph runtime.
+ * \brief Graph runtime with debug .
  *
  *  This runtime can be acccesibly in various language via
  *  TVM runtime PackedFunc API.
  */
 class GraphRuntimeDebug : public GraphRuntime {
 
-  void DebugRun(int index) {
+  int DebugRun(int index) {
     struct timeval tp;
+    int64_t start_time = 0;
+    int64_t end_time = 0;
     if (op_execs()[index]) {
       gettimeofday(&tp, NULL);
-      int64_t start_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
+      start_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
       op_execs()[index]();
       gettimeofday(&tp, NULL);
-      int64_t end_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
+      end_time = int64_t(tp.tv_sec * 1000000L + tp.tv_usec);
       for (size_t j = 0; j < NumOutputs(index); j++) {
           uint32_t eid = GetEntryId(index, j);
-          TVM_CCALL(TVMArrayCopyFromTo(&data_entry()[eid],
-                                      &debug_buffers_[eid]->out_tensor,
-                                       nullptr));
-          debug_buffers_[eid]->time_stamp = (end_time - start_time);
+          TVM_CCALL(TVMArrayCopyFromTo(&data_entry()[eid], debug_buffers_[eid], nullptr));
       }
     }
-  }
-
-  void DebugRun() {
-    // Execute each op and copy the outs
-    for (size_t i = 0; i < op_execs().size(); ++i) {
-      DebugRun(i);
-    }
+    return end_time - start_time;
   }
 
   /*!
@@ -82,8 +75,8 @@ class GraphRuntimeDebug : public GraphRuntime {
    * \brief Set the debug buffer to copy the output of each operation.
    * \param data The data pointer.
    */
-  void SetDebugBuffer(void* data) {
-      debug_buffers_.push_back(reinterpret_cast<TVMDbgTensor*>(data));
+  void SetDebugBuffer(DLTensor* data) {
+      debug_buffers_.push_back(data);
   }
 
   PackedFunc GetFunction(
@@ -92,7 +85,7 @@ class GraphRuntimeDebug : public GraphRuntime {
 
   private:
   /*! \brief debug buffer storage pool */
-  std::vector<TVMDbgTensor*> debug_buffers_;
+  std::vector<DLTensor*> debug_buffers_;
 };
 
 
@@ -106,7 +99,7 @@ PackedFunc GraphRuntimeDebug::GetFunction(
       });
   } else if (name == "debug_run") {
     return PackedFunc([sptr_to_self, this](TVMArgs args, TVMRetValue* rv) {
-        this->DebugRun();
+        *rv = this->DebugRun(args[0]);
       });
   } else {
      return GraphRuntime::GetFunction(name, sptr_to_self);
