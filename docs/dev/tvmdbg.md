@@ -40,11 +40,16 @@ By clicking at the **Node name** user can see the node details, like its
 3. Node outputs
 4. Its computations output values
  ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg3.png)
- ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/docs/dev/_images/tvm_dbg4.png)
- ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/docs/dev/_images/tvm_dbg5.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg4.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg5.png)
  ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg6.png)
 
 
 **Limitations:**
 1. Can dump only fused graph, if need to see each and every operation seperately, disable the nnvm optimizations
-2. Layer information will be dispersed into multiple operators.
+2. Layer information may be dispersed into multiple operators.
+
+**References**
+https://github.com/tensorflow/tensorflow
+https://github.com/tensorflow/tensorboard
+https://github.com/awslabs/mxboard
