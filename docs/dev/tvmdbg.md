@@ -13,7 +13,8 @@ TVMDBG addresses these limitations. Among the features provided by TVMDBG, the f
 
 **How to use TVMDBG?**
 1. In `config.cmake` set the `USE_GRAPH_RUNTIME_DEBUG` flag to `ON`
-```# Whether enable additional graph debug functions
+```
+# Whether enable additional graph debug functions
 set(USE_GRAPH_RUNTIME_DEBUG ON)
 ```
 2. Make tvm so that it will make the `libtvm_runtime.so`
@@ -27,21 +28,21 @@ from tvm.tools.debug.runtime import debugruntime as graph_runtime
 The above two modifications will bring up the debug UI during run.
 
 The HOME page of tvmdbg looks like below.
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg1.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg1.png)
  
 Here user will get the option to run with or without debugging.
 Once user perfoms the run, it will take you for listing the nodes in graph.
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg2.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg2.png)
  
 By clicking at the **Node name** user can see the node details, like its 
 1. Node information and its attributes
 2. Node inputs
 3. Node outputs
 4. Its computations output values
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg3.png)
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg4.png)
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg5.png)
- ![picture](https://github.com/siju-samuel/tvmdbg/tree/master/docs/dev/_images/tvm_dbg6.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg3.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/docs/dev/_images/tvm_dbg4.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/docs/dev/_images/tvm_dbg5.png)
+ ![](https://raw.githubusercontent.com/siju-samuel/tvmdbg/master/docs/dev/_images/tvm_dbg6.png)
 
 
 **Limitations:**
