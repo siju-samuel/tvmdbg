@@ -2,15 +2,10 @@
  *  Copyright (c) 2017 by Contributors
  * \file graph_runtime.cc
  */
-#include <sys/time.h>
 #include <tvm/runtime/packed_func.h>
 #include <tvm/runtime/registry.h>
-#include <tvm/runtime/serializer.h>
-#include <dmlc/memory_io.h>
-#include <dmlc/json.h>
 #include <numeric>
 #include "./graph_runtime.h"
-#include <cmath>
 
 namespace tvm {
 namespace runtime {

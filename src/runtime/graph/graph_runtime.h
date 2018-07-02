@@ -8,7 +8,11 @@
 #ifndef TVM_RUNTIME_GRAPH_GRAPH_RUNTIME_H_
 #define TVM_RUNTIME_GRAPH_GRAPH_RUNTIME_H_
 
+#include <tvm/runtime/serializer.h>
+#include <dmlc/memory_io.h>
+#include <dmlc/json.h>
 #include <string>
+#include <vector>
 
 namespace tvm {
 namespace runtime {

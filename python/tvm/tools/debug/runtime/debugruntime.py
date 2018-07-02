@@ -163,9 +163,13 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
     def _debug_run_op_exec(self, index=None):
         nodes_count = len(self.debug_datum.get_nodes_list())
+        if index:
+            time_stamp = self._debug_run(index)
+            self.debug_datum.add_timestamp(time_stamp)
+            return
         for i in range(nodes_count):
-            ts = self._debug_run(i)
-            self.debug_datum.add_timestamp(ts)
+            time_stamp = self._debug_run(i)
+            self.debug_datum.add_timestamp(time_stamp)
 
     def _debug_cli_run(self):
         """Invoke cli and when user execute any command get_run_start_resp will return response"""
