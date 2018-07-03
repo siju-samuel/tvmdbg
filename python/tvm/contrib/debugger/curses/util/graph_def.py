@@ -24,7 +24,7 @@ class Node(object):
 
         name = node['name']
         op = node['op']
-        device = "/job:localhost/replica:0/task:0/device:" + ctx
+        device = "/device:" + ctx
         input_lst = []
         attr = {}
         if 'inputs' in node:
