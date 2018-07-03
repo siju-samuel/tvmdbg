@@ -47,7 +47,11 @@ def create(graph_json_str, libmod, ctx):
             raise ValueError("Type %s is not supported" % type(graph_json_str))
     device_type = ctx.device_type
     device_id = ctx.device_id
-    fcreate = get_global_func("tvm.graph_runtime_debug.create")
+    try:
+        fcreate = get_global_func("tvm.graph_runtime_debug.create")
+    except ValueError:
+        raise ValueError("Please set '(USE_GRAPH_RUNTIME_DEBUG ON)' in " \
+                         "config.cmake and rebuild TVM to enable debug mode")
     func_obj = fcreate(graph_json_str, libmod, device_type, device_id)
     return GraphModuleDebug(func_obj, ctx, graph_json_str)
 
