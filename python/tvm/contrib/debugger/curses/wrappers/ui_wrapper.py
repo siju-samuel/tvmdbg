@@ -256,6 +256,10 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         # information.
         return framework.OnRunEndResponse()
 
+    def exit(self):
+        """Exits and cleanup."""
+        self._remove_dump_root()
+
     def _remove_dump_root(self):
         if os.path.isdir(self._dump_root):
             shutil.rmtree(self._dump_root)

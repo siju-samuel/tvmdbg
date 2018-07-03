@@ -47,14 +47,6 @@ def create(graph_json_str, libmod, ctx):
             raise ValueError("Type %s is not supported" % type(graph_json_str))
     device_type = ctx.device_type
     device_id = ctx.device_id
-    if device_type >= rpc_base.RPC_SESS_MASK:
-        assert libmod.type_key == "rpc"
-        assert rpc_base._SessTableIndex(libmod) == ctx._rpc_sess._tbl_index
-        hmod = rpc_base._ModuleHandle(libmod)
-        fcreate = ctx._rpc_sess.get_function("tvm.graph_runtime_debug.remote_create")
-        device_type = device_type % rpc_base.RPC_SESS_MASK
-        func_obj = fcreate(graph_json_str, hmod, device_type, device_id)
-        return GraphModuleDebug(func_obj, ctx, graph_json_str)
     try:
         fcreate = get_global_func("tvm.graph_runtime_debug.create")
     except ValueError:
@@ -328,8 +320,18 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
             retvals = super(GraphModuleDebug, self).run()
             self.ui_obj.run_end(cli_command, retvals)
+        self.ui_obj.exit()
 
     def run(self, **input_dict):
+        """Run forward execution of the graph with debug
+
+        Parameters
+        ----------
+        input_dict: dict of str to NDArray
+            List of input values to be feed to
+        """
+        if input_dict:
+            self.set_input(**input_dict)
         self._debug_cli_run()
 
     def set_input(self, key=None, value=None, **params):
@@ -466,19 +468,27 @@ class DebugGraphUIWrapper(object):
         'tensorboard'- make data format for tensorbard frontend.
     """
     def __init__(self, p_graph, nodes_list, heads_list, ctx, frontend):
+        """Init the DebugGraphUIWrapper"""
         self._nodes_list = nodes_list
         if frontend == FRONTEND_CLI:
             self.curses_obj = tvmdbg.LocalCLIDebugWrapperModule(self, p_graph, ctx=ctx)
         self.set_output_nodes(heads_list)
 
     def get_run_command(self):
+        """Invoke run from curses ui"""
         return self.curses_obj.get_run_command()
 
     def run_end(self, run_cli_session, retvals):
+        """Invoke run end from curses ui"""
         self.curses_obj.run_end(run_cli_session, retvals)
 
     def set_input(self, key, value):
+        """Set inputs to curses ui"""
         self.curses_obj.set_input(key.replace("/", "_"), value)
+
+    def exit(self):
+        """Exits the curses ui"""
+        self.curses_obj.exit()
 
     def set_output_nodes(self, heads_list):
         """Dump the heads to a list
