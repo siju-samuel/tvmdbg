@@ -63,8 +63,7 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
           string.
 
     Returns:
-      A string representing the debug watch on the tensor (i.e., the "watch
-          key").
+      A string representing the debug watch on the tensor (i.e., the "watch key").
     """
     return "%s:%s" % (_get_tensor_name(node_name, output_slot), debug_op)
 
@@ -190,16 +189,14 @@ class DebugDumpDir(object):
             self._dump_root, METADATA_FILE_PREFIX + OUTPUTS_INFO_FILE_TAG + "*"))
         self._run_outputs_info = []
         for outputs_info_file in outputs_info_files:
-            self._run_outputs_info.append(
-                _load_log_msg_from_evt_file(outputs_info_file))
+            self._run_outputs_info.append(_load_log_msg_from_evt_file(outputs_info_file))
 
     def _load_inputs_info(self):
         inputs_info_files = _glob(os.path.join(
             self._dump_root, METADATA_FILE_PREFIX + INPUT_KEYS_INFO_FILE_TAG + "*"))
         self._run_input_keys_info = []
         for inputs_info_file in inputs_info_files:
-            self._run_input_keys_info.append(
-                _load_log_msg_from_evt_file(inputs_info_file))
+            self._run_input_keys_info.append(_load_log_msg_from_evt_file(inputs_info_file))
 
     def _dump_file_name_to_datum(self, dir_name, file_name):
         """Obtain a data_dump.DebugTensorDatum from the directory and file name.
@@ -213,8 +210,7 @@ class DebugDumpDir(object):
           (`data_dump.DebugTensorDatum`) The `data_dump.DebugTensorDatum` loaded from the dump file.
         """
         # Calculate the relative path of the dump file with respect to the root.
-        debug_dump_rel_path = os.path.join(
-            os.path.relpath(dir_name, self._dump_root), file_name)
+        debug_dump_rel_path = os.path.join(os.path.relpath(dir_name, self._dump_root), file_name)
         return data_dump.DebugTensorDatum(self._dump_root, debug_dump_rel_path)
 
     def _create_tensor_watch_maps(self, device_name):
@@ -311,17 +307,14 @@ class DebugDumpDir(object):
                                                                       self._dump_graph_file_paths[
                                                                           device_name])
                 else:
-                    partition_graph = _find_partition_graph(partition_graphs,
-                                                            device_name)
+                    partition_graph = _find_partition_graph(partition_graphs, device_name)
                 if partition_graph:
-                    partition_graphs_dev_names.append((partition_graph,
-                                                       device_name))
+                    partition_graphs_dev_names.append((partition_graph, device_name))
                 else:
                     print("Failed to load partition graphs from disk.")
 
         for partition_graph, maybe_device_name in partition_graphs_dev_names:
-            debug_graph = graph_dump.DebugGraph(partition_graph,
-                                                device_name=maybe_device_name)
+            debug_graph = graph_dump.DebugGraph(partition_graph, device_name=maybe_device_name)
             self._debug_graphs[debug_graph.device_name] = debug_graph
             self._collect_node_devices(debug_graph)
 
@@ -353,8 +346,7 @@ class DebugDumpDir(object):
             input relations on the partition graphs.
         """
         if not self._debug_graphs:
-            raise LookupError(
-                "No partition graphs loaded for device %s" % device_name)
+            raise LookupError("No partition graphs loaded for device %s" % device_name)
         debug_graph = self._debug_graphs[device_name]
 
         # Verify that the node names in the dump data are all present in the
@@ -390,8 +382,7 @@ class DebugDumpDir(object):
             if not self._satisfied_at_timestamp(
                     device_name, pending_inputs[node], datum.timestamp, start_i=i + 1):
                 raise ValueError("Causality violated in timing relations of debug "
-                                 "dumps: %s (%d): "
-                                 "these input(s) are not satisfied: %s" %
+                                 "dumps: %s (%d): these input(s) are not satisfied: %s" %
                                  (node, datum.timestamp, repr(pending_inputs[node])))
 
             recipients = debug_graph.node_recipients[node]
@@ -403,8 +394,7 @@ class DebugDumpDir(object):
                         # a Merge node only requires one of its two inputs.
                         del recipient_pending_inputs[:]
                     else:
-                        del recipient_pending_inputs[
-                            recipient_pending_inputs.index((node, slot))]
+                        del recipient_pending_inputs[recipient_pending_inputs.index((node, slot))]
 
     def _satisfied_at_timestamp(self, device_name, pending, timestamp, start_i=0):
         """Determine whether pending inputs are satisfied at given timestamp.
@@ -414,11 +404,9 @@ class DebugDumpDir(object):
         Parameters
         ----------
           device_name: (str) device name.
-          pending: A list of 2-tuple (node_name, output_slot): the dependencies to
-            check.
+          pending: A list of 2-tuple (node_name, output_slot): the dependencies to check.
           timestamp: (int) the timestamp in question.
-          start_i: (int) the index in self._dump_tensor_data to start searching for
-            the timestamp.
+          start_i: (int) the index in self._dump_tensor_data to start searching for the timestamp.
 
         Returns:
           (bool) Whether all the dependencies in pending are satisfied at the
@@ -661,12 +649,10 @@ class DebugDumpDir(object):
           ValueError: If device_name is specified but cannot be found.
         """
         if not self._debug_graphs:
-            raise LookupError(
-                "Nodes have not been loaded from partition graphs yet.")
+            raise LookupError("Nodes have not been loaded from partition graphs yet.")
 
         if (device_name is not None) and device_name not in self._debug_graphs:
-            raise ValueError(
-                "The specified device_name '%s' cannot be found." % device_name)
+            raise ValueError("The specified device_name '%s' cannot be found." % device_name)
 
         for _, debug_graph in self._debug_graphs.items():
             if node_name in debug_graph.node_inputs:
@@ -691,12 +677,10 @@ class DebugDumpDir(object):
           ValueError: If the node does not exist in partition graphs.
         """
         if not self._debug_graphs:
-            raise LookupError(
-                "Node devices are not loaded from partition graphs yet.")
+            raise LookupError("Node devices are not loaded from partition graphs yet.")
 
         if node_name not in self._node_devices:
-            raise ValueError("Node '%s' does not exist in partition graphs." %
-                             node_name)
+            raise ValueError("Node '%s' does not exist in partition graphs." % node_name)
 
         output = list(self._node_devices[node_name])
         return output[0] if len(output) == 1 else output
@@ -718,8 +702,7 @@ class DebugDumpDir(object):
              from partition graphs yet.
         """
         if not self._debug_graphs:
-            raise LookupError(
-                "Node op types are not loaded from partition graphs yet.")
+            raise LookupError("Node op types are not loaded from partition graphs yet.")
 
         device_name = self._infer_device_name(device_name, node_name)
         return self._debug_graphs[device_name].node_op_types[node_name]
@@ -753,8 +736,7 @@ class DebugDumpDir(object):
         for watched_slot in self._debug_watches[device_name][node_name]:
             debug_ops = self._debug_watches[device_name][node_name][watched_slot]
             for debug_op in debug_ops:
-                watch_keys.append(
-                    _get_tensor_watch_key(node_name, watched_slot, debug_op))
+                watch_keys.append(_get_tensor_watch_key(node_name, watched_slot, debug_op))
 
         return watch_keys
 
@@ -791,8 +773,7 @@ class DebugDumpDir(object):
                     (debug_watch_key, len(matching_device_names)))
         elif device_name not in self._debug_key_to_datum:
             raise ValueError(
-                "There is no device named '%s' consisting of debug watch keys." %
-                device_name)
+                "There is no device named '%s' consisting of debug watch keys." % device_name)
 
         return self._watch_key_to_datum[device_name].get(debug_watch_key, [])
 
