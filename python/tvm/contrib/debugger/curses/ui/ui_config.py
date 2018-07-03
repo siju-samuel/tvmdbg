@@ -7,7 +7,7 @@ import collections
 import json
 import os
 
-from tvm.tools.debug.ui import ui_common
+from tvm.contrib.debugger.curses.ui import ui_common
 
 RL = ui_common.RichLine
 

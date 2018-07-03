@@ -8,14 +8,14 @@ import shutil
 import sys
 import tempfile
 
-from tvm.tools.debug.ui import ui_shared
-from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import ui_common
-from tvm.tools.debug.ui import ui_factory
-from tvm.tools.debug.ui.analyzer import analyzer
-from tvm.tools.debug.util import common
-from tvm.tools.debug.util import debug_dump as dbg_dump
-from tvm.tools.debug.wrappers import ui_framework as framework
+from tvm.contrib.debugger.curses.ui import ui_shared
+from tvm.contrib.debugger.curses.ui import command_parser
+from tvm.contrib.debugger.curses.ui import ui_common
+from tvm.contrib.debugger.curses.ui import ui_factory
+from tvm.contrib.debugger.curses.ui.analyzer import analyzer
+from tvm.contrib.debugger.curses.util import common
+from tvm.contrib.debugger.curses.util import debug_dump as dbg_dump
+from tvm.contrib.debugger.curses.wrappers import ui_framework as framework
 
 _DUMP_ROOT_PREFIX = "tvmdbg_"
 

@@ -8,8 +8,8 @@ from tvm._ffi.base import string_types
 from tvm.contrib import graph_runtime
 from tvm.contrib.rpc import base as rpc_base
 from tvm._ffi.function import get_global_func
-from tvm.tools.debug.wrappers import ui_wrapper as tvmdbg
-from tvm.tools.debug.util import common
+from tvm.contrib.debugger.curses.wrappers import ui_wrapper as tvmdbg
+from tvm.contrib.debugger.curses.util import common
 
 """String used for frontend seletion.
 Todo: User will have an option to select the frontend when debug is enabling.

@@ -5,9 +5,9 @@ from __future__ import print_function
 
 import argparse
 
-from tvm.tools.debug.ui import ui_config
-from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import ui_common
+from tvm.contrib.debugger.curses.ui import ui_config
+from tvm.contrib.debugger.curses.ui import command_parser
+from tvm.contrib.debugger.curses.ui import ui_common
 
 
 def _parse_command(command):

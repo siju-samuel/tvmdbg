@@ -13,12 +13,12 @@ import copy
 import curses
 import re
 
-from tvm.tools.debug.ui import ui_config
-from tvm.tools.debug.ui import ui_shared
-from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import ui_common
-from tvm.tools.debug.ui import ui_factory
-from tvm.tools.debug.util import graph_dump
+from tvm.contrib.debugger.curses.ui import ui_config
+from tvm.contrib.debugger.curses.ui import ui_shared
+from tvm.contrib.debugger.curses.ui import command_parser
+from tvm.contrib.debugger.curses.ui import ui_common
+from tvm.contrib.debugger.curses.ui import ui_factory
+from tvm.contrib.debugger.curses.util import graph_dump
 
 
 RL = ui_common.RichLine

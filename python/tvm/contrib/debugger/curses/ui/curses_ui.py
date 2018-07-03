@@ -13,12 +13,12 @@ import signal
 import sys
 import threading
 
-from tvm.tools.debug.ui import ui_base
-from tvm.tools.debug.ui import ui_shared
-from tvm.tools.debug.ui import command_parser
-from tvm.tools.debug.ui import curses_widgets
-from tvm.tools.debug.ui import ui_common
-from tvm.tools.debug.ui import tensor_data
+from tvm.contrib.debugger.curses.ui import ui_base
+from tvm.contrib.debugger.curses.ui import ui_shared
+from tvm.contrib.debugger.curses.ui import command_parser
+from tvm.contrib.debugger.curses.ui import curses_widgets
+from tvm.contrib.debugger.curses.ui import ui_common
+from tvm.contrib.debugger.curses.ui import tensor_data
 
 
 _SCROLL_REFRESH = "refresh"

@@ -10,9 +10,9 @@ import os
 import re
 import six
 
-from tvm.tools.debug.util import graph_dump
-from tvm.tools.debug.util import data_dump
-from tvm.tools.debug.runtime import graph_def
+from tvm.contrib.debugger.curses.util import graph_dump
+from tvm.contrib.debugger.curses.util import data_dump
+from tvm.contrib.debugger.curses.util import graph_def
 
 METADATA_FILE_PREFIX = "_tvmdbg_"
 GRAPH_FILE_TAG = "graph_"

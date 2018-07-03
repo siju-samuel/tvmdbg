@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 import abc
 
-from tvm.tools.debug.util import common
+from tvm.contrib.debugger.curses.util import common
 
 # Helper function.
 def _check_type(obj, expected_types):

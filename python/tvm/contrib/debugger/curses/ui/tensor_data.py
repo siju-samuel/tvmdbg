@@ -7,8 +7,8 @@ import copy
 import re
 
 import numpy as np
-from tvm.tools.debug.ui import ui_common
-from tvm.tools.debug.util import data_dump
+from tvm.contrib.debugger.curses.ui import ui_common
+from tvm.contrib.debugger.curses.util import data_dump
 
 _NUMPY_OMISSION = "...,"
 _NUMPY_DEFAULT_EDGE_ITEMS = 3

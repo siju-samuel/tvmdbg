@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import curses
-from tvm.tools.debug.ui import ui_common
+from tvm.contrib.debugger.curses.ui import ui_common
 
 RL = ui_common.RichLine
 EXIT_TEXT = "exit"

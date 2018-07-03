@@ -58,9 +58,8 @@ class GraphRuntime : public ModuleNode {
    * \param sptr_to_self The pointer to the module node.
    * \return The corresponding member function.
    */
-  virtual PackedFunc GetFunction(
-      const std::string& name,
-      const std::shared_ptr<ModuleNode>& sptr_to_self);
+  virtual PackedFunc GetFunction(const std::string& name,
+                                 const std::shared_ptr<ModuleNode>& sptr_to_self);
 
   /*!
    * \return The type key of the executor.
@@ -109,28 +108,63 @@ class GraphRuntime : public ModuleNode {
   void GetOutput(int index, DLTensor* data_out);
 
   /*!
+   * \brief Get the node index given the name of node.
+   * \param name The name of the node.
+   * \return The index of node.
+   */
+  int GetNodeIndex(const std::string& name);
+
+  /*!
+   * \brief Copy index-th node to data_out.
+   *
+   * This method will do a partial run of the the graph
+   * from begining upto the index-th node and return output of index-th node.
+   * This is costly operation and suggest to use only for debug porpose.
+   *
+   * \param index: The  index of the node.
+   * \param data_out the node data.
+   */
+  void DebugGetNodeOutput(int index, DLTensor* data_out);
+
+  /*!
    * \brief Load parameters from binary stream
    * \param strm The input stream.
    */
   void LoadParams(dmlc::Stream* strm);
+
   /*!
    * \brief Load parameters from parameter blob.
    * \param param_blob A binary blob of parameter.
    */
   void LoadParams(const std::string& param_blob);
 
+  /*!
+   * \brief Get the tensor vector pointer.
+   */
   std::vector<DLTensor>& data_entry() {
       return data_entry_;
   }
+
+  /*!
+   * \brief Get the execution function pointer.
+   */
   std::vector<std::function<void()> >& op_execs() {
         return op_execs_;
   }
 
+  /*!
+   * \brief Get the number of outputs of a node for a valid optype.
+   * \param index Index of the nodes.
+   */
   size_t NumOutputs(int index) {
       return (nodes_[index].op_type == "null") ? 1: nodes_[index].param.num_outputs;
   }
 
-  // Get node entry index.
+  /*!
+   * \brief Get node entry index.
+   * \param nid Node id.
+   * \param index Index of the nodes.
+   */
   uint32_t GetEntryId(uint32_t nid, uint32_t index) const {
     return node_row_ptr_[nid] + index;
   }
