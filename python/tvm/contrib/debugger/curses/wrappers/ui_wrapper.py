@@ -1,4 +1,4 @@
-"""Debugger Wrapper Session Consisting of a Local Curses-based CLI."""
+"""Debugger Wrapper Module Consisting of a Local Curses-based CLI."""
 from __future__ import absolute_import
 from __future__ import print_function
 
@@ -28,13 +28,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     """
 
     def __init__(self,
-                 sess,
+                 runtime,
                  graph,
                  ctx=None,
                  dump_root=None,
                  log_usage=True,
-                 ui_type="curses",
-                 thread_name_filter=None):
+                 ui_type="curses"):
         """Constructor of LocalCLIDebugWrapperModule.
 
         Parameters
@@ -56,8 +55,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         if log_usage:
             pass  # No logging for open-source.
 
-        framework.BaseDebugWrapperModule.__init__(
-            self, sess, graph, ctx, thread_name_filter=thread_name_filter)
+        framework.BaseDebugWrapperModule.__init__(self, runtime, graph, ctx)
 
         if not dump_root:
             self._dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
@@ -109,7 +107,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             help="Run through without debug tensor watching.")
         self._argparsers["run"] = args
         args = argparse.ArgumentParser(
-            description="Display information about this Session.run() call.",
+            description="Display information about this module.run() call.",
             usage=argparse.SUPPRESS)
         self._argparsers["HOME"] = args
 
@@ -128,19 +126,19 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         self._tensor_filters[filter_name] = tensor_filter
 
-    def on_session_init(self, request):
-        """Overrides on-session-init callback.
+    def on_runtime_init(self, request):
+        """Overrides on-runtime-init callback.
 
         Parameters
         ----------
-          request: An instance of `OnSessionInitRequest`.
+          request: An instance of `OnRuntimeInitRequest`.
 
         Returns:
-          An instance of `OnSessionInitResponse`.
+          An instance of `OnRuntimeInitResponse`.
         """
 
-        return framework.OnSessionInitResponse(
-            framework.OnSessionInitAction.PROCEED)
+        return framework.OnRuntimeInitResponse(
+            framework.OnRuntimeInitAction.PROCEED)
 
     def on_run_start(self, request):
         """Overrides on-run-start callback.
@@ -221,10 +219,10 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          request: An instance of OnSessionInitRequest.
+          request: An instance of OnRuntimeInitRequest.
 
         Returns:
-          An instance of OnSessionInitResponse.
+          An instance of OnRuntimeInitResponse.
         """
 
         self._is_run_start = False
@@ -234,7 +232,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 # It is possible that the dump root may not exist due to errors that
                 # have occurred prior to graph execution (e.g., invalid device
                 # assignments), in which case we will just raise the exception as the
-                # unwrapped Session does.
+                # unwrapped Module does.
                 raise request.tvm_error
 
             debug_dump = dbg_dump.DebugDumpDir(self._ctx,
@@ -460,7 +458,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
           input_dict: None of a dict. This is the input_dict argument to the run()
             call.
           is_callable_runner: (bool) whether a runner returned by
-            Session.make_callable is being run.
+            Module.make_callable is being run.
         """
 
         self._run_call_count = run_call_count

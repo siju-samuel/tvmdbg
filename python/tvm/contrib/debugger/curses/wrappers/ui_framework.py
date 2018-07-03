@@ -1,4 +1,4 @@
-"""Framework of debug wrapper sessions."""
+"""Framework of debug UI wrapper."""
 from __future__ import absolute_import
 
 import abc
@@ -23,48 +23,48 @@ def _check_type(obj, expected_types):
                         (expected_types, type(obj)))
 
 
-class OnSessionInitRequest(object):
-    """Request to an on-session-init callback.
+class OnRuntimeInitRequest(object):
+    """Request to an on-runtime-init callback.
 
-    This callback is invoked during the __init__ call to a debug-wrapper session.
+    This callback is invoked during the __init__ call to a debug-wrapper.
     """
 
-    def __init__(self, sess):
+    def __init__(self, obj):
         """Constructor.
 
         Parameters
         ----------
-          sess: A TVM Session object.
+          obj: A TVM object.
         """
 
-        self.session = sess
+        self.runtime = obj
 
 
-class OnSessionInitAction(object):
-    """Enum-like values for possible action to take on session init."""
+class OnRuntimeInitAction(object):
+    """Enum-like values for possible action to take on runtime init."""
 
-    # Proceed, without special actions, in the wrapper session initialization.
-    # What action the wrapper session performs next is determined by the caller
-    # of the wrapper session. E.g., it can call run().
+    # Proceed, without special actions, in the wrapper module initialization.
+    # What action the wrapper runtime performs next is determined by the caller
+    # of the wrapper runtime. E.g., it can call run().
     PROCEED = "proceed"
 
-    # Instead of letting the caller of the wrapper session determine what actions
-    # the wrapper session will perform next, enter a loop to receive instructions
+    # Instead of letting the caller of the wrapper module determine what actions
+    # the wrapper runtime will perform next, enter a loop to receive instructions
     # from a remote client.
     # For example, TensorBoard visual debugger can use this action so that it can
-    # launch session.run() calls remotely.
+    # launch module.run() calls remotely.
     REMOTE_INSTR_LOOP = "remote_instr_loop"
 
 
-class OnSessionInitResponse(object):
-    """Response from an on-session-init callback."""
+class OnRuntimeInitResponse(object):
+    """Response from an on-runtime-init callback."""
 
     def __init__(self, action):
         """Constructor.
 
         Parameters
         ----------
-          action: (`OnSessionInitAction`) Debugger action to take on session init.
+          action: (`OnRuntimeInitAction`) Debugger action to take on runtime init.
         """
         _check_type(action, str)
         self.action = action
@@ -73,30 +73,28 @@ class OnSessionInitResponse(object):
 class OnRunStartRequest(object):
     """Request to an on-run-start callback.
 
-    This callback is invoked during a run() call of the debug-wrapper
-    session, immediately after the run() call counter is incremented.
+    This callback is invoked during a get_run_command() call of the
+    debug-wrapper module.
     """
 
-    def __init__(self, outputs, input_dict, run_options, run_metadata,
+    def __init__(self, outputs, input_dict, run_metadata,
                  run_call_count, is_callable_runner=False):
         """Constructor of `OnRunStartRequest`.
 
         Parameters
         ----------
-          outputs: Output targets of the run() call.
-          input_dict: The input dictionary to the run() call.
-          run_options: RunOptions input to the run() call.
-          run_metadata: RunMetadata input to the run() call.
+          outputs: Output targets of the get_run_command() call.
+          input_dict: The input dictionary to the get_run_command() call.
+          run_metadata: RunMetadata input to the get_run_command() call.
             The above four arguments are identical to the input arguments to the
-            run() method of a non-wrapped TVM session.
+            run() method of a non-wrapped TVM runtime.
           run_call_count: 1-based count of how many run calls (including this one)
             has been invoked.
           is_callable_runner: (bool) whether a runner returned by
-            Session.make_callable is being run.
+            module.make_callable is being run.
         """
         self.outputs = outputs
         self.input_dict = input_dict
-        self.run_options = run_options
         self.run_metadata = run_metadata
         self.run_call_count = run_call_count
         self.is_callable_runner = is_callable_runner
@@ -106,7 +104,7 @@ class OnRunStartResponse(object):
     """Request from an on-run-start callback.
 
     The caller of the callback can use this response object to specify what
-    action the debug-wrapper session actually takes on the run() call.
+    action the debug-wrapper module actually takes on the run() call.
     """
 
     def __init__(self,
@@ -122,7 +120,7 @@ class OnRunStartResponse(object):
         Parameters
         ----------
           action: (`CLIRunStartAction`) the action actually taken by the wrapped
-            session for the run() call.
+            module for the run() call.
           debug_urls: (`list` of `str`) debug_urls used in watching the tensors
             during the run() call.
           debug_ops: (`str` or `list` of `str`) Debug op(s) to be used by the
@@ -164,7 +162,7 @@ class OnRunEndRequest(object):
         Parameters
         ----------
           performed_action: (`CLIRunStartAction`) Actually-performed action by the
-            debug-wrapper session.
+            debug-wrapper module.
           run_metadata: run_metadata output from the run() call (if any).
           tvm_error: (errors.OpError subtypes) TVM OpError that occurred
             during the run (if any).
@@ -212,63 +210,50 @@ class CLIRunCommand(object):
 
 
 class BaseDebugWrapperModule(object):
-    """Base class of debug-wrapper session classes.
+    """Base class of debug-wrapper module classes.
 
     Concrete classes that inherit from this class need to implement the abstract
-    methods such as on_session_init, on_run_start and on_run_end.
+    methods such as on_runtime_init, on_run_start and on_run_end.
     """
 
-    def __init__(self, sess, graph, ctx=None, thread_name_filter=None,
-                 pass_through_operrors=False):
+    def __init__(self, runtime, graph, ctx=None):
         """Constructor of `BaseDebugWrapperModule`.
 
         Parameters
         ----------
-          sess: An (unwrapped) TVM session instance. It should be a subtype
-            of `BaseSession` or `tf.MonitoredSession`.
-          thread_name_filter: Regular-expression filter (whitelist) for name(s) of
-            thread(s) on which the wrapper session will be active. This regular
-            expression is used in a start-anchored fashion on the thread name, i.e.,
-            by applying the `match` method of the compiled pattern. The default
-            `None` means that the wrapper session will be active on all threads.
-            E.g., r"MainThread$", r"QueueRunnerThread.*".
-          pass_through_operrors: If True, all captured OpErrors will be
-            propagated.  By default this captures all OpErrors.
+          runtime: An (unwrapped) TVM module instance.
 
         Raises:
-          ValueError: On invalid `OnSessionInitAction` value.
-          NotImplementedError: If a non-DirectSession sess object is received.
+          ValueError: On invalid `OnRuntimeInitAction` value.
+          NotImplementedError: If a non-DirectSession runtime object is received.
         """
         self._outputs = []
         self._input_dict = {}
         self._graph = graph
         self._ctx = ctx
 
-        # The session being wrapped.
-        self._sess = sess
-        self._thread_name_filter_pattern = (re.compile(thread_name_filter)
-                                            if thread_name_filter else None)
-        self._pass_through_operrors = pass_through_operrors
+        # The runtime being wrapped.
+        self._runtime = runtime
 
         # Keeps track of number of run calls that have been performed on this
-        # debug-wrapper session. The count can be used for purposes such as
-        # displaying the state of the Session in a UI and determining a run
+        # debug-wrapper module. The count can be used for purposes such as
+        # displaying the state of the runtime in a UI and determining a run
         # number-dependent debug URL.
         self._run_call_count = 0
 
-        # Invoke on-session-init callback.
-        response = self.on_session_init(OnSessionInitRequest(self._sess))
-        _check_type(response, OnSessionInitResponse)
+        # Invoke on-runtime-init callback.
+        response = self.on_runtime_init(OnRuntimeInitRequest(self._runtime))
+        _check_type(response, OnRuntimeInitResponse)
 
-        if response.action == OnSessionInitAction.PROCEED:
+        if response.action == OnRuntimeInitAction.PROCEED:
             pass
-        elif response.action == OnSessionInitAction.REMOTE_INSTR_LOOP:
+        elif response.action == OnRuntimeInitAction.REMOTE_INSTR_LOOP:
             raise NotImplementedError(
-                "OnSessionInitAction REMOTE_INSTR_LOOP has not been "
+                "OnRuntimeInitAction REMOTE_INSTR_LOOP has not been "
                 "implemented.")
         else:
             raise ValueError(
-                "Invalid OnSessionInitAction value: %s" % response.action)
+                "Invalid OnRuntimeInitAction value: %s" % response.action)
 
     def set_ouputs(self, name):
         """Set the output Name which used to access from runtime.
@@ -328,44 +313,27 @@ class BaseDebugWrapperModule(object):
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
             run_end_req = OnRunEndRequest(run_start_resp.action)
 
-    def get_run_command(self,
-                        outputs=None,
-                        options=None,
-                        run_metadata=None,
-                        callable_runner=None):
-        """Wrapper around Session.run() that inserts tensor watch options.
+    def get_run_command(self, run_metadata=None):
+        """Wrapper around module.run() that inserts tensor watch options.
 
         Parameters
         ----------
-          outputs: Same as the `outputs` arg to regular `Session.run()`.
-          options: Same as the `options` arg to regular `Session.run()`.
-          run_metadata: Same as the `run_metadata` arg to regular `Session.run()`.
-          callable_runner: A `callable` returned by `Session.make_callable()`.
-            If not `None`, `outputs` and `input_dict` must both be `None`.
+          run_metadata: Same as the `run_metadata` arg to regular `module.run()`.
+
 
         Returns:
-          Simply forwards the output of the wrapped `Session.run()` call.
+          Simply return the run_command on which runtime should perform
 
         Raises:
           ValueError: On invalid `CLIRunStartAction` value. Or if `callable_runner`
             is not `None` and either or both of `outputs` and `input_dict` is `None`.
         """
         retvals = True
-        outputs = self._outputs
-
-        if not callable_runner:
-            self.increment_run_call_count()
-        else:
-            if outputs or self._input_dict:
-                raise ValueError(
-                    "callable_runner and outputs/input_dict are mutually exclusive, but "
-                    "are used simultaneously.")
 
         # Invoke on-run-start callback and obtain response.
         run_start_resp = self.on_run_start(
-            OnRunStartRequest(self._outputs, self._input_dict, options, run_metadata,
-                              self._run_call_count,
-                              is_callable_runner=bool(callable_runner)))
+            OnRunStartRequest(self._outputs, self._input_dict, run_metadata,
+                              self._run_call_count))
         _check_type(run_start_resp, OnRunStartResponse)
 
         run_command = CLIRunCommand(run_start_resp, run_metadata)
@@ -392,24 +360,24 @@ class BaseDebugWrapperModule(object):
         self._run_call_count += 1
 
     @abc.abstractmethod
-    def on_session_init(self, request):
-        """Callback invoked during construction of the debug-wrapper session.
+    def on_runtime_init(self, request):
+        """Callback invoked during construction of the debug-wrapper module.
 
         This is a blocking callback.
         The invocation happens right before the constructor ends.
 
         Parameters
         ----------
-          request: (`OnSessionInitRequest`) callback request carrying information
-            such as the session being wrapped.
+          request: (`OnRuntimeInitRequest`) callback request carrying information
+            such as the module being wrapped.
 
         Returns:
-          An instance of `OnSessionInitResponse`.
+          An instance of `OnRuntimeInitResponse`.
         """
 
     @abc.abstractmethod
     def on_run_start(self, request):
-        """Callback invoked on run() calls to the debug-wrapper session.
+        """Callback invoked on run() calls to the debug-wrapper module.
 
         This is a blocking callback.
         The invocation happens after the wrapper's run() call is entered,
@@ -420,18 +388,18 @@ class BaseDebugWrapperModule(object):
           request: (`OnRunStartRequest`) callback request object carrying
             information about the run call such as the outputs, input dict, run
             options, run metadata, and how many `run()` calls to this wrapper
-            session have occurred.
+            module have occurred.
 
         Returns:
           An instance of `OnRunStartResponse`, carrying information to
-            1) direct the wrapper session to perform a specified action (e.g., run
+            1) direct the wrapper module to perform a specified action (e.g., run
               with or without debug tensor watching.)
             2) debug URLs used to watch the tensors.
         """
 
     @abc.abstractmethod
     def on_run_end(self, request):
-        """Callback invoked on run() calls to the debug-wrapper session.
+        """Callback invoked on run() calls to the debug-wrapper module.
 
         This is a blocking callback.
         The invocation happens right before the wrapper exits its run() call.
@@ -439,7 +407,7 @@ class BaseDebugWrapperModule(object):
         Parameters
         ----------
           request: (`OnRunEndRequest`) callback request object carrying information
-            such as the actual action performed by the session wrapper for the
+            such as the actual action performed by the module wrapper for the
             run() call.
 
         Returns:
