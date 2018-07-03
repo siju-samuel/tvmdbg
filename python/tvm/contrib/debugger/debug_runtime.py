@@ -55,7 +55,11 @@ def create(graph_json_str, libmod, ctx):
         device_type = device_type % rpc_base.RPC_SESS_MASK
         func_obj = fcreate(graph_json_str, hmod, device_type, device_id)
         return GraphModuleDebug(func_obj, ctx, graph_json_str)
-    fcreate = get_global_func("tvm.graph_runtime_debug.create")
+    try:
+        fcreate = get_global_func("tvm.graph_runtime_debug.create")
+    except ValueError:
+        raise ValueError("Please set '(USE_GRAPH_RUNTIME_DEBUG ON)' in " \
+                         "config.cmake and rebuild TVM to enable debug mode")
     func_obj = fcreate(graph_json_str, libmod, device_type, device_id)
     return GraphModuleDebug(func_obj, ctx, graph_json_str)
 
