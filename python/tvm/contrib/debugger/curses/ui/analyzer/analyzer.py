@@ -1017,7 +1017,7 @@ class DebugAnalyzer(object):
             max_depth = 1
 
         line = "%s node \"%s\"" % (type_str, node_name)
-        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "blue")]
+        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "white")]
         lines.append(line + " (Depth limit = %d):" % (max_depth))
 
         command_template = "go -r %s" if do_outputs else "gi -r %s"

@@ -92,14 +92,14 @@ def format_tensor(tensor,
         suffix = tensor_label.split(":")[-1]
         if suffix.isdigit():
             # Suffix is a number. Assume it is the output slot index.
-            font_attr_segs[0] = [(8, 8 + len(tensor_label), "blue")]
+            font_attr_segs[0] = [(8, 8 + len(tensor_label), "white")]
         else:
             # Suffix is not a number. It is auxiliary information such as the debug
             # op type. In this case, highlight the suffix with a different color.
             debug_op_len = len(suffix)
             proper_len = len(tensor_label) - debug_op_len - 1
             font_attr_segs[0] = [
-                (8, 8 + proper_len, "blue"),
+                (8, 8 + proper_len, "white"),
                 (8 + proper_len + 1, 8 + proper_len + 1 + debug_op_len, "yellow")
             ]
 

@@ -479,7 +479,7 @@ class CursesUI(ui_base.BaseUI):
         self._color_pairs["underline"] = curses.A_UNDERLINE
 
         # Default color pair to use when a specified color pair does not exist.
-        self._default_color_pair = self._color_pairs[ui_shared.COLOR_BLUE]
+        self._default_color_pair = self._color_pairs[ui_shared.COLOR_WHITE]
 
     def _screen_launch(self):
         """Launch the curses screen."""

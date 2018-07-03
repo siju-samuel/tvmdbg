@@ -11,13 +11,11 @@ from tvm._ffi.function import get_global_func
 from tvm.contrib.debugger.curses.wrappers import ui_wrapper as tvmdbg
 from tvm.contrib.debugger.curses.util import common
 
-"""String used for frontend seletion.
-Todo: User will have an option to select the frontend when debug is enabling.
-Currently only FRONTEND_CLI is supported.
-
-FRONTEND_CLI : Select the CLI cursus ui framework for UX
-FRONTEND_TESNORBOARD : Select tensorbox as the UX
-"""
+#Todo: User will have an option to select the frontend when debug is enabling.
+#String used for frontend seletion.
+#Currently only FRONTEND_CLI is supported.
+#FRONTEND_CLI : Select the CLI cursus ui framework for UX
+#FRONTEND_TESNORBOARD : Select tensorbox as the UX
 FRONTEND_CLI = 'cli'
 FRONTEND_TESNORBOARD = 'tensorboard'
 
@@ -113,15 +111,15 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         p_graph = self._get_graph_json(nodes_list,
                                        dltype_list, shapes_list)
         ctx = str(ctx).upper().replace("(", ":").replace(")", "")
-        self.ui = self._create_debug_ui(p_graph, nodes_list, heads_list, ctx, frontend)
-        dump_path = self.ui.get_dump_path(ctx)
+        self.ui_obj = self._create_debug_ui(p_graph, nodes_list, heads_list, ctx, frontend)
+        dump_path = self.ui_obj.get_dump_path(ctx)
         # prepare the debug out buffer list
         self.dbg_buff_list = self._make_debug_buffer_list(shapes_list, dltype_list)
         self.debug_datum = GraphModuleDebugDumpDatum(nodes_list, self.dbg_buff_list,
                                                      dump_path, ctx)
         # dump the json information
         self.debug_datum.dump_graph_json(p_graph)
-        self.ui.set_output_nodes(heads_list)
+        self.ui_obj.set_output_nodes(heads_list)
 
     def _parse_graph(self, graph):
         """Parse and extract the NNVM graph.
@@ -314,18 +312,18 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         -------
         none
         """
-        cli_command = self.ui.get_run_command()
+        cli_command = self.ui_obj.get_run_command()
         run_start_resp = cli_command.get_run_start_resp()
         retvals = True
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
             self.set_debug_buffer()
             retvals = self._debug_run_op_exec()
             self.debug_datum.dump_output()
-            self.ui.run_end(cli_command, retvals)
+            self.ui_obj.run_end(cli_command, retvals)
 
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
             retvals = super(GraphModuleDebug, self).run()
-            self.ui.run_end(cli_command, retvals)
+            self.ui_obj.run_end(cli_command, retvals)
 
     def run(self, **input_dict):
         self._debug_cli_run()
@@ -355,7 +353,7 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         super(GraphModuleDebug, self).set_input(key, value, **params)
 
         if key:
-            self.ui.set_input(key, value)
+            self.ui_obj.set_input(key, value)
 
 class GraphModuleDebugDumpDatum():
     """Graph debug data module.
@@ -382,14 +380,14 @@ class GraphModuleDebugDumpDatum():
         self._nodes_list = nodes_list
         self._dump_path = dump_path
         self._out_stats = node_stats
-        self._ts_list = []
+        self._time_list = []
         self.ctx = ctx
 
     def get_nodes_list(self):
         return self._nodes_list
 
-    def set_time(self, ts):
-        self._ts_list.append(ts)
+    def set_time(self, time):
+        self._time_list.append(time)
 
     def dump_output(self):
         """Dump the outputs to a temporary folder
@@ -406,16 +404,15 @@ class GraphModuleDebugDumpDatum():
         """
         eid = 0
         order = 0
-        for node, ts in zip(self._nodes_list, self._ts_list):
+        for node, time in zip(self._nodes_list, self._time_list):
             num_outputs = 1 if node['op'] == 'param' \
                             else int(node['attrs']['num_outputs'])
             for j in range(num_outputs):
                 ndbuffer = self._out_stats[eid]
                 eid += 1
-                order += ts
-                key = node['name'] + "_" + str(j) + "__000000" + str(order) + ".npy"
-                key = key.replace("/", "_")
-                dump_file = str(self._dump_path + key)
+                order += time
+                key = node['name'] + "_" + str(j) + "__" + str(order) + ".npy"
+                dump_file = str(self._dump_path + key.replace("/", "_"))
                 np.save(dump_file, ndbuffer.asnumpy())
                 os.rename(dump_file, dump_file.rpartition('.')[0])
 
@@ -467,17 +464,17 @@ class DebugGraphUIWrapper(object):
     def __init__(self, p_graph, nodes_list, heads_list, ctx, frontend):
         self._nodes_list = nodes_list
         if frontend == FRONTEND_CLI:
-            self.ui_obj = tvmdbg.LocalCLIDebugWrapperModule(self, p_graph, ctx=ctx)
+            self.curses_obj = tvmdbg.LocalCLIDebugWrapperModule(self, p_graph, ctx=ctx)
         self.set_output_nodes(heads_list)
 
     def get_run_command(self):
-        return self.ui_obj.get_run_command()
+        return self.curses_obj.get_run_command()
 
     def run_end(self, run_cli_session, retvals):
-        self.ui_obj.run_end(run_cli_session, retvals)
+        self.curses_obj.run_end(run_cli_session, retvals)
 
     def set_input(self, key, value):
-        self.ui_obj.set_input(key.replace("/", "_"), value)
+        self.curses_obj.set_input(key.replace("/", "_"), value)
 
     def set_output_nodes(self, heads_list):
         """Dump the heads to a list
@@ -493,7 +490,7 @@ class DebugGraphUIWrapper(object):
 
         """
         for output in heads_list:
-            self.ui_obj.set_ouputs(self._nodes_list[output[0]]['name'])
+            self.curses_obj.set_ouputs(self._nodes_list[output[0]]['name'])
 
     def _ensure_dir(self, file_path):
         """Create a directory if not exists
@@ -525,7 +522,7 @@ class DebugGraphUIWrapper(object):
         # save to file
         folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
         folder_name = folder_name + ctx.replace(":", "_") + "/"
-        self.ui_obj.dump_folder(folder_name)
-        path = self.ui_obj._dump_root + folder_name
+        self.curses_obj.dump_folder(folder_name)
+        path = self.curses_obj._dump_root + folder_name
         self._ensure_dir(path)
         return path
