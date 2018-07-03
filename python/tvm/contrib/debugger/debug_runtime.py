@@ -520,7 +520,7 @@ class DebugGraphUIWrapper(object):
             Directory path where the graph and node outputs will be stored.
         """
         # save to file
-        folder_name = "/_tvmdbg_device_,job_localhost,replica_0,task_0,device_"
+        folder_name = "/_tvmdbg_device_,device_"
         folder_name = folder_name + ctx.replace(":", "_") + "/"
         self.curses_obj.dump_folder(folder_name)
         path = self.curses_obj._dump_root + folder_name
