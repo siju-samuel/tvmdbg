@@ -27,7 +27,8 @@ class Interval(object):
     def contains(self, value):
         """Check values is present in interval between a start and end value.
 
-        Args:
+        Parameters
+        ----------
           value: (obj) value to examine within range.
 
         Returns:
@@ -42,7 +43,8 @@ class Interval(object):
     def __eq__(self, other):
         """Check interval obj is equal.
 
-        Args:
+        Parameters
+        ----------
           other: (obj) Interval object to examine.
 
         Returns:
@@ -63,7 +65,8 @@ def parse_command(command):
 
     Nested double quotes and brackets are not handled.
 
-    Args:
+    Parameters
+    ----------
       command: (str) Input command.
 
     Returns:
@@ -105,7 +108,8 @@ def parse_command(command):
 def extract_output_file_path(args):
     """Extract output file path from command arguments.
 
-    Args:
+    Parameters
+    ----------
       args: (list of str) command arguments.
 
     Returns:
@@ -152,7 +156,8 @@ def extract_output_file_path(args):
 def parse_tensor_name_with_slicing(in_str):
     """Parse tensor name, potentially suffixed by slicing string.
 
-    Args:
+    Parameters
+    ----------
       in_str: (str) Input name of the tensor, potentially followed by a slicing
         string. E.g.: Without slicing string: "hidden/weights/Variable:0", with
         slicing string: "hidden/weights/Variable:0[1, :]"
@@ -178,7 +183,8 @@ def validate_slicing_string(slicing_string):
     Check if the input string contains only brackets, digits, commas and
     colons that are valid characters in numpy-style array slicing.
 
-    Args:
+    Parameters
+    ----------
       slicing_string: (str) Input slicing string to be validated.
 
     Returns:
@@ -193,7 +199,8 @@ def _parse_slices(slicing_string):
 
     The string must be a valid slicing string.
 
-    Args:
+    Parameters
+    ----------
       slicing_string: (str) Input slicing string to be parsed.
 
     Returns:
@@ -223,7 +230,8 @@ def parse_indices(indices_string):
     For example, if the input is "[1, 2, 3]", the return value will be a list of
     indices: [1, 2, 3]
 
-    Args:
+    Parameters
+    ----------
       indices_string: (str) a string representing indices. Can optionally be
         surrounded by a pair of brackets.
 
@@ -244,7 +252,8 @@ def parse_indices(indices_string):
 def parse_ranges(range_string):
     """Parse a string representing numerical range(s).
 
-    Args:
+    Parameters
+    ----------
       range_string: (str) A string representing a numerical range or a list of
         them. For example:
           "[-1.0,1.0]", "[-inf, 0]", "[[-inf, -1.0], [1.0, inf]]"
@@ -285,7 +294,8 @@ def parse_ranges(range_string):
 def parse_memory_interval(interval_str):
     """Convert a human-readable memory interval to a tuple of start and end value.
 
-    Args:
+    Parameters
+    ----------
       interval_str: (`str`) A human-readable str representing an interval
         (e.g., "[10kB, 20kB]", "<100M", ">100G"). Only the units "kB", "MB", "GB"
         are supported. The "B character at the end of the input `str` may be
@@ -315,7 +325,8 @@ def parse_memory_interval(interval_str):
 def parse_time_interval(interval_str):
     """Convert a human-readable time interval to a tuple of start and end value.
 
-    Args:
+    Parameters
+    ----------
       interval_str: (`str`) A human-readable str representing an interval
         (e.g., "[10us, 20us]", "<100s", ">100ms"). Supported time suffixes are
         us, ms, s.
@@ -344,7 +355,8 @@ def parse_time_interval(interval_str):
 def _parse_interval(interval_str):
     """Convert a human-readable interval to a tuple of start and end value.
 
-    Args:
+    Parameters
+    ----------
       interval_str: (`str`) A human-readable str representing an interval
         (e.g., "[1M, 2M]", "<100k", ">100ms"). The items following the ">", "<",
         ">=" and "<=" signs have to start with a number (e.g., 3.0, -2, .98).
@@ -413,7 +425,8 @@ def parse_readable_size_str(size_str):
     Only the units "kB", "MB", "GB" are supported. The "B character at the end
     of the input `str` may be omitted.
 
-    Args:
+    Parameters
+    ----------
       size_str: (`str`) A human-readable str representing a number of bytes
         (e.g., "0", "1023", "1.1kB", "24 MB", "23GB", "100 G".
 
@@ -444,7 +457,8 @@ def parse_readable_size_str(size_str):
 def parse_readable_time_str(time_str):
     """Parses a time string in the format N, Nus, Nms, Ns.
 
-    Args:
+    Parameters
+    ----------
       time_str: (`str`) string consisting of an integer time value optionally
         followed by 'us', 'ms', or 's' suffix. If suffix is not specified,
         value is assumed to be in microseconds. (e.g. 100us, 8ms, 5s, 100).
@@ -473,7 +487,8 @@ def parse_readable_time_str(time_str):
 def evaluate_tensor_slice(tensor, tensor_slicing):
     """Call eval on the slicing of a tensor, with validation.
 
-    Args:
+    Parameters
+    ----------
       tensor: (numpy ndarray) The tensor value.
       tensor_slicing: (str or None) Slicing of the tensor, e.g., "[:, 1]". If
         None, no slicing will be performed on the tensor.
@@ -498,7 +513,8 @@ def get_view_tensor_argparser(description):
 
     Examples of such commands include view_tensor and print_input.
 
-    Args:
+    Parameters
+    ----------
       description: Description of the ArgumentParser.
 
     Returns:

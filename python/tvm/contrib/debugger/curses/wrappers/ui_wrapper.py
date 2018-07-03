@@ -37,7 +37,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                  thread_name_filter=None):
         """Constructor of LocalCLIDebugWrapperModule.
 
-        Args:
+        Parameters
+        ----------
           graph_runtime: The TVM `Graph Runtime` object being wrapped.
 
         Raises:
@@ -118,7 +119,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def add_tensor_filter(self, filter_name, tensor_filter):
         """Add a tensor filter.
 
-        Args:
+        Parameters
+        ----------
           filter_name: (`str`) name of the filter.
           tensor_filter: (`callable`) the filter callable. See the doc string of
             `DebugDumpDir.find()` for more details about its signature.
@@ -129,7 +131,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def on_session_init(self, request):
         """Overrides on-session-init callback.
 
-        Args:
+        Parameters
+        ----------
           request: An instance of `OnSessionInitRequest`.
 
         Returns:
@@ -145,7 +148,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         Invoke the CLI to let user choose what action to take:
           `run` / `invoke_stepper`.
 
-        Args:
+        Parameters
+        ----------
           request: An instance of `OnRunStartRequest`.
 
         Returns:
@@ -215,7 +219,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
           1) Load the debug dump.
           2) Bring up the Analyzer CLI.
 
-        Args:
+        Parameters
+        ----------
           request: An instance of OnSessionInitRequest.
 
         Returns:
@@ -258,7 +263,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def _prep_debug_cli_for_run_end(self, debug_dump, tvm_error, passed_filter):
         """Prepare (but not launch) CLI for run-end, with debug dump from the run.
 
-        Args:
+        Parameters
+        ----------
           debug_dump: (dbg_dump.DebugDumpDir) The debug dump directory from this
             run.
           tvm_error: (None or OpError) OpError that happened during the run() call
@@ -441,7 +447,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                                 is_callable_runner=False):
         """Update the internal state with regard to run() call history.
 
-        Args:
+        Parameters
+        ----------
           run_call_count: (int) Number of run() calls that have occurred.
           outputs: a node/tensor or a list of node/tensor that are the outputs of
             the run() call. This is the same as the outputs argument to the run()

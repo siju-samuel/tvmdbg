@@ -9,7 +9,8 @@ from tvm.contrib.debugger.curses.util import common
 def _check_type(obj, expected_types):
     """Check if an object is of the expected type.
 
-    Args:
+    Parameters
+    ----------
       obj: The object being checked.
       expected_types: (`type` or an iterable of `type`s) The expected `type`(s)
         of obj.
@@ -31,7 +32,8 @@ class OnSessionInitRequest(object):
     def __init__(self, sess):
         """Constructor.
 
-        Args:
+        Parameters
+        ----------
           sess: A TVM Session object.
         """
 
@@ -60,7 +62,8 @@ class OnSessionInitResponse(object):
     def __init__(self, action):
         """Constructor.
 
-        Args:
+        Parameters
+        ----------
           action: (`OnSessionInitAction`) Debugger action to take on session init.
         """
         _check_type(action, str)
@@ -78,7 +81,8 @@ class OnRunStartRequest(object):
                  run_call_count, is_callable_runner=False):
         """Constructor of `OnRunStartRequest`.
 
-        Args:
+        Parameters
+        ----------
           outputs: Output targets of the run() call.
           input_dict: The input dictionary to the run() call.
           run_options: RunOptions input to the run() call.
@@ -115,7 +119,8 @@ class OnRunStartResponse(object):
                  tolerate_dbg_op_failures=False):
         """Constructor of `OnRunStartResponse`.
 
-        Args:
+        Parameters
+        ----------
           action: (`CLIRunStartAction`) the action actually taken by the wrapped
             session for the run() call.
           debug_urls: (`list` of `str`) debug_urls used in watching the tensors
@@ -156,7 +161,8 @@ class OnRunEndRequest(object):
                  tvm_error=None):
         """Constructor for `OnRunEndRequest`.
 
-        Args:
+        Parameters
+        ----------
           performed_action: (`CLIRunStartAction`) Actually-performed action by the
             debug-wrapper session.
           run_metadata: run_metadata output from the run() call (if any).
@@ -189,7 +195,8 @@ class CLIRunCommand(object):
     def __init__(self, run_start_resp, metadata):
         """Constructor of CLIRunCommand.
 
-        Args:
+        Parameters
+        ----------
           run_start_resp: Run start is depend on the action triggered from the CLI.
           RUN output also depend on the action saved in 'run_start_resp'.
           metadata: Same as meta data argument
@@ -215,7 +222,8 @@ class BaseDebugWrapperModule(object):
                  pass_through_operrors=False):
         """Constructor of `BaseDebugWrapperModule`.
 
-        Args:
+        Parameters
+        ----------
           sess: An (unwrapped) TVM session instance. It should be a subtype
             of `BaseSession` or `tf.MonitoredSession`.
           thread_name_filter: Regular-expression filter (whitelist) for name(s) of
@@ -265,7 +273,8 @@ class BaseDebugWrapperModule(object):
     def set_ouputs(self, name):
         """Set the output Name which used to access from runtime.
 
-        Args:
+        Parameters
+        ----------
           name : Name of the output by which used to output from runtime.
         """
         self._outputs.append(name)
@@ -273,7 +282,8 @@ class BaseDebugWrapperModule(object):
     def set_input(self, name, value):
         """Set the input with Name and Numpy/Tvm.NdArray Value.
 
-        Args:
+        Parameters
+        ----------
           name : Name of the input by which used to input to runtime.
           value : Numpy/Tvm.NdArray instance which used to input to runtime.
         """
@@ -282,7 +292,8 @@ class BaseDebugWrapperModule(object):
     def dump_folder(self, folder_name=None):
         """Sets and returns the folder to dump the outputs and graph.
 
-        Args:
+        Parameters
+        ----------
           folder_name : String the name of folder
 
         """
@@ -294,7 +305,8 @@ class BaseDebugWrapperModule(object):
         """Notify CLI that the graph runtime is completed the task and output
         is ready access from CLI.
 
-        Args:
+        Parameters
+        ----------
           cli_command: CLI command is created by the CLI wrapper before invoking
           graph runtime.
           retvals: graph runtime return value.
@@ -323,7 +335,8 @@ class BaseDebugWrapperModule(object):
                         callable_runner=None):
         """Wrapper around Session.run() that inserts tensor watch options.
 
-        Args:
+        Parameters
+        ----------
           outputs: Same as the `outputs` arg to regular `Session.run()`.
           options: Same as the `options` arg to regular `Session.run()`.
           run_metadata: Same as the `run_metadata` arg to regular `Session.run()`.
@@ -385,7 +398,8 @@ class BaseDebugWrapperModule(object):
         This is a blocking callback.
         The invocation happens right before the constructor ends.
 
-        Args:
+        Parameters
+        ----------
           request: (`OnSessionInitRequest`) callback request carrying information
             such as the session being wrapped.
 
@@ -401,7 +415,8 @@ class BaseDebugWrapperModule(object):
         The invocation happens after the wrapper's run() call is entered,
         after an increment of run call counter.
 
-        Args:
+        Parameters
+        ----------
           request: (`OnRunStartRequest`) callback request object carrying
             information about the run call such as the outputs, input dict, run
             options, run metadata, and how many `run()` calls to this wrapper
@@ -421,7 +436,8 @@ class BaseDebugWrapperModule(object):
         This is a blocking callback.
         The invocation happens right before the wrapper exits its run() call.
 
-        Args:
+        Parameters
+        ----------
           request: (`OnRunEndRequest`) callback request object carrying information
             such as the actual action performed by the session wrapper for the
             run() call.

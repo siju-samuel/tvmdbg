@@ -42,7 +42,8 @@ def bytes_to_readable_str(num_bytes, include_b=False):
 
     The units B, kB, MB and GB are used.
 
-    Args:
+    Parameters
+    ----------
       num_bytes: (`int` or None) Number of bytes.
       include_b: (`bool`) Include the letter B at the end of the unit.
 
@@ -70,7 +71,8 @@ def bytes_to_readable_str(num_bytes, include_b=False):
 def time_to_readable_str(value_us, force_time_unit=None):
     """Convert time value to human-readable string.
 
-    Args:
+    Parameters
+    ----------
       value_us: time value in microseconds.
       force_time_unit: force the output to use the specified time unit. Must be
         in TIME_UNITS.
@@ -98,7 +100,8 @@ def time_to_readable_str(value_us, force_time_unit=None):
 def parse_ranges_highlight(ranges_string):
     """Process ranges highlight string.
 
-    Args:
+    Parameters
+    ----------
       ranges_string: (str) A string representing a numerical range of a list of
         numerical ranges. See the help info of the -r flag of the view_tensor
         command for more details.
@@ -113,7 +116,8 @@ def parse_ranges_highlight(ranges_string):
     def ranges_filter(ndarray):
         """Determine which elements of the tensor to be highlighted.
 
-        Args:
+        Parameters
+        ----------
           ndarray: tensor
 
         Returns: A boolean ndarray of the same shape as ndarray.
@@ -135,7 +139,8 @@ def parse_ranges_highlight(ranges_string):
 def get_np_printoptions_frm_scr(screen_info):
     """Retreive np.set_printoptions() to set the text format for display numpy ndarrays.
 
-    Args:
+    Parameters
+    ----------
       screen_info: Optional dict input containing screen information such as
             cols.
 
@@ -157,7 +162,8 @@ def format_tensor(tensor,
                   write_path=None):
     """Generate formatted str to represent a tensor or its slices.
 
-    Args:
+    Parameters
+    ----------
       tensor: (numpy ndarray) The tensor value.
       tensor_name: (str) Name of the tensor, e.g., the tensor's debug watch key.
       np_printoptions: (dict) Numpy tensor formatting options.
@@ -218,7 +224,8 @@ def format_tensor(tensor,
 def error(msg):
     """Generate a RichTextLines output for error.
 
-    Args:
+    Parameters
+    ----------
       msg: (str) The error message.
 
     Returns:
@@ -233,7 +240,8 @@ def error(msg):
 def _recommend_command(command, description, indent=2, create_link=False):
     """Generate a RichTextLines object that describes a recommended command.
 
-    Args:
+    Parameters
+    ----------
       command: (str) The command to recommend.
       description: (str) A description of what the command does.
       indent: (int) How many spaces to indent in the beginning.
@@ -274,7 +282,8 @@ def get_run_start_intro(graph_node_count,
                         is_callable_runner=False):
     """Generate formatted intro for run-start UI.
 
-    Args:
+    Parameters
+    ----------
       run_call_count: (int) Run call counter.
       outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
@@ -359,7 +368,8 @@ def get_run_short_description(run_call_count,
                               is_callable_runner=False):
     """Get a short description of the run() call.
 
-    Args:
+    Parameters
+    ----------
       run_call_count: (int) Run call counter.
       outputs: Outputs of the `GraphRuntime.run()` call. See doc of `GraphRuntime.run()`
         for more details.
@@ -404,7 +414,8 @@ def get_run_short_description(run_call_count,
 def get_error_intro(tvm_error):
     """Generate formatted intro for TVM run-time error.
 
-    Args:
+    Parameters
+    ----------
       tvm_error: (errors.OpError) TVM run-time error object.
 
     Returns:

@@ -13,7 +13,8 @@ from tvm.contrib.debugger.curses.ui import ui_common
 def _parse_command(command):
     """Parse a command string into prefix and arguments.
 
-    Args:
+    Parameters
+    ----------
       command: (str) Command string to be parsed.
 
     Returns:
@@ -37,7 +38,8 @@ def _parse_command(command):
 def _analyze_tab_complete_input(text):
     """Analyze raw input to tab-completer.
 
-    Args:
+    Parameters
+    ----------
       text: (str) the full, raw input text to be tab-completed.
 
     Returns:
@@ -88,7 +90,8 @@ class BaseUI(object):
     def __init__(self, on_ui_exit=None, config=None):
         """Constructor of the base class.
 
-        Args:
+        Parameters
+        ----------
           on_ui_exit: (`Callable`) the callback to be called when the UI exits.
           config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
@@ -120,7 +123,8 @@ class BaseUI(object):
     def set_help_intro(self, help_intro):
         """Set an introductory message to the help output of the command registry.
 
-        Args:
+        Parameters
+        ----------
           help_intro: (RichTextLines) Rich text lines appended to the beginning of
             the output of the command "help", as introductory information.
         """
@@ -140,7 +144,8 @@ class BaseUI(object):
 
         See the doc string of the wrapped method for more details on the args.
 
-        Args:
+        Parameters
+        ----------
           prefix: (str) command prefix.
           handler: (callable) command handler.
           help_info: (str) help information.
@@ -165,7 +170,8 @@ class BaseUI(object):
                title_color=None):
         """Run the UI until user- or command- triggered exit.
 
-        Args:
+        Parameters
+        ----------
           init_command: (str) Optional command to run on CLI start up.
           title: (str) Optional title to display in the CLI.
           title_color: (str) Optional color of the title, e.g., "yellow".

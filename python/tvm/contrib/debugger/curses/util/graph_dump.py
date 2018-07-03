@@ -6,7 +6,8 @@ from __future__ import print_function
 def parse_node_or_tensor_name(name):
     """Get the node name from a string that can be node or tensor name.
 
-    Args:
+    Parameters
+    ----------
       name: An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
@@ -29,7 +30,8 @@ def parse_node_or_tensor_name(name):
 def get_node_name(element_name):
     """Get the node name from a string that can be node or tensor name.
 
-    Args:
+    Parameters
+    ----------
       element_name: An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
@@ -48,7 +50,8 @@ def get_output_slot(element_name):
     If element_name is a node name without output slot at the end, 0 will be
     assumed.
 
-    Args:
+    Parameters
+    ----------
       element_name: (`str`) name of the graph element in question.
 
     Returns:
@@ -64,7 +67,8 @@ def is_copy_node(node_name):
     Such nodes are inserted by TVM core upon request in
     RunOptions.debug_options.debug_tensor_watch_opts.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node.
 
     Returns:
@@ -80,7 +84,8 @@ def is_debug_node(node_name):
     Such nodes are inserted by TVM core upon request in
     RunOptions.debug_options.debug_tensor_watch_opts.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node.
 
     Returns:
@@ -112,7 +117,8 @@ class DebugGraph(object):
     def __init__(self, graph_dump_def, device_name=None):
         """Constructor of _DebugGraph.
 
-        Args:
+        Parameters
+        ----------
           graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
             debugger-inserted Copy* and Debug* nodes.
           device_name: (str) name of the device.
@@ -149,7 +155,8 @@ class DebugGraph(object):
     def _process_graph_dump_node(self, node):
         """Process a node from the debug GraphDef.
 
-        Args:
+        Parameters
+        ----------
           node: (NodeDef) A partition-graph node to be processed.
 
         Raises:
@@ -252,7 +259,8 @@ class DebugGraph(object):
     def _prune_nodes_ins_resp_maps(self, nodes_to_prune):
         """Prune nodes out of input and recipient maps.
 
-        Args:
+        Parameters
+        ----------
           nodes_to_prune: (`list` of `str`) Names of the nodes to be pruned.
         """
         for node in nodes_to_prune:
@@ -377,7 +385,8 @@ def reconstruct_non_graph_dump_def(graph_dump_def):
            send- and recv-type ops will have different input names.
         3) The parallel_iteration attribute of while-loop Enter ops are set to 1.
 
-    Args:
+    Parameters
+    ----------
       graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
         debugger-inserted Copy* and Debug* nodes.
 

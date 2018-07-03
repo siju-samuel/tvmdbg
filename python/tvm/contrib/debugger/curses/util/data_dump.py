@@ -16,7 +16,8 @@ class InconvertibleTensorProto(object):
     def __init__(self, tensor_proto, initialized=True):
         """Constructor.
 
-        Args:
+        Parameters
+        ----------
           tensor_proto: the `TensorProto` object that cannot be represented as a
             `np.ndarray` object.
           initialized: (`bool`) whether the Tensor is initialized.
@@ -35,7 +36,8 @@ def load_tensor_from_event_file(event_file_path):
     Assumes that the event file contains a `Event` protobuf and the `Event`
     protobuf contains a `Tensor` value.
 
-    Args:
+    Parameters
+    ----------
       event_file_path: (`str`) path to the event file.
 
     Returns:
@@ -50,7 +52,8 @@ def load_tensor_from_event_file(event_file_path):
 def _get_tensor_name(node_name, output_slot):
     """Get tensor name given node name and output slot index.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node that outputs the tensor, as a string.
       output_slot: Output slot index of the tensor, as an integer.
 
@@ -63,7 +66,8 @@ def _get_tensor_name(node_name, output_slot):
 def _get_tensor_watch_key(node_name, output_slot, debug_op):
     """Get the string representation of a debug watch on a tensor.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node by which the watched tensor is produced, as a
           string.
       output_slot: Output slot index of the tensor, as an integer.
@@ -79,7 +83,8 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
 def device_path_to_device_name(device_dir):
     """Parse device name from device path.
 
-    Args:
+    Parameters
+    ----------
       device_dir: (str) a directory name for the device.
 
     Returns:
@@ -106,7 +111,8 @@ class DebugTensorDatum(object):
     def __init__(self, dump_root, debug_dump_rel_path):
         """`DebugTensorDatum` constructor.
 
-        Args:
+        Parameters
+        ----------
           dump_root: (`str`) Debug dump root directory. This path should not include
             the path component that represents the device name (see also below).
           debug_dump_rel_path: (`str`) Path to a debug dump file, relative to the

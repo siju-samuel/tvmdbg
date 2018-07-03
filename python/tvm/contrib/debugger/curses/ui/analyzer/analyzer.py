@@ -54,7 +54,8 @@ def _add_main_menu(output,
                    enable_graphnode_outputs=True):
     """Generate main menu for the screen output from a command.
 
-    Args:
+    Parameters
+    ----------
       output: (ui_common.RichTextLines) the output object to modify.
       node_name: (str or None) name of the node involved (if any). If None,
         the menu items node_details, graphnode_inputs and graphnode_outputs will be
@@ -126,7 +127,8 @@ class DebugAnalyzer(object):
     def __init__(self, debug_dump, config):
         """DebugAnalyzer constructor.
 
-        Args:
+        Parameters
+        ----------
           debug_dump: A DebugDumpDir object.
           config: A `ui_config.CLIConfig` object that carries user-facing
             configurations.
@@ -143,7 +145,8 @@ class DebugAnalyzer(object):
     def _build_argument_parsers(self, config):
         """Build argument parsers for DebugAnalayzer.
 
-        Args:
+        Parameters
+        ----------
           config: A `ui_config.CLIConfig` object.
 
         Returns:
@@ -298,7 +301,8 @@ class DebugAnalyzer(object):
         This is the same signature as the input argument to
         dbg_dump.DebugDumpDir.find().
 
-        Args:
+        Parameters
+        ----------
           filter_name: (str) name of the filter. Cannot be empty.
           filter_callable: (callable) a filter function of the signature described
             as above.
@@ -328,7 +332,8 @@ class DebugAnalyzer(object):
     def get_tensor_filter(self, filter_name):
         """Retrieve filter function by name.
 
-        Args:
+        Parameters
+        ----------
           filter_name: Name of the filter set during add_tensor_filter() call.
 
         Returns:
@@ -346,7 +351,8 @@ class DebugAnalyzer(object):
     def get_help(self, handler_name):
         """ Retrieve ArgumentParser full help text.
 
-        Args:
+        Parameters
+        ----------
           handler_name: argument name.
         Returns:
           Formats the full help text and returns it as a string.
@@ -358,7 +364,8 @@ class DebugAnalyzer(object):
 
         List tensors dumped during debugged Session.run() call.
 
-        Args:
+        Parameters
+        ----------
           args: Command-line arguments, excluding the command prefix, as a list of
             str.
           screen_info: Optional dict input containing screen information such as
@@ -476,7 +483,8 @@ class DebugAnalyzer(object):
         This method assumes that data is sorted in the default order, i.e.,
         by ascending timestamps.
 
-        Args:
+        Parameters
+        ----------
           data: (list of DebugTensorDaum) the data based on which the maximum
             column widths will be determined.
 
@@ -539,7 +547,8 @@ class DebugAnalyzer(object):
     def _sort_dump_data_by(self, data, sort_by, reverse):
         """Sort a list of DebugTensorDatum in specified order.
 
-        Args:
+        Parameters
+        ----------
           data: (list of DebugTensorDatum) the data to be sorted.
           sort_by: The field to sort data by.
           reverse: (bool) Whether to use reversed (descending) order.
@@ -588,7 +597,8 @@ class DebugAnalyzer(object):
                                   max_no_ip_width, max_no_op_width, no_tensor_width):
         """Generate a line containing the column heads of the tensor list.
 
-        Args:
+        Parameters
+        ----------
           parsed: Parsed arguments (by argparse) of the list_graphnodes command.
           max_timestamp_width: (int) maximum width of the timestamp column.
           max_dump_size_width: (int) maximum width of the dump size column.
@@ -671,7 +681,8 @@ class DebugAnalyzer(object):
 
         Query information about a given node.
 
-        Args:
+        Parameters
+        ----------
           args: Command-line arguments, excluding the command prefix, as a list of
             str.
           screen_info: Optional dict input containing screen information such as
@@ -736,7 +747,8 @@ class DebugAnalyzer(object):
     def _render_node_traceback(self, node_name):
         """Render traceback of a node's creation in Python, if available.
 
-        Args:
+        Parameters
+        ----------
           node_name: (str) name of the node.
 
         Returns:
@@ -773,7 +785,8 @@ class DebugAnalyzer(object):
 
         Show inputs to a given node.
 
-        Args:
+        Parameters
+        ----------
           args: Command-line arguments, excluding the command prefix, as a list of
             str.
           screen_info: Optional dict input containing screen information such as
@@ -803,7 +816,8 @@ class DebugAnalyzer(object):
 
         Print value of a given dumped tensor.
 
-        Args:
+        Parameters
+        ----------
           args: Command-line arguments, excluding the command prefix, as a list of
             str.
           screen_info: Optional dict input containing screen information such as
@@ -943,7 +957,8 @@ class DebugAnalyzer(object):
 
         Show inputs to a given node.
 
-        Args:
+        Parameters
+        ----------
           args: Command-line arguments, excluding the command prefix, as a list of
             str.
           screen_info: Optional dict input containing screen information such as
@@ -979,7 +994,8 @@ class DebugAnalyzer(object):
         Format a list of lines to display the inputs or output recipients of a
         given node.
 
-        Args:
+        Parameters
+        ----------
           recursive: Whether the listing is to be done recursively, as a boolean.
           node_name: The name of the node in question, as a str.
           depth: Maximum recursion depth, applies only if recursive == True, as an
@@ -1017,7 +1033,7 @@ class DebugAnalyzer(object):
             max_depth = 1
 
         line = "%s node \"%s\"" % (type_str, node_name)
-        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "white")]
+        font_attr_segs[0] = [(len(line) - 1 - len(node_name), len(line) - 1, "blue")]
         lines.append(line + " (Depth limit = %d):" % (max_depth))
 
         command_template = "go -r %s" if do_outputs else "gi -r %s"
@@ -1060,7 +1076,8 @@ class DebugAnalyzer(object):
         together with some formatting attributes (to attr_segs). The formatting
         attributes can include command shortcuts, for example.
 
-        Args:
+        Parameters
+        ----------
           lines: Text lines to append to, as a list of str.
           attr_segs: (dict) Attribute segments dictionary to append to.
           node_name: Name of the node, as a str. This arg is updated during the
@@ -1152,7 +1169,8 @@ class DebugAnalyzer(object):
     def _format_neighbors(self, neighbor_type, non_ctrls, ctrls, neighbors_display=False):
         """List neighbors (inputs or recipients) of a node.
 
-        Args:
+        Parameters
+        ----------
           neighbor_type: ("input" | "recipient")
           non_ctrls: Non-control neighbor node names, as a list of str.
           ctrls: Control neighbor node names, as a list of str.
@@ -1199,7 +1217,8 @@ class DebugAnalyzer(object):
     def _list_node_attributes(self, node_name):
         """List neighbors (inputs or recipients) of a node.
 
-        Args:
+        Parameters
+        ----------
           node_name: Name of the node of which the attributes are to be listed.
 
         Returns:
@@ -1222,7 +1241,8 @@ class DebugAnalyzer(object):
     def _list_node_dumps(self, node_name):
         """List dumped tensor data from a node.
 
-        Args:
+        Parameters
+        ----------
           node_name: Name of the node of which the attributes are to be listed.
 
         Returns:
@@ -1267,7 +1287,8 @@ def create_analyzer_ui(debug_dump,
                        config=None):
     """Create an instance of CursesUI based on a DebugDumpDir object.
 
-    Args:
+    Parameters
+    ----------
       debug_dump: (dbg_dump.DebugDumpDir) The debug dump to use.
       tensor_filters: (dict) A dict mapping tensor filter name (str) to tensor
         filter (Callable).

@@ -57,7 +57,8 @@ class RichLine(object):
     def __init__(self, text="", font_attr=None):
         """Construct a RichLine with no rich attributes or a single attribute.
 
-        Args:
+        Parameters
+        ----------
           text: Raw text string
           font_attr: If specified, a single font attribute to be applied to the
             entire text.  Extending this object via concatenation allows creation
@@ -74,7 +75,8 @@ class RichLine(object):
 
         Does not modify self.
 
-        Args:
+        Parameters
+        ----------
           other: Another piece of text to concatenate with this one.
             If it is a plain str, it will be appended to this string with no
             attributes.  If it is a RichLine, it will be appended to this string
@@ -106,7 +108,8 @@ class RichLine(object):
 def rich_text_lines_frm_line_list(rich_text_list, annotations=None, additional_attr=None):
     """Convert a list of RichLine objects or strings to a RichTextLines object.
 
-    Args:
+    Parameters
+    ----------
       rich_text_list: a list of RichLine objects or strings
       annotations: annotatoins for the resultant RichTextLines object.
 
@@ -140,7 +143,8 @@ class RichTextLines(object):
     def __init__(self, lines, font_attr_segs=None, annotations=None, additional_attr=None):
         """Constructor of RichTextLines.
 
-        Args:
+        Parameters
+        ----------
           lines: A list of str or a single str, representing text output to
             screen. The latter case is for convenience when the text output is
             single-line.
@@ -237,7 +241,8 @@ class RichTextLines(object):
 
         The object itself is not changed. A sliced instance is returned.
 
-        Args:
+        Parameters
+        ----------
           begin: (int) Beginning line index (inclusive). Must be >= 0.
           end: (int) Ending line index (exclusive). Must be >= 0.
 
@@ -282,7 +287,8 @@ class RichTextLines(object):
         the value from the input argument "other" will override that in this
         instance.
 
-        Args:
+        Parameters
+        ----------
           other: (RichTextLines) The other RichTextLines instance to be appended at
             the end of this instance.
         """
@@ -307,7 +313,8 @@ class RichTextLines(object):
     def _extend_before(self, other):
         """Add another RichTextLines object to the front.
 
-        Args:
+        Parameters
+        ----------
           other: (RichTextLines) The other object to add to the front to this
             object.
         """
@@ -339,7 +346,8 @@ class RichTextLines(object):
     def append(self, line, font_attr_segs=None):
         """Append a single line of text.
 
-        Args:
+        Parameters
+        ----------
           line: (str) The text to be added to the end.
           font_attr_segs: (list of tuples) Font attribute segments of the appended
             line.
@@ -352,7 +360,8 @@ class RichTextLines(object):
     def append_rich_line(self, rich_line):
         """Append a single line of text with line font attribute segments.
 
-        Args:
+        Parameters
+        ----------
           rich_line: (str) The text to be added to the end.
         """
         self.append(rich_line.text, rich_line.font_attr_segs)
@@ -360,7 +369,8 @@ class RichTextLines(object):
     def prepend(self, line, font_attr_segs=None):
         """Prepend (i.e., add to the front) a single line of text.
 
-        Args:
+        Parameters
+        ----------
           line: (str) The text to be added to the front.
           font_attr_segs: (list of tuples) Font attribute segments of the appended
             line.
@@ -376,7 +386,8 @@ class RichTextLines(object):
 
         The font_attr_segs and annotations are ignored.
 
-        Args:
+        Parameters
+        ----------
           file_path: (str) path of the file to write to.
         """
 
@@ -394,7 +405,8 @@ def regex_find(orig_screen_output, regex, font_attr):
     1) search for specific items in a large list of items, and
     2) search for specific numerical values in a large tensor.
 
-    Args:
+    Parameters
+    ----------
       orig_screen_output: The original RichTextLines, in which the regex find
         is to be performed.
       regex: The regex used for matching.
@@ -487,7 +499,8 @@ def wrap_rich_text_lines(inp, cols):
     screen/panel width via the screen_info kwarg and should produce properly
     length-limited lines in the output accordingly.
 
-    Args:
+    Parameters
+    ----------
       inp: Input RichTextLines object.
       cols: Number of columns, as an int.
 
@@ -598,7 +611,8 @@ class CommandHandlerRegistry(object):
                                  prefix_aliases=None):
         """Register a callable as a command handler.
 
-        Args:
+        Parameters
+        ----------
           prefix: Command prefix, i.e., the first word in a command, e.g.,
             "print" as in "print tensor_1".
           handler: A callable of the following signature:
@@ -660,7 +674,8 @@ class CommandHandlerRegistry(object):
     def dispatch_command(self, prefix, argv, screen_info=None):
         """Handles a command by dispatching it to a registered command handler.
 
-        Args:
+        Parameters
+        ----------
           prefix: Command prefix, as a str, e.g., "print".
           argv: Command argument vector, excluding the command prefix, represented
             as a list of str, e.g.,
@@ -722,7 +737,8 @@ class CommandHandlerRegistry(object):
     def is_registered(self, prefix):
         """Test if a command prefix or its alias is has a registered handler.
 
-        Args:
+        Parameters
+        ----------
           prefix: A prefix or its alias, as a str.
 
         Returns:
@@ -733,7 +749,8 @@ class CommandHandlerRegistry(object):
     def get_help(self, cmd_prefix=None):
         """Compile help information into a RichTextLines object.
 
-        Args:
+        Parameters
+        ----------
           cmd_prefix: Optional command prefix. As the prefix itself or one of its
             aliases.
 
@@ -763,7 +780,8 @@ class CommandHandlerRegistry(object):
     def set_help_intro(self, help_intro):
         """Set an introductory message to help output.
 
-        Args:
+        Parameters
+        ----------
           help_intro: (RichTextLines) Rich text lines appended to the
             beginning of the output of the command "help", as introductory
             information.
@@ -775,7 +793,8 @@ class CommandHandlerRegistry(object):
 
         "help" is a common command that merits built-in support from this class.
 
-        Args:
+        Parameters
+        ----------
           args: Command line arguments to "help" (not including "help" itself).
           screen_info: (dict) Information regarding the screen, e.g., the screen
             width in characters: {"cols": 80}
@@ -795,7 +814,8 @@ class CommandHandlerRegistry(object):
     def _resolve_prefix(self, token):
         """Resolve command prefix from the prefix itself or its alias.
 
-        Args:
+        Parameters
+        ----------
           token: a str to be resolved.
 
         Returns:
@@ -811,7 +831,8 @@ class CommandHandlerRegistry(object):
     def _get_help_for_command_prefix(self, cmd_prefix):
         """Compile the help information for a given command prefix.
 
-        Args:
+        Parameters
+        ----------
           cmd_prefix: Command prefix, as the prefix itself or one of its
             aliases.
 
@@ -863,7 +884,8 @@ class TabCompletionRegistry(object):
         Note: A context word can be empty, in which case the context is for the
          top-level commands.
 
-        Args:
+        Parameters
+        ----------
           context_words: A list of context words belonging to the context being
             registered. It is a list of str, instead of a single string, to support
             synonym words triggering the same tab-completion context, e.g.,
@@ -892,7 +914,8 @@ class TabCompletionRegistry(object):
     def deregister_context(self, context_words):
         """Deregister a list of context words.
 
-        Args:
+        Parameters
+        ----------
           context_words: A list of context words to deregister, as a list of str.
 
         Raises:
@@ -911,7 +934,8 @@ class TabCompletionRegistry(object):
     def extend_comp_items(self, context_word, new_comp_items):
         """Add a list of completion items to a completion context.
 
-        Args:
+        Parameters
+        ----------
           context_word: A single completion word as a string. The extension will
             also apply to all other context words of the same context.
           new_comp_items: (list of str) New completion items to add.
@@ -930,7 +954,8 @@ class TabCompletionRegistry(object):
     def remove_comp_items(self, context_word, comp_items):
         """Remove a list of completion items from a completion context.
 
-        Args:
+        Parameters
+        ----------
           context_word: A single completion word as a string. The removal will
             also apply to all other context words of the same context.
           comp_items: Completion items to remove.
@@ -949,7 +974,8 @@ class TabCompletionRegistry(object):
     def get_completions(self, context_word, prefix):
         """Get the tab completions given a context word and a prefix.
 
-        Args:
+        Parameters
+        ----------
           context_word: The context word.
           prefix: The prefix of the incomplete word.
 
@@ -978,7 +1004,8 @@ class TabCompletionRegistry(object):
 def _common_prefix(str_list):
     """Given a list of str, returns the longest common prefix.
 
-    Args:
+    Parameters
+    ----------
       str_list: (list of str) A list of strings.
 
     Returns:
@@ -1004,7 +1031,8 @@ class CommandHistory(object):
     def __init__(self, limit=100, history_file_path=None):
         """CommandHistory constructor.
 
-        Args:
+        Parameters
+        ----------
           limit: Maximum number of the most recent commands that this instance
             keeps track of, as an int.
           history_file_path: (str) Manually specified path to history file. Used in
@@ -1048,7 +1076,8 @@ class CommandHistory(object):
     def add_command(self, command):
         """Add a command to the command history.
 
-        Args:
+        Parameters
+        ----------
           command: The history command, as a str.
 
         Raises:
@@ -1072,7 +1101,8 @@ class CommandHistory(object):
     def most_recent_n(self, n):
         """Look up the n most recent commands.
 
-        Args:
+        Parameters
+        ----------
           n: Number of most recent commands to look up.
 
         Returns:
@@ -1085,7 +1115,8 @@ class CommandHistory(object):
     def lookup_prefix(self, prefix, n):
         """Look up the n most recent commands that starts with prefix.
 
-        Args:
+        Parameters
+        ----------
           prefix: The prefix to lookup.
           n: Number of most recent commands to look up.
 
@@ -1105,7 +1136,8 @@ class MenuItem(object):
     def __init__(self, caption, content, enabled=True, custom_color=None):
         """Menu constructor.
 
-        Args:
+        Parameters
+        ----------
           caption: (str) caption of the menu item.
           content: Content of the menu item. For a menu item that triggers
             a command, for example, content is the command string.
@@ -1173,7 +1205,8 @@ class Menu(object):
     def __init__(self, name=None):
         """Menu constructor.
 
-        Args:
+        Parameters
+        ----------
           name: (str or None) name of this menu.
         """
 
@@ -1183,7 +1216,8 @@ class Menu(object):
     def append(self, item):
         """Append an item to the Menu.
 
-        Args:
+        Parameters
+        ----------
           item: (MenuItem) the item to be appended.
         """
         self._items.append(item)
@@ -1191,7 +1225,8 @@ class Menu(object):
     def insert(self, index, item):
         """Insert an item to the Menu to particular position.
 
-        Args:
+        Parameters
+        ----------
           index: (int) position where item to be inserted.
           item : (MenuItem) the item to be inserted.
         """
@@ -1216,7 +1251,8 @@ class Menu(object):
     def caption_to_item(self, caption):
         """Get a MenuItem from the caption.
 
-        Args:
+        Parameters
+        ----------
           caption: (str) The caption to look up.
 
         Returns:
@@ -1240,7 +1276,8 @@ class Menu(object):
                               disabled_item_attrs=None):
         """Format the menu as a single-line RichTextLines object.
 
-        Args:
+        Parameters
+        ----------
           prefix: (str) String added to the beginning of the line.
           divider: (str) The dividing string between the menu items.
           enabled_item_attrs: (list or str) Attributes applied to each enabled

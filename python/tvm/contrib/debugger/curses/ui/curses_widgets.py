@@ -19,7 +19,8 @@ class NavigationHistoryItem(object):
     def __init__(self, command, screen_output, scroll_position):
         """Constructor of NavigationHistoryItem.
 
-        Args:
+        Parameters
+        ----------
           command: (`str`) the command line text.
           screen_output: the screen output of the command.
           scroll_position: (`int`) scroll position in the screen output.
@@ -38,7 +39,8 @@ class CursesNavigationHistory(object):
     def __init__(self, capacity):
         """Constructor of CursesNavigationHistory.
 
-        Args:
+        Parameters
+        ----------
           capacity: (`int`) How many items this object can hold. Each item consists
             of a command stirng, an output RichTextLines object and a scroll
             position.
@@ -56,7 +58,8 @@ class CursesNavigationHistory(object):
     def add_item(self, command, screen_output, scroll_position):
         """Add an item to the navigation histoyr.
 
-        Args:
+        Parameters
+        ----------
           command: command line text.
           screen_output: screen output produced for the command.
           scroll_position: (`int`) scroll position in the screen output.
@@ -72,7 +75,8 @@ class CursesNavigationHistory(object):
     def update_scroll_position(self, new_scroll_position):
         """Update the scroll position of the currently-pointed-to history item.
 
-        Args:
+        Parameters
+        ----------
           new_scroll_position: (`int`) new scroll-position value.
 
         Raises:
@@ -195,7 +199,8 @@ class CursesNavigationHistory(object):
                exit_command):
         """Render the rich text content of the single-line navigation bar.
 
-        Args:
+        Parameters
+        ----------
           max_length: (`int`) Maximum length of the navigation bar, in characters.
           backward_command: (`str`) command for going backward. Used to construct
             the shortcut menu item.

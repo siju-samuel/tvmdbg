@@ -11,7 +11,8 @@ def get_graph_element_name(elem):
     a __str__ representation of the graph element. Certain graph elements, such as
     `SparseTensor`s, do not have the attribute "name".
 
-    Args:
+    Parameters
+    ----------
       elem: The graph element in question.
 
     Returns:
@@ -28,7 +29,8 @@ def get_graph_element_name(elem):
 def get_flattened_names(inputs_or_outputs):
     """Get a flattened list of the names in run() call inputs or outputs.
 
-    Args:
+    Parameters
+    ----------
       inputs_or_outputs: Inputs or outputs of the `Session.run()` call. It maybe
         a Tensor, an Operation or a Variable. It may also be nested lists, tuples
         or dicts. See doc of `Session.run()` for more details.

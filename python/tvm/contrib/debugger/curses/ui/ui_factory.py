@@ -18,7 +18,8 @@ def get_ui(ui_type,
     ImportError. For example, if `ui_type` is `curses`, but `curses` cannot be
     imported properly, e.g., on Windows, will fallback to `readline`.
 
-    Args:
+    Parameters
+    ----------
       ui_type: (`str`) requested UI type. Currently supported:
         (curses | readline)
       on_ui_exit: (`Callable`) the callback to be called when the UI exits.

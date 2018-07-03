@@ -37,7 +37,8 @@ class CLIConfig(object):
     def get(self, property_name):
         """Get the value of a property.
 
-        Args:
+        Parameters
+        ----------
           property_name: Name of the property.
 
         Returns:
@@ -55,7 +56,8 @@ class CLIConfig(object):
 
         Supports limitd property value types: `bool`, `int` and `str`.
 
-        Args:
+        Parameters
+        ----------
           property_name: Name of the property.
           property_val: Value of the property. If the property has `bool` type and
             this argument has `str` type, the `str` value will be parsed as a `bool`
@@ -95,7 +97,8 @@ class CLIConfig(object):
     def set_callback(self, property_name, callback):
         """Set a set-callback for given property.
 
-        Args:
+        Parameters
+        ----------
           property_name: Name of the property.
           callback: The callback as a `callable` of signature:
               def cbk(config):
@@ -126,7 +129,8 @@ class CLIConfig(object):
     def summarize(self, highlight=None):
         """Get a text summary of the config.
 
-        Args:
+        Parameters
+        ----------
           highlight: A property name to highlight in the output.
 
         Returns:

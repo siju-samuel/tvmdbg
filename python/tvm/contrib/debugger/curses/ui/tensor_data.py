@@ -30,7 +30,8 @@ class HighlightOptions(object):
                  font_attr=DEFAULT_TENSOR_ELEMENT_HIGHLIGHT_FONT_ATTR):
         """Constructor of HighlightOptions.
 
-        Args:
+        Parameters
+        ----------
           criterion: (callable) A callable of the following signature:
             def to_highlight(X):
               # Args:
@@ -62,7 +63,8 @@ def format_tensor(tensor,
                   highlight_options=None):
     """Generate a RichTextLines object showing a tensor in formatted style.
 
-    Args:
+    Parameters
+    ----------
       tensor: The tensor to be displayed, as a numpy ndarray or other
         appropriate format (e.g., None representing uninitialized tensors).
       tensor_label: A label for the tensor, as a string. If set to None, will
@@ -200,7 +202,8 @@ def _annotate_ndarray_lines(
          2: {BEGIN_INDICES_KEY: [2, 0]},
          3: {BEGIN_INDICES_KEY: [3, 0]}}
 
-    Args:
+    Parameters
+    ----------
       array_lines: Text lines representing the tensor, as a list of str.
       tensor: The tensor being formatted as string.
       np_printoptions: A dictionary of keyword arguments that are passed to a
@@ -268,7 +271,8 @@ def locate_tensor_element(formatted, indices):
     Given a RichTextLines object representing a tensor and indices of the sought
     element, return the row number at which the element is located (if exists).
 
-    Args:
+    Parameters
+    ----------
       formatted: A RichTextLines object containing formatted text lines
         representing the tensor.
       indices: Indices of the sought element, as a list of int or a list of list
@@ -410,7 +414,8 @@ def _validate_indices_list(indices_list, formatted):
 def _locate_elements_in_line(line, indices_list, ref_indices):
     """Determine the start and end indices of an element in a line.
 
-    Args:
+    Parameters
+    ----------
       line: (str) the line in which the element is to be sought.
       indices_list: (list of list of int) list of indices of the element to
          search for. Assumes that the indices in the batch are unique and sorted
@@ -472,7 +477,8 @@ def numeric_summary(tensor):
     This summary is only available for numeric (int*, float*, complex*) and
     Boolean tensors.
 
-    Args:
+    Parameters
+    ----------
       tensor: (`numpy.ndarray`) the tensor value object to be summarized.
 
     Returns:

@@ -39,7 +39,8 @@ _COMMAND_TEXT = "Command: "
 def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
     """Attempt to extract command from the attribute segments of a line.
 
-    Args:
+    Parameters
+    ----------
       mouse_x: (int) x coordinate of the mouse event.
       attr_segs: (list) The list of attribute segments of a line from a
         RichTextLines object.
@@ -83,7 +84,8 @@ class ScrollBar(object):
                  output_num_rows):
         """Constructor of ScrollBar.
 
-        Args:
+        Parameters
+        ----------
           min_x: (int) left index of the scroll bar on the screen (inclusive).
           min_y: (int) top index of the scroll bar on the screen (inclusive).
           max_x: (int) right index of the scroll bar on the screen (inclusive).
@@ -122,7 +124,8 @@ class ScrollBar(object):
         location, the return value will be 1; at the bottom location, the return
         value will be self._scroll_bar_height - 2.
 
-        Args:
+        Parameters
+        ----------
           screen_coord_sys: (`bool`) whether the return value will be in the
             screen coordinate system.
 
@@ -205,7 +208,8 @@ def _screen_getmouse():
 def _screen_new_output_pad(rows, cols):
     """Generate a new pad on the screen.
 
-    Args:
+    Parameters
+    ----------
       rows: (int) Number of rows the pad will have: not limited to screen size.
       cols: (int) Number of columns the pad will have: not limited to screen
         size.
@@ -298,7 +302,8 @@ class CursesUI(ui_base.BaseUI):
     def __init__(self, on_ui_exit=None, config=None):
         """Constructor of CursesUI.
 
-        Args:
+        Parameters
+        ----------
           on_ui_exit: (Callable) Callback invoked when the UI exits.
           config: An instance of `ui_config.CLIConfig()` carrying user-facing
             configurations.
@@ -570,7 +575,8 @@ class CursesUI(ui_base.BaseUI):
     def _screen_create_command_textbox(self, existing_command=None):
         """Create command textbox on screen.
 
-        Args:
+        Parameters
+        ----------
           existing_command: (str) A command string to put in the textbox right
             after its creation.
         """
@@ -668,7 +674,8 @@ class CursesUI(ui_base.BaseUI):
     def _navigate_screen_output(self, command):
         """Navigate in screen output history.
 
-        Args:
+        Parameters
+        ----------
           command: (`str`) the navigation command, from
             {self._NAVIGATION_FORWARD_COMMAND, self._NAVIGATION_BACK_COMMAND}.
         """
@@ -696,7 +703,8 @@ class CursesUI(ui_base.BaseUI):
     def _dispatch_command(self, command):
         """Dispatch user command.
 
-        Args:
+        Parameters
+        ----------
           command: (str) Command to dispatch.
 
         Returns:
@@ -818,7 +826,8 @@ class CursesUI(ui_base.BaseUI):
         Also handles special key-triggered events such as PgUp/PgDown scrolling of
         the screen output.
 
-        Args:
+        Parameters
+        ----------
           key_code: (int) Key code.
 
         Returns:
@@ -942,7 +951,8 @@ class CursesUI(ui_base.BaseUI):
     def _title(self):
         """Display title.
 
-        Args:
+        Parameters
+        ----------
           title: (str) The title to display.
           title_color: (str) Color of the title, e.g., "yellow".
         """
@@ -973,7 +983,8 @@ class CursesUI(ui_base.BaseUI):
     def _auto_key_in(self, command, erase_existing=False):
         """Automatically key in a command to the command Textbox.
 
-        Args:
+        Parameters
+        ----------
           command: The command, as a string or None.
           erase_existing: (bool) whether existing text (if any) is to be erased
               first.
@@ -995,7 +1006,8 @@ class CursesUI(ui_base.BaseUI):
     def _screen_draw_text_line(self, row, line, attr=curses.A_NORMAL, color=None):
         """Render a line of text on the screen.
 
-        Args:
+        Parameters
+        ----------
           row: (int) Row index.
           line: (str) The line content.
           attr: curses font attribute.
@@ -1025,7 +1037,8 @@ class CursesUI(ui_base.BaseUI):
         the last non-empty line is on the top of the screen. Then renders the
         lines on the screen.
 
-        Args:
+        Parameters
+        ----------
           output: (RichTextLines) text lines to display on the screen. These lines
             may have widths exceeding the screen width. This method will take care
             of the wrapping.
@@ -1075,7 +1088,8 @@ class CursesUI(ui_base.BaseUI):
         highlighting requests (if any), scroll-to-next-match requests (if any),
         and screen refresh requests (if any).
 
-        Args:
+        Parameters
+        ----------
           output: A RichTextLines object that is the screen output text.
           is_refresh: (bool) Is this a refreshing display with existing output.
           highlight_regex: (str) Optional string representing the regex used to
@@ -1137,7 +1151,8 @@ class CursesUI(ui_base.BaseUI):
     def _display_lines(self, output, min_num_rows):
         """Display RichTextLines object on screen.
 
-        Args:
+        Parameters
+        ----------
           output: A RichTextLines object.
           min_num_rows: (int) Minimum number of output rows.
 
@@ -1196,7 +1211,8 @@ class CursesUI(ui_base.BaseUI):
     def _display_main_menu(self, output):
         """Display main menu associated with screen output, if the menu exists.
 
-        Args:
+        Parameters
+        ----------
           output: (ui_common.RichTextLines) The RichTextLines output from
             the annotations field of which the menu will be extracted and used (if
             the menu exists).
@@ -1233,7 +1249,8 @@ class CursesUI(ui_base.BaseUI):
         Note: Gaps between the segments are allowed and will be fixed in with a
         default color.
 
-        Args:
+        Parameters
+        ----------
           pad: The text pad to render the line in.
           row: Row index, as an int.
           txt: The text to be displayed on the specified row, as a str.
@@ -1319,7 +1336,8 @@ class CursesUI(ui_base.BaseUI):
     def _scroll_output(self, direction, line_index=None):
         """Scroll the output pad.
 
-        Args:
+        Parameters
+        ----------
           direction: _SCROLL_REFRESH, _SCROLL_UP, _SCROLL_DOWN, _SCROLL_UP_A_LINE,
             _SCROLL_DOWN_A_LINE, _SCROLL_HOME, _SCROLL_END, _SCROLL_TO_LINE_INDEX
           line_index: (int) Specifies the zero-based line index to scroll to.
@@ -1457,7 +1475,8 @@ class CursesUI(ui_base.BaseUI):
         If there are candidates, display the candidates on screen and return
         command_str + (common prefix of the candidates).
 
-        Args:
+        Parameters
+        ----------
           command_str: (str) The str in the command input textbox when Tab key is
             hit.
 
@@ -1489,7 +1508,8 @@ class CursesUI(ui_base.BaseUI):
     def _display_candidates(self, candidates):
         """Show candidates (e.g., tab-completion candidates) on multiple lines.
 
-        Args:
+        Parameters
+        ----------
           candidates: (list of str) candidates.
         """
 
@@ -1530,7 +1550,8 @@ class CursesUI(ui_base.BaseUI):
         By default, the toast is displayed in the line right above the scroll bar.
         But the line location can be overridden with the line_index arg.
 
-        Args:
+        Parameters
+        ----------
           message: (str) the message to display.
           color: (str) optional color attribute for the message.
           line_index: (int) line index.
@@ -1553,7 +1574,8 @@ class CursesUI(ui_base.BaseUI):
     def _error_toast(self, message):
         """Display a one-line error message on screen.
 
-        Args:
+        Parameters
+        ----------
           message: The error message, without the preceding "ERROR: " substring.
         """
 
@@ -1563,7 +1585,8 @@ class CursesUI(ui_base.BaseUI):
     def _info_toast(self, message):
         """Display a one-line informational message on screen.
 
-        Args:
+        Parameters
+        ----------
           message: The informational message.
         """
 
@@ -1584,7 +1607,8 @@ class CursesUI(ui_base.BaseUI):
     def _mouse_mode_command_handler(self, args, screen_info=None):
         """Handler for the command prefix 'mouse'.
 
-        Args:
+        Parameters
+        ----------
           args: (list of str) Arguments to the command prefix 'mouse'.
           screen_info: (dict) Information about the screen, unused by this handler.
 

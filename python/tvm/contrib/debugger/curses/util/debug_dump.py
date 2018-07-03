@@ -41,7 +41,8 @@ def _is_graph_file(file_name):
 def _get_tensor_name(node_name, output_slot):
     """Get tensor name given node name and output slot index.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node that outputs the tensor, as a string.
       output_slot: Output slot index of the tensor, as an integer.
 
@@ -53,7 +54,8 @@ def _get_tensor_name(node_name, output_slot):
 def _get_tensor_watch_key(node_name, output_slot, debug_op):
     """Get the string representation of a debug watch on a tensor.
 
-    Args:
+    Parameters
+    ----------
       node_name: Name of the node by which the watched tensor is produced, as a
           string.
       output_slot: Output slot index of the tensor, as an integer.
@@ -80,7 +82,8 @@ class DebugDumpDir(object):
     def __init__(self, ctx, dump_root, partition_graphs=None, validate=True):
         """`DebugDumpDir` constructor.
 
-        Args:
+        Parameters
+        ----------
           dump_root: (`str`) path to the dump root directory.
           partition_graphs: A repeated field of GraphDefs representing the
               partition graphs executed by the TVM runtime.
@@ -146,7 +149,8 @@ class DebugDumpDir(object):
         problematic properties, i.e., all zero values, or bad numerical values such
         as nan and inf.
 
-        Args:
+        Parameters
+        ----------
           device_name: (`str`) name of the device.
           device_root: (`str`) dump root directory of the given device.
 
@@ -200,7 +204,8 @@ class DebugDumpDir(object):
     def _dump_file_name_to_datum(self, dir_name, file_name):
         """Obtain a data_dump.DebugTensorDatum from the directory and file name.
 
-        Args:
+        Parameters
+        ----------
           dir_name: (`str`) Name of the directory in which the dump file resides.
           file_name: (`str`) Base name of the dump file.
 
@@ -219,7 +224,8 @@ class DebugDumpDir(object):
         item. Also make a map from watch key to relative timestamp.
         "relative" means (absolute timestamp - ts0).
 
-        Args:
+        Parameters
+        ----------
           device_name: (str) name of the device.
         """
         self._watch_key_to_datum[device_name] = {}
@@ -282,7 +288,8 @@ class DebugDumpDir(object):
         by the debugger. The gathered information can be used to validate the
         tensor dumps.
 
-        Args:
+        Parameters
+        ----------
           partition_graphs: A repeated field of GraphDefs representing the
               partition graphs executed by the TVM runtime.
           validate: (`bool`) Whether the dump files are to be validated against the
@@ -335,7 +342,8 @@ class DebugDumpDir(object):
         Only the watched nodes are validated by this method, because tvmdbg allows
         clients to watch only a subset of the nodes.
 
-        Args:
+        Parameters
+        ----------
           device_name: (`str`) device name.
 
         Raises:
@@ -403,7 +411,8 @@ class DebugDumpDir(object):
 
         Note: This method mutates the input argument "pending".
 
-        Args:
+        Parameters
+        ----------
           device_name: (str) device name.
           pending: A list of 2-tuple (node_name, output_slot): the dependencies to
             check.
@@ -480,7 +489,8 @@ class DebugDumpDir(object):
         If device_name is provided (i.e., not None), it'll be simply returned right
         away.
 
-        Args:
+        Parameters
+        ----------
           device_name: (str or None) name of the device. If None, will try to infer
             the device name by looking at the available nodes.
           node_name: (str) name of the node.
@@ -511,7 +521,8 @@ class DebugDumpDir(object):
     def nodes(self, device_name=None):
         """Get a list of all nodes from the partition graphs.
 
-        Args:
+        Parameters
+        ----------
           device_name: (`str`) name of device. If None, all nodes from all available
             devices will be included.
 
@@ -537,7 +548,8 @@ class DebugDumpDir(object):
     def node_attributes(self, node_name, device_name=None):
         """Get the attributes of a node.
 
-        Args:
+        Parameters
+        ----------
           node_name: Name of the node in question.
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
@@ -557,7 +569,8 @@ class DebugDumpDir(object):
     def node_inputs(self, node_name, is_control=False, device_name=None):
         """Get the inputs of given node according to partition graphs.
 
-        Args:
+        Parameters
+        ----------
           node_name: Name of the node.
           is_control: (`bool`) Whether control inputs, rather than non-control
             inputs, are to be returned.
@@ -597,7 +610,8 @@ class DebugDumpDir(object):
     def node_recipients(self, node_name, is_control=False, device_name=None):
         """Get recipient of the given node's output according to partition graphs.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node.
           is_control: (`bool`) whether control outputs, rather than non-control
             outputs, are to be returned.
@@ -632,7 +646,8 @@ class DebugDumpDir(object):
     def node_exists(self, node_name, device_name=None):
         """Test if a node exists in the partition graphs.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node to be checked.
           device_name: optional device name. If None, will search for the node
             on all available devices. Otherwise, search for the node only on
@@ -661,7 +676,8 @@ class DebugDumpDir(object):
     def node_device(self, node_name):
         """Get the names of the devices that has nodes of the specified name.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node.
 
         Returns:
@@ -688,7 +704,8 @@ class DebugDumpDir(object):
     def node_op_type(self, node_name, device_name=None):
         """Get the op type of given node.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node.
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
@@ -710,7 +727,8 @@ class DebugDumpDir(object):
     def debug_watch_keys(self, node_name, device_name=None):
         """Get all tensor watch keys of given node according to partition graphs.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node.
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
@@ -743,7 +761,8 @@ class DebugDumpDir(object):
     def watch_key_to_data(self, debug_watch_key, device_name=None):
         """Get all `data_dump.DebugTensorDatum` instances corresponding to a debug watch key.
 
-        Args:
+        Parameters
+        ----------
           debug_watch_key: (`str`) debug watch key.
           device_name: (`str`) name of the device. If there is only one device or if
             the specified debug_watch_key exists on only one device, this argument
@@ -784,7 +803,8 @@ class DebugDumpDir(object):
              exclude_node_names=None):
         """Find dumped tensor data by a certain predicate.
 
-        Args:
+        Parameters
+        ----------
           predicate: A callable that takes two input arguments:
 
             ```python
@@ -833,7 +853,8 @@ class DebugDumpDir(object):
                               device_name=None):
         """Get the file paths from a debug-dumped tensor.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node that the tensor is produced by.
           output_slot: (`int`) output slot index of tensor.
           debug_op: (`str`) name of the debug op.
@@ -865,7 +886,8 @@ class DebugDumpDir(object):
         The tensor may be dumped multiple times in the dump root directory, so a
         list of tensors (`numpy.ndarray`) is returned.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node that the tensor is produced by.
           output_slot: (`int`) output slot index of tensor.
           debug_op: (`str`) name of the debug op.
@@ -902,7 +924,8 @@ class DebugDumpDir(object):
         may be dumped multiple times in the dump root directory, so a list of
         relative timestamps (`numpy.ndarray`) is returned.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node that the tensor is produced by.
           output_slot: (`int`) output slot index of tensor.
           debug_op: (`str`) name of the debug op.
@@ -934,7 +957,8 @@ class DebugDumpDir(object):
 
         Unit of the file size: byte.
 
-        Args:
+        Parameters
+        ----------
           node_name: (`str`) name of the node that the tensor is produced by.
           output_slot: (`int`) output slot index of tensor.
           debug_op: (`str`) name of the debug op.
@@ -961,7 +985,8 @@ class DebugDumpDir(object):
     def node_traceback(self, element_name):
         """Try to retrieve the Python traceback of node's construction.
 
-        Args:
+        Parameters
+        ----------
           element_name: (`str`) Name of a graph element (node or tensor).
 
         Returns:
