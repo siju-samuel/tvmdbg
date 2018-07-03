@@ -19,10 +19,10 @@ set(USE_GRAPH_RUNTIME_DEBUG ON)
 ```
 2. Make tvm so that it will make the `libtvm_runtime.so`
 
-3. In the graph build file instead of `from tvm.contrib import graph_runtime` import the debug_runtime `from tvm.tools.debug.runtime import debugruntime as graph_runtime`
+3. In the graph build file instead of `from tvm.contrib import graph_runtime` import the debug_runtime `from tvm.contrib.debugging import debug_runtime as graph_runtime`
 ```
 #from tvm.contrib import graph_runtime
-from tvm.tools.debug.runtime import debugruntime as graph_runtime
+from tvm.contrib.debugging import debug_runtime as graph_runtime
 ```
 
 The above two modifications will bring up the debug UI during run.
@@ -50,6 +50,8 @@ By clicking at the **Node name** user can see the node details, like its
 2. Layer information may be dispersed into multiple operators.
 
 **References**
+
 https://github.com/tensorflow/tensorflow
 https://github.com/tensorflow/tensorboard
 https://github.com/awslabs/mxboard
+
