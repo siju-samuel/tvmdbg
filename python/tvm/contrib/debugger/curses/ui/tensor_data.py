@@ -34,12 +34,6 @@ class HighlightOptions(object):
         ----------
           criterion: (callable) A callable of the following signature:
             def to_highlight(X):
-              # Args:
-              #   X: The tensor to highlight elements in.
-              #
-              # Returns:
-              #   (boolean ndarray) A boolean ndarray of the same shape as X
-              #   indicating which elements are to be highlighted (iff True).
             This callable will be used as the argument of np.argwhere() to
             determine which elements of the tensor are to be highlighted.
           description: (str) Description of the highlight criterion embodied by
@@ -81,7 +75,8 @@ def format_tensor(tensor,
       highlight_options: (HighlightOptions) options for highlighting elements
         of the tensor.
 
-    Returns:
+    Returns
+    -------
       A RichTextLines object. Its annotation field has line-by-line markups to
       indicate which indices in the array the first element of each line
       corresponds to.
@@ -211,7 +206,8 @@ def _annotate_ndarray_lines(
       offset: Line number offset applied to the line indices in the returned
         annotation.
 
-    Returns:
+    Returns
+    -------
       An annotation as a dict.
     """
 
@@ -281,7 +277,8 @@ def locate_tensor_element(formatted, indices):
         In the latter case, the indices must be in ascending order, or a
         ValueError will be raised.
 
-    Returns:
+    Returns
+    -------
       1) A boolean indicating whether the element falls into an omitted line.
       2) Row index.
       3) Column start index, i.e., the first column in which the representation
@@ -293,16 +290,6 @@ def locate_tensor_element(formatted, indices):
     For return values described above are based on a single set of indices to
       look up. In the case of batch mode (multiple sets of indices), the return
       values will be lists of the types described above.
-
-    Raises:
-      AttributeError: If:
-        Input argument "formatted" does not have the required annotations.
-      ValueError: If:
-        1) Indices do not match the dimensions of the tensor, or
-        2) Indices exceed sizes of the tensor, or
-        3) Indices contain negative value(s).
-        4) If in batch mode, and if not all sets of indices are in ascending
-           order.
     """
 
     if isinstance(indices[0], list):
@@ -423,7 +410,8 @@ def _locate_elements_in_line(line, indices_list, ref_indices):
       ref_indices: (list of int) reference indices, i.e., the indices of the
         first element represented in the line.
 
-    Returns:
+    Returns
+    -------
       start_columns: (list of int) start column indices, if found. If not found,
         None.
       end_columns: (list of int) end column indices, if found. If not found,
@@ -481,7 +469,8 @@ def numeric_summary(tensor):
     ----------
       tensor: (`numpy.ndarray`) the tensor value object to be summarized.
 
-    Returns:
+    Returns
+    -------
       The summary text as a `RichTextLines` object. If the type of `tensor` is not
       numeric or Boolean, a single-line `RichTextLines` object containing a
       warning message will reflect that.

@@ -15,7 +15,8 @@ def get_graph_element_name(elem):
     ----------
       elem: The graph element in question.
 
-    Returns:
+    Returns
+    -------
       If the attribute 'name' is available, return the name. Otherwise, return
       str(output).
     """
@@ -35,7 +36,8 @@ def get_flattened_names(inputs_or_outputs):
         a Tensor, an Operation or a Variable. It may also be nested lists, tuples
         or dicts. See doc of `Session.run()` for more details.
 
-    Returns:
+    Returns
+    -------
       (list of str) A flattened list of output names from `inputs_or_outputs`.
     """
 

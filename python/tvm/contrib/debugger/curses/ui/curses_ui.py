@@ -45,7 +45,8 @@ def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
       attr_segs: (list) The list of attribute segments of a line from a
         RichTextLines object.
 
-    Returns:
+    Returns
+    -------
       (str or None) If a command exists: the command as a str; otherwise, None.
     """
 
@@ -95,10 +96,6 @@ class ScrollBar(object):
             scroll_position should be 0. If it is scrolled to the bottom, the value
             should be output_num_rows - 1.
           output_num_rows: (int) Total number of output rows.
-
-        Raises:
-          ValueError: If the width or height of the scroll bar, as determined
-           by min_x, max_x, min_y and max_y, is too small.
         """
 
         self._min_x = min_x
@@ -129,7 +126,8 @@ class ScrollBar(object):
           screen_coord_sys: (`bool`) whether the return value will be in the
             screen coordinate system.
 
-        Returns:
+        Returns
+        -------
           (int) 0-based y coordinate of the scroll block, in the ScrollBar
             coordinate system by default. For example,
             when scroll position is at the top, this return value will be 1 (not 0,
@@ -147,7 +145,8 @@ class ScrollBar(object):
     def layout(self):
         """Get the RichTextLines layout of the scroll bar.
 
-        Returns:
+        Returns
+        -------
           (ui_common.RichTextLines) The text layout of the scroll bar.
         """
         width = self._max_x - self._min_x + 1
@@ -214,7 +213,8 @@ def _screen_new_output_pad(rows, cols):
       cols: (int) Number of columns the pad will have: not limited to screen
         size.
 
-    Returns:
+    Returns
+    -------
       A curses textpad object.
     """
 
@@ -598,7 +598,8 @@ class CursesUI(ui_base.BaseUI):
     def _ui_loop(self):
         """Command-line UI loop.
 
-        Returns:
+        Returns
+        -------
           An exit token of arbitrary type. The token can be None.
         """
 
@@ -634,7 +635,8 @@ class CursesUI(ui_base.BaseUI):
     def _get_user_command(self):
         """Get user command from UI.
 
-        Returns:
+        Returns
+        -------
           command: (str) The user-entered command.
           terminator: (str) Terminator type for the command.
             If command is a normal command entered with the Enter key, the value
@@ -707,7 +709,8 @@ class CursesUI(ui_base.BaseUI):
         ----------
           command: (str) Command to dispatch.
 
-        Returns:
+        Returns
+        -------
           An exit token object. None value means that the UI loop should not exit.
           A non-None value means the UI loop should exit.
         """
@@ -810,7 +813,8 @@ class CursesUI(ui_base.BaseUI):
     def _screen_gather_textbox_str(self):
         """Gather the text string in the command text box.
 
-        Returns:
+        Returns
+        -------
           (str) the current text string in the command textbox, excluding any
           return keys.
         """
@@ -830,15 +834,11 @@ class CursesUI(ui_base.BaseUI):
         ----------
           key_code: (int) Key code.
 
-        Returns:
+        Returns
+        -------
           (int) A translated key code. In most cases, this is identical to the
             input x. However, if x is a Return key, the return value will be
             CLI_TERMINATOR_KEY, so that the text box's edit() method can return.
-
-        Raises:
-          TypeError: If the input x is not of type int.
-          ui_common.CommandLineExit: If a mouse-triggered command returns
-            an exit token when dispatched.
         """
         if not isinstance(key_code, int):
             raise TypeError("Key validator expected type int, received type %s" %
@@ -1012,9 +1012,6 @@ class CursesUI(ui_base.BaseUI):
           line: (str) The line content.
           attr: curses font attribute.
           color: (str) font foreground color name.
-
-        Raises:
-          TypeError: If row is not of type int.
         """
 
         if not isinstance(row, int):
@@ -1043,7 +1040,8 @@ class CursesUI(ui_base.BaseUI):
             may have widths exceeding the screen width. This method will take care
             of the wrapping.
 
-        Returns:
+        Returns
+        -------
           (List of int) A list of line indices, in the wrapped output, where there
             are regex matches.
         """
@@ -1156,13 +1154,11 @@ class CursesUI(ui_base.BaseUI):
           output: A RichTextLines object.
           min_num_rows: (int) Minimum number of output rows.
 
-        Returns:
+        Returns
+        -------
           1) The text pad object used to display the main text body.
           2) (int) number of rows of the text pad, which may exceed screen size.
           3) (int) number of columns of the text pad.
-
-        Raises:
-          ValueError: If input argument "output" is invalid.
         """
 
         if not isinstance(output, ui_common.RichTextLines):
@@ -1342,11 +1338,6 @@ class CursesUI(ui_base.BaseUI):
             _SCROLL_DOWN_A_LINE, _SCROLL_HOME, _SCROLL_END, _SCROLL_TO_LINE_INDEX
           line_index: (int) Specifies the zero-based line index to scroll to.
             Applicable only if direction is _SCROLL_TO_LINE_INDEX.
-
-        Raises:
-          ValueError: On invalid scroll direction.
-          TypeError: If line_index is not int and direction is
-            _SCROLL_TO_LINE_INDEX.
         """
 
         if not self._output_pad:
@@ -1428,7 +1419,8 @@ class CursesUI(ui_base.BaseUI):
 
         The information includes: scroll status and mouse ON/OFF status.
 
-        Returns:
+        Returns
+        -------
           (str) A single text line summarizing the UI status, adapted to the
             current screen width.
         """
@@ -1480,7 +1472,8 @@ class CursesUI(ui_base.BaseUI):
           command_str: (str) The str in the command input textbox when Tab key is
             hit.
 
-        Returns:
+        Returns
+        -------
           (str) Completed string. Could be the same as command_str if no completion
           candidate is available. If candidate(s) are available, return command_str
           appended by the common prefix of the candidates.
@@ -1612,7 +1605,8 @@ class CursesUI(ui_base.BaseUI):
           args: (list of str) Arguments to the command prefix 'mouse'.
           screen_info: (dict) Information about the screen, unused by this handler.
 
-        Returns:
+        Returns
+        -------
           None, as this command handler does not generate any screen outputs other
             than toasts.
         """

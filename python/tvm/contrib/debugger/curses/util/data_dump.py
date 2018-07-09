@@ -40,7 +40,8 @@ def load_tensor_from_event_file(event_file_path):
     ----------
       event_file_path: (`str`) path to the event file.
 
-    Returns:
+    Returns
+    -------
       The tensor value loaded from the event file, as a `numpy.ndarray`. For
       uninitialized Tensors, returns `None`. For Tensors of data types that
       cannot be converted to `numpy.ndarray` (e.g., `tf.resource`), return
@@ -57,7 +58,8 @@ def _get_tensor_name(node_name, output_slot):
       node_name: Name of the node that outputs the tensor, as a string.
       output_slot: Output slot index of the tensor, as an integer.
 
-    Returns:
+    Returns
+    -------
       Name of the tensor, as a string.
     """
     return "%s:%d" % (node_name, output_slot)
@@ -74,7 +76,8 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
       debug_op: Name of the debug op that is used to watch the tensor, as a
           string.
 
-    Returns:
+    Returns
+    -------
       A string representing the debug watch on the tensor (i.e., the "watch
           key").
     """
@@ -87,7 +90,8 @@ def device_path_to_device_name(device_dir):
     ----------
       device_dir: (str) a directory name for the device.
 
-    Returns:
+    Returns
+    -------
       (str) parsed device name.
     """
     path_items = os.path.basename(device_dir)[
@@ -124,11 +128,6 @@ class DebugTensorDatum(object):
             `/tmp/tvmdbg_1/<device_path>/>ns_1/node_a_0_DebugIdentity_123456789`,
             then the value of the debug_dump_rel_path should be
             `<device_path>/ns_1/node_a_0_DebugIdenity_1234456789`.
-
-        Raises:
-          ValueError: If the base file name of the dump file does not conform to
-            the dump file naming pattern:
-            `node_name`_`output_slot`_`debug_op`_`timestamp`
         """
         path_components = os.path.normpath(debug_dump_rel_path).split(os.sep)
         self._device_name = device_path_to_device_name(path_components[0])
@@ -169,7 +168,8 @@ class DebugTensorDatum(object):
     def get_tensor(self):
         """Get tensor from the dump (`Event`) file.
 
-        Returns:
+        Returns
+        -------
           The tensor loaded from the dump (`Event`) file.
         """
         return load_tensor_from_event_file(self.file_path)
@@ -178,7 +178,8 @@ class DebugTensorDatum(object):
     def timestamp(self):
         """Timestamp of when this tensor value was dumped.
 
-        Returns:
+        Returns
+        -------
           (`int`) The timestamp in microseconds.
         """
         return self._timestamp
@@ -191,7 +192,8 @@ class DebugTensorDatum(object):
         same tensor with the same timestamp, which can occur if the dumping events
         are spaced by shorter than the temporal resolution of the timestamps.
 
-        Returns:
+        Returns
+        -------
           (`str`) The extended timestamp.
         """
         return self._extended_timestamp
@@ -200,7 +202,8 @@ class DebugTensorDatum(object):
     def debug_op(self):
         """Name of the debug op.
 
-        Returns:
+        Returns
+        -------
           (`str`) debug op name (e.g., `DebugIdentity`).
         """
         return self._debug_op
@@ -209,7 +212,8 @@ class DebugTensorDatum(object):
     def device_name(self):
         """Name of the device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`str`) device name.
         """
         return self._device_name
@@ -218,7 +222,8 @@ class DebugTensorDatum(object):
     def node_name(self):
         """Name of the node from which the tensor value was dumped.
 
-        Returns:
+        Returns
+        -------
           (`str`) name of the node watched by the debug op.
         """
         return self._node_name
@@ -227,7 +232,8 @@ class DebugTensorDatum(object):
     def output_slot(self):
         """Output slot index from which the tensor value was dumped.
 
-        Returns:
+        Returns
+        -------
           (`int`) output slot index watched by the debug op.
         """
         return self._output_slot
@@ -236,7 +242,8 @@ class DebugTensorDatum(object):
     def tensor_name(self):
         """Name of the tensor watched by the debug op.
 
-        Returns:
+        Returns
+        -------
           (`str`) `Tensor` name, in the form of `node_name`:`output_slot`
         """
         return _get_tensor_name(self.node_name, self.output_slot)
@@ -245,7 +252,8 @@ class DebugTensorDatum(object):
     def watch_key(self):
         """Watch key identities a debug watch on a tensor.
 
-        Returns:
+        Returns
+        -------
           (`str`) A watch key, in the form of `tensor_name`:`debug_op`.
         """
         return _get_tensor_watch_key(self.node_name, self.output_slot,
@@ -262,7 +270,8 @@ class DebugTensorDatum(object):
 
         Unit: byte.
 
-        Returns:
+        Returns
+        -------
           If the dump file exists, size of the dump file, in bytes.
           If the dump file does not exist, None.
         """

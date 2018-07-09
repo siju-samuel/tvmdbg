@@ -39,10 +39,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         Parameters
         ----------
           graph_runtime: The TVM `Graph Runtime` object being wrapped.
-
-        Raises:
-          ValueError: If dump_root is an existing and non-empty directory or if
-            dump_root is a file.
         """
 
         self._init_command = None
@@ -133,7 +129,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         ----------
           request: An instance of `OnRuntimeInitRequest`.
 
-        Returns:
+        Returns
+        -------
           An instance of `OnRuntimeInitResponse`.
         """
 
@@ -150,7 +147,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         ----------
           request: An instance of `OnRunStartRequest`.
 
-        Returns:
+        Returns
+        -------
           An instance of `OnRunStartResponse`.
         """
         self._is_run_start = True
@@ -221,7 +219,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         ----------
           request: An instance of OnRuntimeInitRequest.
 
-        Returns:
+        Returns
+        -------
           An instance of OnRuntimeInitResponse.
         """
 
@@ -319,7 +318,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def _launch_cli(self):
         """Launch the interactive command-line interface.
 
-        Returns:
+        Returns
+        -------
           The OnRunStartResponse specified by the user using the "run" command.
         """
 
@@ -435,7 +435,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
     def _get_run_debug_urls(self):
         """Get the debug_urls value for the current run() call.
 
-        Returns:
+        Returns
+        -------
           debug_urls: (list of str) Debug URLs for the current run() call.
             Currently, the list consists of only one URL that is a file:// URL.
         """

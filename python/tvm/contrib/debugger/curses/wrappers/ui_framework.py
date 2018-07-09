@@ -14,9 +14,6 @@ def _check_type(obj, expected_types):
       obj: The object being checked.
       expected_types: (`type` or an iterable of `type`s) The expected `type`(s)
         of obj.
-
-    Raises:
-        TypeError: If obj is not an instance of expected_type.
     """
     if not isinstance(obj, expected_types):
         raise TypeError("Expected type %s; got type %s" %
@@ -222,10 +219,6 @@ class BaseDebugWrapperModule(object):
         Parameters
         ----------
           runtime: An (unwrapped) TVM module instance.
-
-        Raises:
-          ValueError: On invalid `OnRuntimeInitAction` value.
-          NotImplementedError: If a non-DirectSession runtime object is received.
         """
         self._outputs = []
         self._input_dict = {}
@@ -296,7 +289,8 @@ class BaseDebugWrapperModule(object):
           graph runtime.
           retvals: graph runtime return value.
 
-        Returns:
+        Returns
+        -------
           None
         """
         retvals = retvals
@@ -321,12 +315,9 @@ class BaseDebugWrapperModule(object):
           run_metadata: Same as the `run_metadata` arg to regular `module.run()`.
 
 
-        Returns:
+        Returns
+        -------
           Simply return the run_command on which runtime should perform
-
-        Raises:
-          ValueError: On invalid `CLIRunStartAction` value. Or if `callable_runner`
-            is not `None` and either or both of `outputs` and `input_dict` is `None`.
         """
         retvals = True
 
@@ -350,7 +341,8 @@ class BaseDebugWrapperModule(object):
     def run_call_count(self):
         """Get the number how many time call run is invoked.
 
-        Returns:
+        Returns
+        -------
           ('int') number of run count.
         """
         return self._run_call_count
@@ -371,7 +363,8 @@ class BaseDebugWrapperModule(object):
           request: (`OnRuntimeInitRequest`) callback request carrying information
             such as the module being wrapped.
 
-        Returns:
+        Returns
+        -------
           An instance of `OnRuntimeInitResponse`.
         """
 
@@ -390,7 +383,8 @@ class BaseDebugWrapperModule(object):
             options, run metadata, and how many `run()` calls to this wrapper
             module have occurred.
 
-        Returns:
+        Returns
+        -------
           An instance of `OnRunStartResponse`, carrying information to
             1) direct the wrapper module to perform a specified action (e.g., run
               with or without debug tensor watching.)
@@ -410,6 +404,7 @@ class BaseDebugWrapperModule(object):
             such as the actual action performed by the module wrapper for the
             run() call.
 
-        Returns:
+        Returns
+        -------
           An instance of `OnRunStartResponse`.
         """

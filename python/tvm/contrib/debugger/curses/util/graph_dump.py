@@ -11,7 +11,8 @@ def parse_node_or_tensor_name(name):
       name: An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
-    Returns:
+    Returns
+    -------
       1) The node name, as a str. If the input name is a tensor name, i.e.,
         consists of a colon, the final colon and the following output slot
         will be stripped.
@@ -35,7 +36,8 @@ def get_node_name(element_name):
       element_name: An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
-    Returns:
+    Returns
+    -------
       The node name, as a str. If the input name is a tensor name, i.e.,
         consists of a colon, the final colon and the following output slot
         will be stripped.
@@ -54,7 +56,8 @@ def get_output_slot(element_name):
     ----------
       element_name: (`str`) name of the graph element in question.
 
-    Returns:
+    Returns
+    -------
       (`int`) output slot number.
     """
     _, output_slot = parse_node_or_tensor_name(element_name)
@@ -71,7 +74,8 @@ def is_copy_node(node_name):
     ----------
       node_name: Name of the node.
 
-    Returns:
+    Returns
+    -------
       A bool indicating whether the input argument is the name of a debug Copy
       node.
     """
@@ -88,7 +92,8 @@ def is_debug_node(node_name):
     ----------
       node_name: Name of the node.
 
-    Returns:
+    Returns
+    -------
       A bool indicating whether the input argument is the name of a debug node.
     """
     return node_name.startswith("__dbg_")
@@ -122,9 +127,6 @@ class DebugGraph(object):
           graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
             debugger-inserted Copy* and Debug* nodes.
           device_name: (str) name of the device.
-
-        Raises:
-          ValueError: If duplicate node names are encountered.
         """
         self._graph_dump_def = graph_dump_def
         self._non_graph_dump_def = None
@@ -158,9 +160,6 @@ class DebugGraph(object):
         Parameters
         ----------
           node: (NodeDef) A partition-graph node to be processed.
-
-        Raises:
-          ValueError: If duplicate node names are encountered.
         """
         if is_debug_node(node.name):
             # This is a debug node. Parse the node name and retrieve the
@@ -282,7 +281,8 @@ class DebugGraph(object):
     def device_name(self):
         """Name of the device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`str`) device name.
         """
         return self._device_name
@@ -302,7 +302,8 @@ class DebugGraph(object):
     def node_devices(self):
         """Device that belong to tensor.
 
-        Returns:
+        Returns
+        -------
           (`str`) node device name.
         """
         return self._node_devices
@@ -311,7 +312,8 @@ class DebugGraph(object):
     def node_op_types(self):
         """Type of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`str`) node tensor type.
         """
         return self._node_op_types
@@ -320,7 +322,8 @@ class DebugGraph(object):
     def node_attributes(self):
         """Attributes of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`str`) node tensor attributes.
         """
         return self._node_attributes
@@ -329,7 +332,8 @@ class DebugGraph(object):
     def node_inputs(self):
         """Inputes of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`Dict`) inputs of node tensor.
         """
         return self._node_inputs
@@ -338,7 +342,8 @@ class DebugGraph(object):
     def node_ctrl_inputs(self):
         """Control inputes of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`Dict`) control inputs of node tensor.
         """
         return self._node_ctrl_inputs
@@ -347,7 +352,8 @@ class DebugGraph(object):
     def node_reversed_ref_inputs(self):
         """Reversed inputs of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`Dict`) reversed inputs of node tensor.
         """
         return self._node_reversed_ref_inputs
@@ -356,7 +362,8 @@ class DebugGraph(object):
     def node_recipients(self):
         """Recipient of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`Dict`) recipient of node tensor.
         """
         return self._node_recipients
@@ -365,7 +372,8 @@ class DebugGraph(object):
     def node_ctrl_recipients(self):
         """Control recipients of device that the tensor belongs to.
 
-        Returns:
+        Returns
+        -------
           (`Dict`) control recipients of node tensor.
         """
         return self._node_ctrl_recipients
@@ -390,7 +398,8 @@ def reconstruct_non_graph_dump_def(graph_dump_def):
       graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
         debugger-inserted Copy* and Debug* nodes.
 
-    Returns:
+    Returns
+    -------
       The reconstructed `tvm.GraphDef` stripped of the debugger-inserted nodes.
     """
     return DebugGraph(graph_dump_def).non_graph_dump_def

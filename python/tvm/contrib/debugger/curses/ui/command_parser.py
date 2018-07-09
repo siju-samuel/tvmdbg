@@ -31,7 +31,8 @@ class Interval(object):
         ----------
           value: (obj) value to examine within range.
 
-        Returns:
+        Returns
+        -------
           (bool) True when value is fall between a start and end value else False.
         """
         if value < self.start or value == self.start and not self.start_included:
@@ -47,7 +48,8 @@ class Interval(object):
         ----------
           other: (obj) Interval object to examine.
 
-        Returns:
+        Returns
+        -------
           (bool) True when same as other else False.
         """
         return (self.start == other.start and
@@ -69,7 +71,8 @@ def parse_command(command):
     ----------
       command: (str) Input command.
 
-    Returns:
+    Returns
+    -------
       (list of str) List of arguments.
     """
 
@@ -112,12 +115,10 @@ def extract_output_file_path(args):
     ----------
       args: (list of str) command arguments.
 
-    Returns:
+    Returns
+    -------
       (list of str) Command arguments with the output file path part stripped.
       (str or None) Output file path (if any).
-
-    Raises:
-      SyntaxError: If there is no file path after the last ">" character.
     """
 
     if args and args[-1].endswith(">"):
@@ -162,7 +163,8 @@ def parse_tensor_name_with_slicing(in_str):
         string. E.g.: Without slicing string: "hidden/weights/Variable:0", with
         slicing string: "hidden/weights/Variable:0[1, :]"
 
-    Returns:
+    Returns
+    -------
       (str) name of the tensor
       (str) slicing string, if any. If no slicing string is present, return "".
     """
@@ -187,7 +189,8 @@ def validate_slicing_string(slicing_string):
     ----------
       slicing_string: (str) Input slicing string to be validated.
 
-    Returns:
+    Returns
+    -------
       (bool) True if and only if the slicing string is valid.
     """
 
@@ -203,11 +206,9 @@ def _parse_slices(slicing_string):
     ----------
       slicing_string: (str) Input slicing string to be parsed.
 
-    Returns:
+    Returns
+    -------
       tuple(slice1, slice2, ...)
-
-    Raises:
-      ValueError: If tensor_slicing is not a valid numpy ndarray slicing str.
     """
     parsed = []
     for slice_string in slicing_string[1:-1].split(","):
@@ -235,7 +236,8 @@ def parse_indices(indices_string):
       indices_string: (str) a string representing indices. Can optionally be
         surrounded by a pair of brackets.
 
-    Returns:
+    Returns
+    -------
       (list of int): Parsed indices.
     """
 
@@ -258,12 +260,10 @@ def parse_ranges(range_string):
         them. For example:
           "[-1.0,1.0]", "[-inf, 0]", "[[-inf, -1.0], [1.0, inf]]"
 
-    Returns:
+    Returns
+    -------
       (list of list of float) A list of numerical ranges parsed from the input
         string.
-
-    Raises:
-      ValueError: If the input doesn't represent a range or a list of ranges.
     """
 
     range_string = range_string.strip()
@@ -301,11 +301,9 @@ def parse_memory_interval(interval_str):
         are supported. The "B character at the end of the input `str` may be
         omitted.
 
-    Returns:
+    Returns
+    -------
       `Interval` object where start and end are in bytes.
-
-    Raises:
-      ValueError: if the input is not valid.
     """
     str_interval = _parse_interval(interval_str)
     interval_start = 0
@@ -331,11 +329,9 @@ def parse_time_interval(interval_str):
         (e.g., "[10us, 20us]", "<100s", ">100ms"). Supported time suffixes are
         us, ms, s.
 
-    Returns:
+    Returns
+    -------
       `Interval` object where start and end are in microseconds.
-
-    Raises:
-      ValueError: if the input is not valid.
     """
     str_interval = _parse_interval(interval_str)
     interval_start = 0
@@ -362,12 +358,10 @@ def _parse_interval(interval_str):
         ">=" and "<=" signs have to start with a number (e.g., 3.0, -2, .98).
         The same requirement applies to the items in the parentheses or brackets.
 
-    Returns:
+    Returns
+    -------
       Interval object where start or end can be None
       if the range is specified as "<N" or ">N" respectively.
-
-    Raises:
-      ValueError: if the input is not valid.
     """
     interval_str = interval_str.strip()
     if interval_str.startswith("<="):
@@ -430,11 +424,9 @@ def parse_readable_size_str(size_str):
       size_str: (`str`) A human-readable str representing a number of bytes
         (e.g., "0", "1023", "1.1kB", "24 MB", "23GB", "100 G".
 
-    Returns:
+    Returns
+    -------
       (`int`) The parsed number of bytes.
-
-    Raises:
-      ValueError: on failure to parse the input `size_str`.
     """
 
     size_str = size_str.strip()
@@ -463,7 +455,8 @@ def parse_readable_time_str(time_str):
         followed by 'us', 'ms', or 's' suffix. If suffix is not specified,
         value is assumed to be in microseconds. (e.g. 100us, 8ms, 5s, 100).
 
-    Returns:
+    Returns
+    -------
       Microseconds value.
     """
 
@@ -493,11 +486,9 @@ def evaluate_tensor_slice(tensor, tensor_slicing):
       tensor_slicing: (str or None) Slicing of the tensor, e.g., "[:, 1]". If
         None, no slicing will be performed on the tensor.
 
-    Returns:
+    Returns
+    -------
       (numpy ndarray) The sliced tensor.
-
-    Raises:
-      ValueError: If tensor_slicing is not a valid numpy ndarray slicing str.
     """
 
     _ = tensor
@@ -517,7 +508,8 @@ def get_view_tensor_argparser(description):
     ----------
       description: Description of the ArgumentParser.
 
-    Returns:
+    Returns
+    -------
       An instance of argparse.ArgumentParser.
     """
 

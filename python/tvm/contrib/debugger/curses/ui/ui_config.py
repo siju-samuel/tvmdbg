@@ -41,11 +41,9 @@ class CLIConfig(object):
         ----------
           property_name: Name of the property.
 
-        Returns:
+        Returns
+        -------
           Value of the property.
-
-        Raises:
-          KeyError: if `property_name` is an invalid property name.
         """
         if property_name not in self._config:
             raise KeyError("%s is not a valid property name." % property_name)
@@ -61,10 +59,6 @@ class CLIConfig(object):
           property_name: Name of the property.
           property_val: Value of the property. If the property has `bool` type and
             this argument has `str` type, the `str` value will be parsed as a `bool`
-
-        Raises:
-          ValueError: if a `str` property_value fails to be parsed as a `bool`.
-          KeyError: if `property_name` is an invalid property name.
         """
         if property_name not in self._config:
             raise KeyError("%s is not a valid property name." % property_name)
@@ -105,10 +99,6 @@ class CLIConfig(object):
             where config is the config after it is set to the new value.
             The callback is invoked each time the set() method is called with the
             matching property_name.
-
-        Raises:
-          KeyError: If property_name does not exist.
-          TypeError: If `callback` is not callable.
         """
         if property_name not in self._config:
             raise KeyError("%s is not a valid property name." % property_name)
@@ -133,7 +123,8 @@ class CLIConfig(object):
         ----------
           highlight: A property name to highlight in the output.
 
-        Returns:
+        Returns
+        -------
           A `RichTextLines` output.
         """
         lines = [RL("Command-line configuration:", "bold"), RL("")]

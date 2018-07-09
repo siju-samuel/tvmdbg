@@ -149,7 +149,8 @@ class DebugAnalyzer(object):
         ----------
           config: A `ui_config.CLIConfig` object.
 
-        Returns:
+        Returns
+        -------
           A dict mapping command handler name to `ArgumentParser` instance.
         """
         # Argument parsers for command handlers.
@@ -306,11 +307,6 @@ class DebugAnalyzer(object):
           filter_name: (str) name of the filter. Cannot be empty.
           filter_callable: (callable) a filter function of the signature described
             as above.
-
-        Raises:
-          ValueError: If filter_name is an empty str.
-          TypeError: If filter_name is not a str.
-                     Or if filter_callable is not callable.
         """
 
         if not isinstance(filter_name, str):
@@ -336,11 +332,10 @@ class DebugAnalyzer(object):
         ----------
           filter_name: Name of the filter set during add_tensor_filter() call.
 
-        Returns:
+        Returns
+        -------
           The callable associated with the filter name.
 
-        Raises:
-          ValueError: If there is no tensor filter of the specified filter name.
         """
 
         if filter_name not in self._tensor_filters:
@@ -354,7 +349,8 @@ class DebugAnalyzer(object):
         Parameters
         ----------
           handler_name: argument name.
-        Returns:
+        Returns
+        -------
           Formats the full help text and returns it as a string.
         """
         return self._arg_parsers[handler_name].format_help()
@@ -371,7 +367,8 @@ class DebugAnalyzer(object):
           screen_info: Optional dict input containing screen information such as
             cols.
 
-        Returns:
+        Returns
+        -------
           Output text lines as a RichTextLines object.
         """
 
@@ -488,7 +485,8 @@ class DebugAnalyzer(object):
           data: (list of DebugTensorDaum) the data based on which the maximum
             column widths will be determined.
 
-        Returns:
+        Returns
+        -------
           (int) maximum width of the timestamp column. 0 if data is empty.
           (int) maximum width of the dump size column. 0 if data is empty.
           (int) maximum width of the op type column. 0 if data is empty.
@@ -553,11 +551,10 @@ class DebugAnalyzer(object):
           sort_by: The field to sort data by.
           reverse: (bool) Whether to use reversed (descending) order.
 
-        Returns:
+        Returns
+        -------
           (list of DebugTensorDatum) in sorted order.
 
-        Raises:
-          ValueError: given an invalid value of sort_by.
         """
 
         if sort_by == SORT_TENSORS_BY_TIMESTAMP:
@@ -604,7 +601,8 @@ class DebugAnalyzer(object):
           max_dump_size_width: (int) maximum width of the dump size column.
           max_op_type_width: (int) maximum width of the op type column.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object.
         """
 
@@ -688,7 +686,8 @@ class DebugAnalyzer(object):
           screen_info: Optional dict input containing screen information such as
             cols.
 
-        Returns:
+        Returns
+        -------
           Output text lines as a RichTextLines object.
         """
 
@@ -751,7 +750,8 @@ class DebugAnalyzer(object):
         ----------
           node_name: (str) name of the node.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object containing the stack trace of the node's
           construction.
         """
@@ -792,7 +792,8 @@ class DebugAnalyzer(object):
           screen_info: Optional dict input containing screen information such as
             cols.
 
-        Returns:
+        Returns
+        -------
           Output text lines as a RichTextLines object.
         """
 
@@ -823,7 +824,8 @@ class DebugAnalyzer(object):
           screen_info: Optional dict input containing screen information such as
             cols.
 
-        Returns:
+        Returns
+        -------
           Output text lines as a RichTextLines object.
         """
 
@@ -964,7 +966,8 @@ class DebugAnalyzer(object):
           screen_info: Optional dict input containing screen information such as
             cols.
 
-        Returns:
+        Returns
+        -------
           Output text lines as a RichTextLines object.
         """
 
@@ -1005,7 +1008,8 @@ class DebugAnalyzer(object):
           do_outputs: Whether recipients, instead of input nodes are to be
             listed, as a boolean.
 
-        Returns:
+        Returns
+        -------
           Input or recipient tree formatted as a RichTextLines object.
         """
 
@@ -1175,7 +1179,8 @@ class DebugAnalyzer(object):
           non_ctrls: Non-control neighbor node names, as a list of str.
           ctrls: Control neighbor node names, as a list of str.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object.
         """
 
@@ -1221,7 +1226,8 @@ class DebugAnalyzer(object):
         ----------
           node_name: Name of the node of which the attributes are to be listed.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object.
         """
 
@@ -1245,7 +1251,8 @@ class DebugAnalyzer(object):
         ----------
           node_name: Name of the node of which the attributes are to be listed.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object.
         """
 
@@ -1296,7 +1303,8 @@ def create_analyzer_ui(debug_dump,
       on_ui_exit: (`Callable`) the callback to be called when the UI exits.
       config: A `ui_config.CLIConfig` object.
 
-    Returns:
+    Returns
+    -------
       (ui_base.BaseUI) A BaseUI subtype object with a set of standard analyzer
         commands and tab-completions registered.
     """

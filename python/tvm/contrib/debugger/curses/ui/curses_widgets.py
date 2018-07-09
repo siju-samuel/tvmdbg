@@ -44,9 +44,6 @@ class CursesNavigationHistory(object):
           capacity: (`int`) How many items this object can hold. Each item consists
             of a command stirng, an output RichTextLines object and a scroll
             position.
-
-        Raises:
-          ValueError: If capacity is not a positive number.
         """
         if capacity <= 0:
             raise ValueError("In valid capacity value: %d" % capacity)
@@ -78,9 +75,6 @@ class CursesNavigationHistory(object):
         Parameters
         ----------
           new_scroll_position: (`int`) new scroll-position value.
-
-        Raises:
-          ValueError: If the history is empty.
         """
         if not self._items:
             raise ValueError("Empty navigation history")
@@ -89,7 +83,8 @@ class CursesNavigationHistory(object):
     def size(self):
         """Get the size of widget items from list.
 
-        Returns:
+        Returns
+        -------
           ('int') length of widget items list.
         """
         return len(self._items)
@@ -97,7 +92,8 @@ class CursesNavigationHistory(object):
     def pointer(self):
         """Get curses widget pointer.
 
-        Returns:
+        Returns
+        -------
           The pointer value.
         """
         return self._pointer
@@ -108,11 +104,9 @@ class CursesNavigationHistory(object):
         Decrease the pointer value by 1, if possible. Otherwise, the pointer value
         will be unchanged.
 
-        Returns:
+        Returns
+        -------
           The updated pointer value.
-
-        Raises:
-          ValueError: If history is empty.
         """
         if not self._items:
             raise ValueError("Empty navigation history")
@@ -127,10 +121,9 @@ class CursesNavigationHistory(object):
         Increase the pointer value by 1, if possible. Otherwise, the pointer value
         will be unchanged.
 
-        Returns:
+        Returns
+        -------
           The updated pointer value.
-
-        Raises:
           ValueError: If history is empty.
         """
         if not self._items:
@@ -143,7 +136,8 @@ class CursesNavigationHistory(object):
     def can_go_back(self):
         """Test whether client can go back one place.
 
-        Returns:
+        Returns
+        -------
           (`bool`) Whether going back one place is possible.
         """
         return self._pointer >= 1
@@ -151,7 +145,8 @@ class CursesNavigationHistory(object):
     def can_go_forward(self):
         """Test whether client can go forward one place.
 
-        Returns:
+        Returns
+        -------
           (`bool`) Whether going back one place is possible.
         """
         return self._pointer + 1 < len(self._items)
@@ -159,7 +154,8 @@ class CursesNavigationHistory(object):
     def can_go_home(self):
         """Test whether client can go home place.
 
-        Returns:
+        Returns
+        -------
           (`bool`) Whether going back home place is possible.
         """
         if self._pointer >= 0:
@@ -172,7 +168,8 @@ class CursesNavigationHistory(object):
     def can_go_help(self):
         """Test whether client can go help place.
 
-        Returns:
+        Returns
+        -------
           (`bool`) Whether going back help place is possible.
         """
         if self._pointer >= 0:
@@ -185,7 +182,8 @@ class CursesNavigationHistory(object):
     def get_latest_command_info(self):
         """Get the latest command information.
 
-        Returns:
+        Returns
+        -------
           (`string`) Return the recent command shortcut.
         """
         return self._items[self._pointer].command
@@ -207,7 +205,8 @@ class CursesNavigationHistory(object):
           forward_command: (`str`) command for going forward. Used to construct the
             shortcut menu item.
 
-        Returns:
+        Returns
+        -------
           (`ui_common.RichTextLines`) the navigation bar text with
             attributes.
 

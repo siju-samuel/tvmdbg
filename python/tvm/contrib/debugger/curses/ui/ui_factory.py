@@ -28,11 +28,9 @@ def get_ui(ui_type,
       config: An instance of `ui_config.CLIConfig()` carrying user-facing
         configurations.
 
-    Returns:
+    Returns
+    -------
       A `ui_base.BaseUI` subtype object.
-
-    Raises:
-      ValueError: on invalid ui_type or on exhausting or fallback ui_types.
     """
     if available_ui_types is None:
         available_ui_types = copy.deepcopy(SUPPORTED_UI_TYPES)

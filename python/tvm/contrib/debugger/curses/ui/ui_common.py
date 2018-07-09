@@ -38,7 +38,8 @@ class CommandLineExit(Exception):
     def exit_token(self):
         """Get the exit token object cause the UI loop exit.
 
-        Returns:
+        Returns
+        -------
           ('object') An exit token object, object to cause the UI loop exit.
         """
         return self._exit_token
@@ -82,7 +83,8 @@ class RichLine(object):
             attributes.  If it is a RichLine, it will be appended to this string
             with its attributes preserved.
 
-        Returns:
+        Returns
+        -------
           A new RichLine comprising both chunks of text, with appropriate
             attributes applied to the corresponding substrings.
         """
@@ -113,7 +115,8 @@ def rich_text_lines_frm_line_list(rich_text_list, annotations=None, additional_a
       rich_text_list: a list of RichLine objects or strings
       annotations: annotatoins for the resultant RichTextLines object.
 
-    Returns:
+    Returns
+    -------
       A corresponding RichTextLines object.
     """
     lines = []
@@ -170,9 +173,6 @@ class RichTextLines(object):
             This information can make display of tensors on screen clearer and can
             help the user navigate (scroll) to the desired location in a large
             tensor.
-
-        Raises:
-          ValueError: If lines is of invalid type.
         """
         if isinstance(lines, list):
             self._lines = lines
@@ -196,7 +196,8 @@ class RichTextLines(object):
     def lines(self):
         """Get the rich text lines(list).
 
-        Returns:
+        Returns
+        -------
           List of rich text line.
         """
         return self._lines
@@ -205,7 +206,8 @@ class RichTextLines(object):
     def font_attr_segs(self):
         """Get the rich text line font attributes segments.
 
-        Returns:
+        Returns
+        -------
           Dictionary of rich text line font attributes segments.
         """
         return self._font_attr_segs
@@ -214,7 +216,8 @@ class RichTextLines(object):
     def font_additional_attr(self):
         """Get the rich text line additional attributes.
 
-        Returns:
+        Returns
+        -------
           Rich text line additional attributes.
         """
         return self._additional_attr
@@ -223,7 +226,8 @@ class RichTextLines(object):
     def annotations(self):
         """Get the rich text line annotations.
 
-        Returns:
+        Returns
+        -------
           Dictionary of rich text line annotations.
         """
         return self._annotations
@@ -231,7 +235,8 @@ class RichTextLines(object):
     def num_lines(self):
         """Get the size of the rich text line list.
 
-        Returns:
+        Returns
+        -------
           ('int')Size of rich text line list.
         """
         return len(self._lines)
@@ -246,11 +251,9 @@ class RichTextLines(object):
           begin: (int) Beginning line index (inclusive). Must be >= 0.
           end: (int) Ending line index (exclusive). Must be >= 0.
 
-        Returns:
+        Returns
+        -------
           (RichTextLines) Sliced output instance of RichTextLines.
-
-        Raises:
-          ValueError: If begin or end is negative.
         """
 
         if begin < 0 or end < 0:
@@ -412,11 +415,9 @@ def regex_find(orig_screen_output, regex, font_attr):
       regex: The regex used for matching.
       font_attr: Font attribute used for highlighting the found result.
 
-    Returns:
+    Returns
+    -------
       A modified copy of orig_screen_output.
-
-    Raises:
-      ValueError: If input str regex is not a valid regular expression.
     """
     new_screen_output = RichTextLines(
         orig_screen_output.lines,
@@ -504,13 +505,12 @@ def wrap_rich_text_lines(inp, cols):
       inp: Input RichTextLines object.
       cols: Number of columns, as an int.
 
-    Returns:
+    Returns
+    -------
       1) A new instance of RichTextLines, with line lengths limited to cols.
       2) A list of new (wrapped) line index. For example, if the original input
         consists of three lines and only the second line is wrapped, and it's
         wrapped into two lines, this return value will be: [0, 1, 3].
-    Raises:
-      ValueError: If inputs have invalid types.
     """
 
     new_line_indices = []
@@ -629,14 +629,6 @@ class CommandHandlerRegistry(object):
           help_info: A help string.
           prefix_aliases: Aliases for the command prefix, as a list of str. E.g.,
             shorthands for the command prefix: ["p", "pr"]
-
-        Raises:
-          ValueError: If
-            1) the prefix is empty, or
-            2) handler is not callable, or
-            3) a handler is already registered for the prefix, or
-            4) elements in prefix_aliases clash with existing aliases.
-            5) help_info is not a str.
         """
 
         if not prefix:
@@ -682,20 +674,11 @@ class CommandHandlerRegistry(object):
             ["tensor_1"]
           screen_info: A dictionary containing screen info, e.g., {"cols": 100}.
 
-        Returns:
+        Returns
+        -------
           An instance of RichTextLines or None. If any exception is caught during
           the invocation of the command handler, the RichTextLines will wrap the
           error type and message.
-
-        Raises:
-          ValueError: If
-            1) prefix is empty, or
-            2) no command handler is registered for the command prefix, or
-            3) the handler is found for the prefix, but it fails to return a
-              RichTextLines or raise any exception.
-          CommandLineExit:
-            If the command handler raises this type of exception, this method will
-            simply pass it along.
         """
         if not prefix:
             raise ValueError("Prefix is empty")
@@ -741,7 +724,8 @@ class CommandHandlerRegistry(object):
         ----------
           prefix: A prefix or its alias, as a str.
 
-        Returns:
+        Returns
+        -------
           True iff a handler is registered for prefix.
         """
         return self._resolve_prefix(prefix) is not None
@@ -754,7 +738,8 @@ class CommandHandlerRegistry(object):
           cmd_prefix: Optional command prefix. As the prefix itself or one of its
             aliases.
 
-        Returns:
+        Returns
+        -------
           A RichTextLines object containing the help information. If cmd_prefix
           is None, the return value will be the full command-line help. Otherwise,
           it will be the help information for the specified command.
@@ -799,7 +784,8 @@ class CommandHandlerRegistry(object):
           screen_info: (dict) Information regarding the screen, e.g., the screen
             width in characters: {"cols": 80}
 
-        Returns:
+        Returns
+        -------
           (RichTextLines) Screen text output.
         """
 
@@ -818,7 +804,8 @@ class CommandHandlerRegistry(object):
         ----------
           token: a str to be resolved.
 
-        Returns:
+        Returns
+        -------
           If resolvable, the resolved command prefix.
           If not resolvable, None.
         """
@@ -836,7 +823,8 @@ class CommandHandlerRegistry(object):
           cmd_prefix: Command prefix, as the prefix itself or one of its
             aliases.
 
-        Returns:
+        Returns
+        -------
           A list of str as the help information fo cmd_prefix. If the cmd_prefix
             does not exist, the returned list of str will indicate that.
         """
@@ -891,9 +879,6 @@ class TabCompletionRegistry(object):
             synonym words triggering the same tab-completion context, e.g.,
             both "drink" and the short-hand "dr" can trigger the same context.
           comp_items: A list of completion items, as a list of str.
-
-        Raises:
-          TypeError: if the input arguments are not all of the correct types.
         """
 
         if not isinstance(context_words, list):
@@ -917,10 +902,6 @@ class TabCompletionRegistry(object):
         Parameters
         ----------
           context_words: A list of context words to deregister, as a list of str.
-
-        Raises:
-          KeyError: if there are word(s) in context_words that do not correspond
-            to any registered contexts.
         """
 
         for context_word in context_words:
@@ -939,9 +920,6 @@ class TabCompletionRegistry(object):
           context_word: A single completion word as a string. The extension will
             also apply to all other context words of the same context.
           new_comp_items: (list of str) New completion items to add.
-
-        Raises:
-          KeyError: if the context word has not been registered.
         """
 
         if context_word not in self._comp_dict:
@@ -959,9 +937,6 @@ class TabCompletionRegistry(object):
           context_word: A single completion word as a string. The removal will
             also apply to all other context words of the same context.
           comp_items: Completion items to remove.
-
-        Raises:
-          KeyError: if the context word has not been registered.
         """
 
         if context_word not in self._comp_dict:
@@ -979,7 +954,8 @@ class TabCompletionRegistry(object):
           context_word: The context word.
           prefix: The prefix of the incomplete word.
 
-        Returns:
+        Returns
+        -------
           (1) None if no registered context matches the context_word.
               A list of str for the matching completion items. Can be an empty list
               of a matching context exists, but no completion item matches the
@@ -1008,7 +984,8 @@ def _common_prefix(str_list):
     ----------
       str_list: (list of str) A list of strings.
 
-    Returns:
+    Returns
+    -------
       (str) The longest common prefix.
     """
     if not str_list:
@@ -1079,9 +1056,6 @@ class CommandHistory(object):
         Parameters
         ----------
           command: The history command, as a str.
-
-        Raises:
-          TypeError: if command is not a str.
         """
 
         if self._commands and command == self._commands[-1]:
@@ -1105,7 +1079,8 @@ class CommandHistory(object):
         ----------
           n: Number of most recent commands to look up.
 
-        Returns:
+        Returns
+        -------
           A list of n most recent commands, or all available most recent commands,
           if n exceeds size of the command history, in chronological order.
         """
@@ -1120,7 +1095,8 @@ class CommandHistory(object):
           prefix: The prefix to lookup.
           n: Number of most recent commands to look up.
 
-        Returns:
+        Returns
+        -------
           A list of n most recent commands that have the specified prefix, or all
           available most recent commands that have the prefix, if n exceeds the
           number of history commands with the prefix.
@@ -1154,7 +1130,8 @@ class MenuItem(object):
     def caption(self):
         """Get a caption of MenuItem.
 
-        Returns:
+        Returns
+        -------
           ('string') Caption of the menu item.
         """
         return self._caption
@@ -1167,7 +1144,8 @@ class MenuItem(object):
     def content(self):
         """Get a content of MenuItem.
 
-        Returns:
+        Returns
+        -------
           ('string') Content of the menu item. For a menu item that triggers
             a command, for example, content is the command string.
         """
@@ -1177,7 +1155,8 @@ class MenuItem(object):
     def get_custom_color(self):
         """Get the custom color attribute for MenuItem.
 
-        Returns:
+        Returns
+        -------
           Custom color attribute.
         """
         return self._custom_color
@@ -1185,7 +1164,8 @@ class MenuItem(object):
     def is_enabled(self):
         """Get a MenuItem is enable or not.
 
-        Returns:
+        Returns
+        -------
           ('bool') The menu item enable status.
         """
         return self._enabled
@@ -1235,7 +1215,8 @@ class Menu(object):
     def num_items(self):
         """Get a size of of MenuItems under Menu.
 
-        Returns:
+        Returns
+        -------
           ('int') The size of MenuItem under Menu.
         """
         return len(self._items)
@@ -1243,7 +1224,8 @@ class Menu(object):
     def captions(self):
         """Get a captions of MenuItems under current Menu.
 
-        Returns:
+        Returns
+        -------
           ('list') List of menu item captions.
         """
         return [item.caption for item in self._items]
@@ -1255,11 +1237,9 @@ class Menu(object):
         ----------
           caption: (str) The caption to look up.
 
-        Returns:
+        Returns
+        -------
           (MenuItem) The first-match menu item with the caption, if any.
-
-        Raises:
-          LookupError: If a menu item with the caption does not exist.
         """
 
         captions = self.captions()
@@ -1285,7 +1265,8 @@ class Menu(object):
           disabled_item_attrs: (list or str) Attributes applied to each
             disabled menu item, e.g., ["red"].
 
-        Returns:
+        Returns
+        -------
           (RichTextLines) A single-line output representing the menu, with
             font_attr_segs marking the individual menu items.
         """

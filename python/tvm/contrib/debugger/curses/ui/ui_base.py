@@ -17,7 +17,8 @@ def _parse_command(command):
     ----------
       command: (str) Command string to be parsed.
 
-    Returns:
+    Returns
+    -------
       prefix: (str) The command prefix.
       args: (list of str) The command arguments (i.e., not including the
         prefix).
@@ -42,7 +43,8 @@ def _analyze_tab_complete_input(text):
     ----------
       text: (str) the full, raw input text to be tab-completed.
 
-    Returns:
+    Returns
+    -------
       context: (str) the context str. For example,
         If text == "view_tensor softmax", returns "view_tensor".
         If text == "print", returns "".
@@ -178,7 +180,8 @@ class BaseUI(object):
           enable_mouse_on_start: (bool) Whether the mouse mode is to be enabled on
             start-up.
 
-        Returns:
+        Returns
+        -------
           An exit token of arbitrary type. Can be None.
         """
 

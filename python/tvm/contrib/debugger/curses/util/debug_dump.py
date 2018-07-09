@@ -46,7 +46,8 @@ def _get_tensor_name(node_name, output_slot):
       node_name: Name of the node that outputs the tensor, as a string.
       output_slot: Output slot index of the tensor, as an integer.
 
-    Returns:
+    Returns
+    -------
       Name of the tensor, as a string.
     """
     return "%s:%d" % (node_name, output_slot)
@@ -62,7 +63,8 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
       debug_op: Name of the debug op that is used to watch the tensor, as a
           string.
 
-    Returns:
+    Returns
+    -------
       A string representing the debug watch on the tensor (i.e., the "watch key").
     """
     return "%s:%s" % (_get_tensor_name(node_name, output_slot), debug_op)
@@ -88,11 +90,6 @@ class DebugDumpDir(object):
               partition graphs executed by the TVM runtime.
           validate: (`bool`) whether the dump files are to be validated against the
               partition graphs.
-
-        Raises:
-          IOError: If dump_root does not exist as a directory.
-          ValueError: If more than one core metadata file is found under the dump
-            root directory.
         """
         if not os.path.isdir(dump_root):
             raise IOError("Dump root directory %s does not exist" % dump_root)
@@ -152,9 +149,6 @@ class DebugDumpDir(object):
         ----------
           device_name: (`str`) name of the device.
           device_root: (`str`) dump root directory of the given device.
-
-        Raises:
-          ValueError: If GraphDef for the device is not available.
         """
         self._dump_tensor_data[device_name] = []
         self._debug_watches[device_name] = collections.defaultdict(
@@ -206,7 +200,8 @@ class DebugDumpDir(object):
           dir_name: (`str`) Name of the directory in which the dump file resides.
           file_name: (`str`) Base name of the dump file.
 
-        Returns:
+        Returns
+        -------
           (`data_dump.DebugTensorDatum`) The `data_dump.DebugTensorDatum` loaded from the dump file.
         """
         # Calculate the relative path of the dump file with respect to the root.
@@ -261,7 +256,8 @@ class DebugDumpDir(object):
     def ts0(self):
         """Absolute timestamp of the first dumped tensor across all devices.
 
-        Returns:
+        Returns
+        -------
           (`int`) absolute timestamp of the first dumped tensor, in microseconds.
         """
         return self._t0
@@ -270,7 +266,8 @@ class DebugDumpDir(object):
     def size(self):
         """Total number of dumped tensors in the dump root directory.
 
-        Returns:
+        Returns
+        -------
           (`int`) The total number of dumped tensors in the dump root directory.
         """
         return sum(len(self._dump_tensor_data[device_name])
@@ -290,10 +287,6 @@ class DebugDumpDir(object):
               partition graphs executed by the TVM runtime.
           validate: (`bool`) Whether the dump files are to be validated against the
             partition graphs.
-
-        Raises:
-          ValueError: If the partition GraphDef of one or more devices fail to be
-            loaded.
         """
         if partition_graphs:
             partition_graphs_dev_names = [
@@ -338,12 +331,6 @@ class DebugDumpDir(object):
         Parameters
         ----------
           device_name: (`str`) device name.
-
-        Raises:
-          LookupError: If the partition graphs have not been loaded yet.
-          ValueError: If dumps contain node names not found in partition graph.
-            Or if the temporal order of the dump's timestamps violate the
-            input relations on the partition graphs.
         """
         if not self._debug_graphs:
             raise LookupError("No partition graphs loaded for device %s" % device_name)
@@ -408,7 +395,8 @@ class DebugDumpDir(object):
           timestamp: (int) the timestamp in question.
           start_i: (int) the index in self._dump_tensor_data to start searching for the timestamp.
 
-        Returns:
+        Returns
+        -------
           (bool) Whether all the dependencies in pending are satisfied at the
             timestamp. If pending is empty to begin with, return True.
         """
@@ -432,11 +420,9 @@ class DebugDumpDir(object):
     def partition_graphs(self):
         """Get the partition graphs.
 
-        Returns:
+        Returns
+        -------
           Partition graphs as a list of GraphDef.
-
-        Raises:
-          LookupError: If no partition graphs have been loaded.
         """
         if not self._debug_graphs:
             raise LookupError("No partition graphs have been loaded.")
@@ -447,7 +433,8 @@ class DebugDumpDir(object):
     def run_outputs_info(self):
         """Get a str representation of the outputs used in the Session.run() call.
 
-        Returns:
+        Returns
+        -------
           If the information is available from one `Session.run` call, a `str`
             obtained from `repr(outputs)`.
           If the information is available from multiple `Session.run` calls, a
@@ -461,7 +448,8 @@ class DebugDumpDir(object):
     def run_input_keys_info(self):
         """Get a str representation of the input_dict used in the Session.run() call.
 
-        Returns:
+        Returns
+        -------
           If the information is available from one `Session.run` call, a `str`
             obtained from `repr(input_dict)`.
           If the information is available from multiple `Session.run` calls, a
@@ -483,13 +471,9 @@ class DebugDumpDir(object):
             the device name by looking at the available nodes.
           node_name: (str) name of the node.
 
-        Returns:
+        Returns
+        -------
           (str) Inferred name of the device, if available.
-
-        Raises:
-          ValueError: If the node name does not exist on any of the available
-            devices or if there are multiple devices that contain the node with
-            the given name.
         """
         if device_name is None:
             if node_name in self._node_devices:
@@ -514,12 +498,9 @@ class DebugDumpDir(object):
           device_name: (`str`) name of device. If None, all nodes from all available
             devices will be included.
 
-        Returns:
+        Returns
+        -------
           All nodes' names, as a list of str.
-
-        Raises:
-          LookupError: If no partition graphs have been loaded.
-          ValueError: If specified node name does not exist.
         """
         if not self._debug_graphs:
             raise LookupError("No partition graphs have been loaded.")
@@ -542,11 +523,9 @@ class DebugDumpDir(object):
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
 
-        Returns:
+        Returns
+        -------
           Attributes of the node.
-
-        Raises:
-          LookupError: If no partition graphs have been loaded.
         """
         if not self._debug_graphs:
             raise LookupError("No partition graphs have been loaded.")
@@ -565,12 +544,9 @@ class DebugDumpDir(object):
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
 
-        Returns:
+        Returns
+        -------
           (`list` of `str`) inputs to the node, as a list of node names.
-
-        Raises:
-          LookupError: If node inputs and control inputs have not been loaded
-             from partition graphs yet.
         """
         if not self._debug_graphs:
             raise LookupError(
@@ -606,12 +582,9 @@ class DebugDumpDir(object):
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
 
-        Returns:
+        Returns
+        -------
           (`list` of `str`) all inputs to the node, as a list of node names.
-
-        Raises:
-          LookupError: If node inputs and control inputs have not been loaded
-             from partition graphs yet.
         """
         if not self._debug_graphs:
             raise LookupError(
@@ -626,7 +599,8 @@ class DebugDumpDir(object):
     def devices(self):
         """Get the list of device names.
 
-        Returns:
+        Returns
+        -------
           (`list` of `str`) names of the devices.
         """
         return self._device_names
@@ -641,12 +615,9 @@ class DebugDumpDir(object):
             on all available devices. Otherwise, search for the node only on
             the given device.
 
-        Returns:
+        Returns
+        -------
           A boolean indicating whether the node exists.
-
-        Raises:
-          LookupError: If no partition graphs have been loaded yet.
-          ValueError: If device_name is specified but cannot be found.
         """
         if not self._debug_graphs:
             raise LookupError("Nodes have not been loaded from partition graphs yet.")
@@ -666,15 +637,11 @@ class DebugDumpDir(object):
         ----------
           node_name: (`str`) name of the node.
 
-        Returns:
+        Returns
+        -------
           (`str` or `list` of `str`) name of the device(s) on which the node of the
             given name is found. Returns a `str` if there is only one such device,
             otherwise return a `list` of `str`.
-
-        Raises:
-          LookupError: If node inputs and control inputs have not been loaded
-             from partition graphs yet.
-          ValueError: If the node does not exist in partition graphs.
         """
         if not self._debug_graphs:
             raise LookupError("Node devices are not loaded from partition graphs yet.")
@@ -694,12 +661,9 @@ class DebugDumpDir(object):
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
 
-        Returns:
+        Returns
+        -------
           (`str`) op type of the node.
-
-        Raises:
-          LookupError: If node op types have not been loaded
-             from partition graphs yet.
         """
         if not self._debug_graphs:
             raise LookupError("Node op types are not loaded from partition graphs yet.")
@@ -716,13 +680,10 @@ class DebugDumpDir(object):
           device_name: (`str`) name of the device. If there is only one device or if
             node_name exists on only one device, this argument is optional.
 
-        Returns:
+        Returns
+        -------
           (`list` of `str`) all debug tensor watch keys. Returns an empty list if
             the node name does not correspond to any debug watch keys.
-
-        Raises:
-          `LookupError`: If debug watch information has not been loaded from
-            partition graphs yet.
         """
         try:
             device_name = self._infer_device_name(device_name, node_name)
@@ -750,13 +711,10 @@ class DebugDumpDir(object):
             the specified debug_watch_key exists on only one device, this argument
             is optional.
 
-        Returns:
+        Returns
+        -------
           A list of `data_dump.DebugTensorDatum` instances that correspond to the debug watch
           key. If the watch key does not exist, returns an empty list.
-
-        Raises:
-          ValueError: If there are multiple devices that have the debug_watch_key,
-            but device_name is not specified.
         """
         if device_name is None:
             matching_device_names = [
@@ -804,7 +762,8 @@ class DebugDumpDir(object):
           exclude_node_names: Optional regular expression to exclude nodes with
             names matching the regular expression.
 
-        Returns:
+        Returns
+        -------
           A list of all `data_dump.DebugTensorDatum` objects in this `DebugDumpDir` object
            for which predicate returns True, sorted in ascending order of the
            timestamp.
@@ -843,13 +802,10 @@ class DebugDumpDir(object):
             the specified debug_watch_key exists on only one device, this argument
             is optional.
 
-        Returns:
+        Returns
+        -------
           List of file path(s) loaded. This is a list because each debugged tensor
             may be dumped multiple times.
-
-        Raises:
-          WatchKeyDoesNotExistInDebugDumpDirError: If the tensor does not exist in
-            the debug-dump data.
         """
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
@@ -876,12 +832,9 @@ class DebugDumpDir(object):
             the specified debug_watch_key exists on only one device, this argument
             is optional.
 
-        Returns:
+        Returns
+        -------
           List of tensors (`numpy.ndarray`) loaded from the debug-dump file(s).
-
-        Raises:
-          WatchKeyDoesNotExistInDebugDumpDirError: If the tensor does not exist in
-            the debug-dump data.
         """
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
         try:
@@ -914,12 +867,9 @@ class DebugDumpDir(object):
             the specified debug_watch_key exists on only one device, this argument
             is optional.
 
-        Returns:
+        Returns
+        -------
           (`list` of `int`) list of relative timestamps.
-
-        Raises:
-          WatchKeyDoesNotExistInDebugDumpDirError: If the tensor watch key does not
-            exist in the debug dump data.
         """
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
@@ -947,12 +897,9 @@ class DebugDumpDir(object):
             the specified debug_watch_key exists on only one device, this argument
             is optional.
 
-        Returns:
+        Returns
+        -------
           (`list` of `int`): list of dump file sizes in bytes.
-
-        Raises:
-          WatchKeyDoesNotExistInDebugDumpDirError: If the tensor watch key does not
-            exist in the debug dump data.
         """
         device_name = self._infer_device_name(device_name, node_name)
         watch_key = _get_tensor_watch_key(node_name, output_slot, debug_op)
@@ -970,13 +917,10 @@ class DebugDumpDir(object):
         ----------
           element_name: (`str`) Name of a graph element (node or tensor).
 
-        Returns:
+        Returns
+        -------
           (list) The traceback list object as returned by the `extract_trace`
             method of Python's traceback module.
-
-        Raises:
-          LookupError: If Python graph is not available for traceback lookup.
-          KeyError: If the node cannot be found in the Python graph loaded.
         """
         node_name = graph_dump.get_node_name(element_name)
         if node_name not in self._node_traceback:

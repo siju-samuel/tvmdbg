@@ -47,7 +47,8 @@ def bytes_to_readable_str(num_bytes, include_b=False):
       num_bytes: (`int` or None) Number of bytes.
       include_b: (`bool`) Include the letter B at the end of the unit.
 
-    Returns:
+    Returns
+    -------
       (`str`) A string representing the number of bytes in a human-readable way,
         including a unit at the end.
     """
@@ -77,11 +78,9 @@ def time_to_readable_str(value_us, force_time_unit=None):
       force_time_unit: force the output to use the specified time unit. Must be
         in TIME_UNITS.
 
-    Returns:
+    Returns
+    -------
       Human-readable string representation of the time value.
-
-    Raises:
-      ValueError: if force_time_unit value is not in TIME_UNITS.
     """
     if not value_us:
         return "0"
@@ -106,7 +105,8 @@ def parse_ranges_highlight(ranges_string):
         numerical ranges. See the help info of the -r flag of the view_tensor
         command for more details.
 
-    Returns:
+    Returns
+    -------
       An instance of tensor_data.HighlightOptions, if range_string is a valid
         representation of a range or a list of ranges.
     """
@@ -120,7 +120,8 @@ def parse_ranges_highlight(ranges_string):
         ----------
           ndarray: tensor
 
-        Returns: A boolean ndarray of the same shape as ndarray.
+        Returns
+        -------
         """
 
         ret_val = np.zeros(ndarray.shape, dtype=bool)
@@ -144,7 +145,9 @@ def get_np_printoptions_frm_scr(screen_info):
       screen_info: Optional dict input containing screen information such as
             cols.
 
-    Returns: A dictionary of keyword.
+    Returns
+    -------
+       A dictionary of keyword.
     """
 
     if screen_info and "cols" in screen_info:
@@ -183,7 +186,8 @@ def format_tensor(tensor,
       write_path: A path to save the tensor value (after any slicing) to
         (optional). `numpy.save()` is used to save the value.
 
-    Returns:
+    Returns
+    -------
       An instance of `ui_common.RichTextLines` representing the
       (potentially sliced) tensor.
     """
@@ -228,7 +232,8 @@ def error(msg):
     ----------
       msg: (str) The error message.
 
-    Returns:
+    Returns
+    -------
       (ui_common.RichTextLines) A representation of the error message
         for screen output.
     """
@@ -248,7 +253,8 @@ def _recommend_command(command, description, indent=2, create_link=False):
       create_link: (bool) Whether a command link is to be applied to the command
         string.
 
-    Returns:
+    Returns
+    -------
       (RichTextLines) Formatted text (with font attributes) for recommending the
         command.
     """
@@ -294,7 +300,8 @@ def get_run_start_intro(graph_node_count,
       is_callable_runner: (bool) whether a runner returned by
           GraphRuntime.make_callable is being run.
 
-    Returns:
+    Returns
+    -------
       (RichTextLines) Formatted intro message about the `GraphRuntime.run()` call.
     """
 
@@ -378,7 +385,8 @@ def get_run_short_description(run_call_count,
       is_callable_runner: (bool) whether a runner returned by
           GraphRuntime.make_callable is being run.
 
-    Returns:
+    Returns
+    -------
       (str) A short description of the run() call, including information about
         the output(s) and input(s).
     """
@@ -418,7 +426,8 @@ def get_error_intro(tvm_error):
     ----------
       tvm_error: (errors.OpError) TVM run-time error object.
 
-    Returns:
+    Returns
+    -------
       (RichTextLines) Formatted intro message about the run-time OpError, with
         sample commands for debugging.
     """
