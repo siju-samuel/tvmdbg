@@ -38,7 +38,11 @@ def test_graph_simple():
             print("Skip because llvm is not enabled")
             return
         mlib = tvm.build(s, [A, B], "llvm", name="myadd")
-        mod = graph_runtime.create(graph, mlib, tvm.cpu(0))
+        try:
+            mod = graph_runtime.create(graph, mlib, tvm.cpu(0))
+        except ValueError:
+            return
+
         a = np.random.uniform(size=(n,)).astype(A.dtype)
         mod.set_input(x=a)
         #verify dumproot created

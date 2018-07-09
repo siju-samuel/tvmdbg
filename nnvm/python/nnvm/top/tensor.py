@@ -53,11 +53,6 @@ reg.register_pattern("copy", OpPattern.ELEMWISE)
 reg.register_schedule("copy", _fschedule_broadcast)
 
 # cast
-@reg.register_compute("cast")
-def compute_cast(attrs, inputs, _):
-    """Compute definition of cast"""
-    dtype = attrs.get_string("dtype")
-    return topi.cast(inputs[0], dtype)
 reg.register_pattern("cast", OpPattern.ELEMWISE)
 reg.register_schedule("cast", _fschedule_broadcast)
 
@@ -173,6 +168,54 @@ reg.register_schedule("broadcast_mul", _fschedule_broadcast)
 reg.register_pattern("broadcast_div", OpPattern.BROADCAST)
 reg.register_schedule("broadcast_div", _fschedule_broadcast)
 
+# broadcast mod
+reg.register_pattern("broadcast_mod", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_mod", _fschedule_broadcast)
+
+# broadcast max
+reg.register_pattern("broadcast_max", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_max", _fschedule_broadcast)
+
+# broadcast min
+reg.register_pattern("broadcast_min", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_min", _fschedule_broadcast)
+
+# broadcast pow
+reg.register_pattern("broadcast_pow", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_pow", _fschedule_broadcast)
+
+# broadcast left_shift
+reg.register_pattern("broadcast_left_shift", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_left_shift", _fschedule_broadcast)
+
+# broadcast right_shift
+reg.register_pattern("broadcast_right_shift", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_right_shift", _fschedule_broadcast)
+
+# broadcast greater
+reg.register_pattern("broadcast_greater", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_greater", _fschedule_broadcast)
+
+# broadcast less
+reg.register_pattern("broadcast_less", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_less", _fschedule_broadcast)
+
+# broadcast equal
+reg.register_pattern("broadcast_equal", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_equal", _fschedule_broadcast)
+
+# broadcast not_equal
+reg.register_pattern("broadcast_not_equal", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_not_equal", _fschedule_broadcast)
+
+# broadcast greater_equal
+reg.register_pattern("broadcast_greater_equal", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_greater_equal", _fschedule_broadcast)
+
+# broadcast less_equal
+reg.register_pattern("broadcast_less_equal", OpPattern.BROADCAST)
+reg.register_schedule("broadcast_less_equal", _fschedule_broadcast)
+
 # broadcast_to
 reg.register_pattern("broadcast_to", OpPattern.BROADCAST)
 reg.register_schedule("broadcast_to", _fschedule_broadcast)
@@ -210,18 +253,10 @@ reg.register_pattern("ones_like", OpPattern.ELEMWISE)
 reg.register_schedule("ones_like", _fschedule_elemwise)
 
 # greater
-@reg.register_compute("greater")
-def compute_greater(_, inputs, out_info):
-    """Compute definition of greater"""
-    return topi.greater(inputs[0], inputs[1]).astype('float32')
 reg.register_pattern("greater", OpPattern.ELEMWISE)
 reg.register_schedule("greater", _fschedule_elemwise)
 
 # less
-@reg.register_compute("less")
-def compute_less(_, inputs, out_info):
-    """Compute definition of less"""
-    return topi.less(inputs[0], inputs[1]).astype('float32')
 reg.register_pattern("less", OpPattern.ELEMWISE)
 reg.register_schedule("less", _fschedule_elemwise)
 

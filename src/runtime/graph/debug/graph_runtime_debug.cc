@@ -1,5 +1,5 @@
 /*!
- *  Copyright (c) 2017 by Contributors
+ *  Copyright (c) 2018 by Contributors
  * \file graph_runtime_debug.cc
  */
 #include <sys/time.h>

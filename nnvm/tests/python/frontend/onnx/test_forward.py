@@ -23,14 +23,15 @@ def get_tvm_output(model, x, target, ctx, out_shape, dtype='float32'):
     return out.asnumpy()
 
 
-def verify_onnx_forward_impl(graph_file, data_shape, out_shape):
+def get_caffe2_output(model, x, dtype='float32'):
     import caffe2.python.onnx.backend
-    def get_caffe2_output(model, x, dtype='float32'):
-        prepared_backend = caffe2.python.onnx.backend.prepare(model)
-        W = {model.graph.input[0].name: x.astype(dtype)}
-        c2_out = prepared_backend.run(W)[0]
-        return c2_out
+    prepared_backend = caffe2.python.onnx.backend.prepare(model)
+    W = {model.graph.input[0].name: x.astype(dtype)}
+    c2_out = prepared_backend.run(W)[0]
+    return c2_out
 
+
+def verify_onnx_forward_impl(graph_file, data_shape, out_shape):
     dtype = 'float32'
     x = np.random.uniform(size=data_shape)
     model = onnx.load(graph_file)
@@ -107,6 +108,50 @@ def test_reshape_like():
 
     np.testing.assert_allclose(ref_shape, tvm_out.shape)
 
+def _test_power_iteration(x_shape, y_shape):
+    if isinstance(y_shape, int):
+        y_shape = [y_shape]
+
+    x = np.random.uniform(size=x_shape).astype(np.float32)
+    y = np.random.uniform(size=y_shape).astype(np.float32)
+
+    np_res = np.power(x, y).astype(np.float32)
+
+    res = helper.make_node("Pow", ['x', 'y'], ['out'])
+
+    graph = helper.make_graph([res],
+                              'power_test',
+                              inputs = [helper.make_tensor_value_info("x", TensorProto.FLOAT, list(x_shape)),
+                                        helper.make_tensor_value_info("y", TensorProto.FLOAT, list(y_shape))],
+                              outputs = [helper.make_tensor_value_info("out", TensorProto.FLOAT, list(np_res.shape))])
+
+    model = helper.make_model(graph, producer_name='power_test')
+
+    for target, ctx in ctx_list():
+        new_sym, params = nnvm.frontend.from_onnx(model)
+
+        input_name = model.graph.input[0].name
+        input_name1 = model.graph.input[1].name
+        shape_dict = {input_name: x.shape, input_name1: y.shape}
+        dtype_dict = {input_name: x.dtype, input_name1: y.dtype}
+
+        graph, lib, params = nnvm.compiler.build(new_sym, target, shape_dict, dtype_dict, params=params)
+        m = graph_runtime.create(graph, lib, ctx)
+        # set inputs
+        m.set_input(input_name, tvm.nd.array(x))
+        m.set_input(input_name1, tvm.nd.array(y))
+        m.set_input(**params)
+        m.run()
+        # get outputs
+        tvm_out = m.get_output(0, tvm.nd.empty(np_res.shape, np_res.dtype))
+
+        np.testing.assert_allclose(np_res, tvm_out.asnumpy(), rtol=1e-5, atol=1e-5)
+
+def test_power():
+    _test_power_iteration((1, 3), (1))
+    _test_power_iteration((2, 3), (2, 3))
+    _test_power_iteration((2, 3), (1, 3))
+
 def test_squeeze():
     in_shape = (1, 3, 1, 3, 1, 1)
     out_shape = (3, 3)
@@ -144,6 +189,101 @@ def test_unsqueeze():
 
     np.testing.assert_allclose(out_shape, tvm_out.shape)
 
+def _test_slice_iteration(indata, outdata, starts, ends, axes=None):
+    if axes:
+        y = helper.make_node("Slice", ['in'], ['out'], axes=axes, starts=starts, ends=ends)
+    else:
+        y = helper.make_node("Slice", ['in'], ['out'], starts=starts, ends=ends)
+
+    graph = helper.make_graph([y],
+                              'slice_test',
+                              inputs = [helper.make_tensor_value_info("in", TensorProto.FLOAT, list(indata.shape))],
+                              outputs = [helper.make_tensor_value_info("out", TensorProto.FLOAT, list(outdata.shape))])
+
+    model = helper.make_model(graph, producer_name='slice_test')
+
+    for target, ctx in ctx_list():
+        tvm_out = get_tvm_output(model, indata, target, ctx, outdata.shape, 'float32')
+
+    np.testing.assert_allclose(outdata, tvm_out)
+
+def test_slice():
+    x = np.random.randn(20, 10, 5).astype(np.float32)
+    _test_slice_iteration(x, x[0:3, 0:10], (0, 0), (3, 10), (0, 1))
+    _test_slice_iteration(x, x[:, :, 3:4], (0, 0, 3), (20, 10, 4))
+    _test_slice_iteration(x, x[:, 1:1000], (1), (1000), (1))
+    _test_slice_iteration(x, x[:, 0:-1], (0), (-1), (1))
+
+def _test_onnx_op_elementwise(inshape, outfunc, npargs, dtype, opname, kwargs):
+    indata = np.random.uniform(size=(2, 4, 5, 6)).astype(dtype)
+    outdata = outfunc(indata, **npargs)
+
+    y = helper.make_node(opname, ['in'], ['out'], **kwargs)
+
+    graph = helper.make_graph([y],
+                              opname+'_test',
+                              inputs = [helper.make_tensor_value_info("in", TensorProto.FLOAT, list(indata.shape))],
+                              outputs = [helper.make_tensor_value_info("out", TensorProto.FLOAT, list(outdata.shape))])
+
+    model = helper.make_model(graph, producer_name=opname+'_test')
+
+    for target, ctx in ctx_list():
+        tvm_out = get_tvm_output(model, indata, target, ctx, outdata.shape, dtype)
+
+    np.testing.assert_allclose(outdata, tvm_out)
+
+def test_floor():
+    _test_onnx_op_elementwise((2, 4, 5, 6), np.floor, {}, 'float32', 'Floor', {})
+
+def test_ceil():
+    _test_onnx_op_elementwise((2, 4, 5, 6), np.ceil, {}, 'float32', 'Ceil', {})
+
+def test_clip():
+    _test_onnx_op_elementwise((2, 4, 5, 6),
+                              np.clip,
+                              {'a_min': -1.0, 'a_max': 1.0},
+                              'float32',
+                              'Clip',
+                              {'min': -1.0, 'max': 1.0})
+
+def test_matmul():
+    a_shape = (4, 3)
+    b_shape = (3, 4)
+    out_shape = (4, 4)
+
+    a_array = np.random.uniform(size=a_shape).astype('float32')
+    b_array = np.random.uniform(size=b_shape).astype('float32')
+
+    mul_node = helper.make_node("MatMul", ["a", "b"], ["out"])
+
+    graph = helper.make_graph([mul_node],
+                              "matmul_test",
+                              inputs = [helper.make_tensor_value_info("a", TensorProto.FLOAT, list(a_shape)),
+                                        helper.make_tensor_value_info("b", TensorProto.FLOAT, list(b_shape))],
+                              outputs = [helper.make_tensor_value_info("out", TensorProto.FLOAT, list(out_shape))])
+
+    model = helper.make_model(graph, producer_name='matmul_test')
+
+    for target, ctx in ctx_list():
+        new_sym, params = nnvm.frontend.from_onnx(model)
+
+        input_name = model.graph.input[0].name
+        input_name1 = model.graph.input[1].name
+        shape_dict = {input_name: a_array.shape, input_name1: b_array.shape}
+        dtype_dict = {input_name: 'float32', input_name1: 'float32'}
+
+        graph, lib, params = nnvm.compiler.build(new_sym, target, shape_dict, dtype_dict, params=params)
+        m = graph_runtime.create(graph, lib, ctx)
+        # set inputs
+        m.set_input(input_name, tvm.nd.array(a_array.astype('float32')))
+        m.set_input(input_name1, tvm.nd.array(b_array.astype('float32')))
+        m.set_input(**params)
+        m.run()
+        # get outputs
+        tvm_out = m.get_output(0, tvm.nd.empty(out_shape, 'float32'))
+
+        np.testing.assert_allclose(np.matmul(a_array, b_array), tvm_out.asnumpy(), rtol=1e-5, atol=1e-5)
+
 if __name__ == '__main__':
     # verify_super_resolution_example()
     # verify_squeezenet1_1()
@@ -151,5 +291,11 @@ if __name__ == '__main__':
     verify_resnet18()
     test_reshape()
     test_reshape_like()
+    test_power()
     test_squeeze()
     test_unsqueeze()
+    test_slice()
+    test_floor()
+    test_ceil()
+    test_clip()
+    test_matmul()
