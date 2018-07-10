@@ -39,10 +39,12 @@ class CLIConfig(object):
 
         Parameters
         ----------
-          property_name: Name of the property.
+        property_name: str
+          Name of the property.
 
         Returns
         -------
+        value: str
           Value of the property.
         """
         if property_name not in self._config:
@@ -56,9 +58,12 @@ class CLIConfig(object):
 
         Parameters
         ----------
-          property_name: Name of the property.
-          property_val: Value of the property. If the property has `bool` type and
-            this argument has `str` type, the `str` value will be parsed as a `bool`
+        property_name: str
+          Name of the property.
+
+        property_val: str
+          Value of the property. If the property has `bool` type and this argument has `str` type,
+          the `str` value will be parsed as a `bool`
         """
         if property_name not in self._config:
             raise KeyError("%s is not a valid property name." % property_name)
@@ -93,12 +98,13 @@ class CLIConfig(object):
 
         Parameters
         ----------
-          property_name: Name of the property.
-          callback: The callback as a `callable` of signature:
-              def cbk(config):
-            where config is the config after it is set to the new value.
-            The callback is invoked each time the set() method is called with the
-            matching property_name.
+        property_name: str
+          Name of the property.
+
+        callback: callable
+          The callback as a `callable` of signature: def cbk(config): where config is the config
+          after it is set to the new value. The callback is invoked each time the set() method is
+          called with the matching property_name.
         """
         if property_name not in self._config:
             raise KeyError("%s is not a valid property name." % property_name)
@@ -121,10 +127,12 @@ class CLIConfig(object):
 
         Parameters
         ----------
-          highlight: A property name to highlight in the output.
+        highlight: str
+          A property name to highlight in the output.
 
         Returns
         -------
+        lines: object
           A `RichTextLines` output.
         """
         lines = [RL("Command-line configuration:", "bold"), RL("")]

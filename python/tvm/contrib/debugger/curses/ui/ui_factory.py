@@ -20,17 +20,18 @@ def get_ui(ui_type,
 
     Parameters
     ----------
-      ui_type: (`str`) requested UI type. Currently supported:
-        (curses | readline)
-      on_ui_exit: (`Callable`) the callback to be called when the UI exits.
-      available_ui_types: (`None` or `list` of `str`) Manually-set available
-        ui_types.
-      config: An instance of `ui_config.CLIConfig()` carrying user-facing
-        configurations.
+    ui_type: str
+      requested UI type. Currently supported: (curses | readline)
 
-    Returns
-    -------
-      A `ui_base.BaseUI` subtype object.
+    on_ui_exit: Callable
+      the callback to be called when the UI exits.
+
+    available_ui_types: None or list of str
+      Manually-set available ui_types.
+
+    config: object of ui_config.CLIConfig()
+      An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
+
     """
     if available_ui_types is None:
         available_ui_types = copy.deepcopy(SUPPORTED_UI_TYPES)
@@ -42,9 +43,6 @@ def get_ui(ui_type,
         if not ui_type or ui_type == "curses":
             from . import curses_ui
             return curses_ui.CursesUI(on_ui_exit=on_ui_exit, config=config)
-        # elif ui_type == "readline":
-        #  from . import readline_ui
-        #  return readline_ui.ReadlineUI(on_ui_exit=on_ui_exit, config=config)
     except ImportError:
         available_ui_types.remove(ui_type)
         if not available_ui_types:

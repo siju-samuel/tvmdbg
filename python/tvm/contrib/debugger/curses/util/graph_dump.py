@@ -8,16 +8,19 @@ def parse_node_or_tensor_name(name):
 
     Parameters
     ----------
-      name: An input node name (e.g., "node_a") or tensor name (e.g.,
+    name: str
+      An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
     Returns
     -------
-      1) The node name, as a str. If the input name is a tensor name, i.e.,
-        consists of a colon, the final colon and the following output slot
-        will be stripped.
-      2) If the input name is a tensor name, the output slot, as an int. If
-        the input name is not a tensor name, None.
+    node_name: str
+      The node name, as a str. If the input name is a tensor name, i.e.,
+      consists of a colon, the final colon and the following output slot
+      will be stripped.
+    output_slot: int or None
+      If the input name is a tensor name, the output slot, as an int. If
+      the input name is not a tensor name, None.
     """
 
     if ":" in name and not name.endswith(":"):
@@ -33,14 +36,16 @@ def get_node_name(element_name):
 
     Parameters
     ----------
-      element_name: An input node name (e.g., "node_a") or tensor name (e.g.,
+    element_name: str
+      An input node name (e.g., "node_a") or tensor name (e.g.,
         "node_a:0"), as a str.
 
     Returns
     -------
+    node_name: str
       The node name, as a str. If the input name is a tensor name, i.e.,
-        consists of a colon, the final colon and the following output slot
-        will be stripped.
+      consists of a colon, the final colon and the following output slot
+      will be stripped.
     """
     node_name, _ = parse_node_or_tensor_name(element_name)
     return node_name
@@ -54,11 +59,13 @@ def get_output_slot(element_name):
 
     Parameters
     ----------
-      element_name: (`str`) name of the graph element in question.
+    element_name: str
+      Name of the graph element in question.
 
     Returns
     -------
-      (`int`) output slot number.
+    output_slot: int or None
+      Output slot number.
     """
     _, output_slot = parse_node_or_tensor_name(element_name)
     return output_slot if output_slot is not None else 0
@@ -72,10 +79,12 @@ def is_copy_node(node_name):
 
     Parameters
     ----------
-      node_name: Name of the node.
+    node_name: str
+      Name of the node.
 
     Returns
     -------
+    value: bool
       A bool indicating whether the input argument is the name of a debug Copy
       node.
     """
@@ -90,10 +99,12 @@ def is_debug_node(node_name):
 
     Parameters
     ----------
-      node_name: Name of the node.
+    node_name: str
+      Name of the node.
 
     Returns
     -------
+    value: bool
       A bool indicating whether the input argument is the name of a debug node.
     """
     return node_name.startswith("__dbg_")
@@ -124,9 +135,11 @@ class DebugGraph(object):
 
         Parameters
         ----------
-          graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
+        graph_dump_def: GraphDef
+          The debugger-decorated `GraphDef`, with the
             debugger-inserted Copy* and Debug* nodes.
-          device_name: (str) name of the device.
+        device_name: str
+          name of the device.
         """
         self._graph_dump_def = graph_dump_def
         self._non_graph_dump_def = None
@@ -159,7 +172,8 @@ class DebugGraph(object):
 
         Parameters
         ----------
-          node: (NodeDef) A partition-graph node to be processed.
+        node: NodeDef
+          A partition-graph node to be processed.
         """
         if is_debug_node(node.name):
             # This is a debug node. Parse the node name and retrieve the
@@ -260,7 +274,8 @@ class DebugGraph(object):
 
         Parameters
         ----------
-          nodes_to_prune: (`list` of `str`) Names of the nodes to be pruned.
+        nodes_to_prune: list` of str
+          Names of the nodes to be pruned.
         """
         for node in nodes_to_prune:
             del self._node_inputs[node]
@@ -283,7 +298,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`str`) device name.
+        device_name  str
+          Device name.
         """
         return self._device_name
 
@@ -304,7 +320,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`str`) node device name.
+        node_devices: str
+          node device name.
         """
         return self._node_devices
 
@@ -314,7 +331,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`str`) node tensor type.
+        node_op_types: str
+          node tensor type.
         """
         return self._node_op_types
 
@@ -324,7 +342,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`str`) node tensor attributes.
+        node_attributes: str
+          node tensor attributes.
         """
         return self._node_attributes
 
@@ -334,7 +353,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`Dict`) inputs of node tensor.
+        node_inputs: dict
+          inputs of node tensor.
         """
         return self._node_inputs
 
@@ -344,7 +364,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`Dict`) control inputs of node tensor.
+        node_ctrl_inputs: dict
+          control inputs of node tensor.
         """
         return self._node_ctrl_inputs
 
@@ -354,7 +375,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`Dict`) reversed inputs of node tensor.
+        node_reversed_ref_inputs: dict
+          Reversed inputs of node tensor.
         """
         return self._node_reversed_ref_inputs
 
@@ -364,7 +386,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`Dict`) recipient of node tensor.
+        node_recipients: dict
+          Recipient of node tensor.
         """
         return self._node_recipients
 
@@ -374,7 +397,8 @@ class DebugGraph(object):
 
         Returns
         -------
-          (`Dict`) control recipients of node tensor.
+        node_ctrl_recipients: str
+          Control recipients of node tensor.
         """
         return self._node_ctrl_recipients
 
@@ -395,11 +419,13 @@ def reconstruct_non_graph_dump_def(graph_dump_def):
 
     Parameters
     ----------
-      graph_dump_def: The debugger-decorated `tvm.GraphDef`, with the
+    graph_dump_def: GraphDef
+      The debugger-decorated `GraphDef`, with the
         debugger-inserted Copy* and Debug* nodes.
 
     Returns
     -------
+    non_graph_dump_def: GraphDef
       The reconstructed `tvm.GraphDef` stripped of the debugger-inserted nodes.
     """
     return DebugGraph(graph_dump_def).non_graph_dump_def

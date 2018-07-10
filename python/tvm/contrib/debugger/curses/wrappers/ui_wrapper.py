@@ -38,7 +38,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          graph_runtime: The TVM `Graph Runtime` object being wrapped.
+        graph_runtime: Graph Runtime
+          The TVM `Graph Runtime` object being wrapped.
         """
 
         self._init_command = None
@@ -115,9 +116,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          filter_name: (`str`) name of the filter.
-          tensor_filter: (`callable`) the filter callable. See the doc string of
-            `DebugDumpDir.find()` for more details about its signature.
+        filter_name: str
+          name of the filter.
+
+        tensor_filter: callable
+          The filter callable. See the doc string of`DebugDumpDir.find()`
+          for more details about its signature.
         """
 
         self._tensor_filters[filter_name] = tensor_filter
@@ -127,10 +131,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          request: An instance of `OnRuntimeInitRequest`.
+        request: OnRuntimeInitRequest
+          An instance of `OnRuntimeInitRequest`.
 
         Returns
         -------
+        framework.OnRuntimeInitResponse: OnRuntimeInitResponse
           An instance of `OnRuntimeInitResponse`.
         """
 
@@ -145,10 +151,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          request: An instance of `OnRunStartRequest`.
+        request: OnRunStartRequest
+          An instance of `OnRunStartRequest`.
 
         Returns
         -------
+        run_start_response: OnRunStartResponse
           An instance of `OnRunStartResponse`.
         """
         self._is_run_start = True
@@ -217,10 +225,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          request: An instance of OnRuntimeInitRequest.
+        request: OnRuntimeInitRequest
+          An instance of OnRuntimeInitRequest.
 
         Returns
         -------
+        framework.OnRunEndResponse: OnRunEndResponse
           An instance of OnRuntimeInitResponse.
         """
 
@@ -266,11 +276,14 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          debug_dump: (dbg_dump.DebugDumpDir) The debug dump directory from this
-            run.
-          tvm_error: (None or OpError) OpError that happened during the run() call
-            (if any).
-          passed_filter: (None or str) Name of the tensor filter that just passed
+        debug_dump: dbg_dump.DebugDumpDir
+          The debug dump directory from this run.
+
+        tvm_error: None or OpError
+          OpError that happened during the run() call (if any).
+
+        passed_filter: None or str
+          Name of the tensor filter that just passed
             and caused the preparation of this run-end CLI (if any).
         """
 
@@ -320,6 +333,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Returns
         -------
+        response: OnRunStartResponse
           The OnRunStartResponse specified by the user using the "run" command.
         """
 
@@ -437,7 +451,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Returns
         -------
-          debug_urls: (list of str) Debug URLs for the current run() call.
+        debug_urls: list of str
+          Debug URLs for the current run() call.
             Currently, the list consists of only one URL that is a file:// URL.
         """
 
@@ -452,14 +467,19 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-          run_call_count: (int) Number of run() calls that have occurred.
-          outputs: a node/tensor or a list of node/tensor that are the outputs of
+        run_call_count: int
+          Number of run() calls that have occurred.
+
+        outputs: A node/tensor or a list of node/tensor
+          A node/tensor or a list of node/tensor that are the outputs of
             the run() call. This is the same as the outputs argument to the run()
             call.
-          input_dict: None of a dict. This is the input_dict argument to the run()
-            call.
-          is_callable_runner: (bool) whether a runner returned by
-            Module.make_callable is being run.
+
+        input_dict: None of a dict.
+          This is the input_dict argument to the run() call.
+
+        is_callable_runner: bool
+          whether a runner returned by Module.make_callable is being run.
         """
 
         self._run_call_count = run_call_count

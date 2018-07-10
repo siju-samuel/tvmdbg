@@ -13,12 +13,13 @@ def get_graph_element_name(elem):
 
     Parameters
     ----------
-      elem: The graph element in question.
+    elem: dict
+      The graph element in question.
 
     Returns
     -------
-      If the attribute 'name' is available, return the name. Otherwise, return
-      str(output).
+    val: str
+      If the attribute 'name' is available, return the name. Otherwise, return str(output).
     """
     if hasattr(elem, "attr"):
         val = elem.attr("name")
@@ -32,13 +33,14 @@ def get_flattened_names(inputs_or_outputs):
 
     Parameters
     ----------
-      inputs_or_outputs: Inputs or outputs of the `Session.run()` call. It maybe
-        a Tensor, an Operation or a Variable. It may also be nested lists, tuples
-        or dicts. See doc of `Session.run()` for more details.
+    inputs_or_outputs: list, tuple or dict
+      Inputs or outputs of the `Session.run()` call. It maybea Tensor, an Operation or a Variable.
+      It may also be nested lists, tuples or dicts. See doc of `Session.run()` for more details.
 
     Returns
     -------
-      (list of str) A flattened list of output names from `inputs_or_outputs`.
+    lines: list of str
+      A flattened list of output names from `inputs_or_outputs`.
     """
 
     lines = []

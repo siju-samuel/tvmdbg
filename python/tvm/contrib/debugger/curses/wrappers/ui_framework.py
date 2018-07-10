@@ -11,9 +11,10 @@ def _check_type(obj, expected_types):
 
     Parameters
     ----------
-      obj: The object being checked.
-      expected_types: (`type` or an iterable of `type`s) The expected `type`(s)
-        of obj.
+    obj: Object
+      The object being checked.
+    expected_types: `type` or an iterable of `type`s
+      The expected `type`(s) of obj.
     """
     if not isinstance(obj, expected_types):
         raise TypeError("Expected type %s; got type %s" %
@@ -31,7 +32,8 @@ class OnRuntimeInitRequest(object):
 
         Parameters
         ----------
-          obj: A TVM object.
+        obj: object
+          A TVM object.
         """
 
         self.runtime = obj
@@ -61,7 +63,8 @@ class OnRuntimeInitResponse(object):
 
         Parameters
         ----------
-          action: (`OnRuntimeInitAction`) Debugger action to take on runtime init.
+        action: OnRuntimeInitAction
+          Debugger action to take on runtime init.
         """
         _check_type(action, str)
         self.action = action
@@ -80,15 +83,22 @@ class OnRunStartRequest(object):
 
         Parameters
         ----------
-          outputs: Output targets of the get_run_command() call.
-          input_dict: The input dictionary to the get_run_command() call.
-          run_metadata: RunMetadata input to the get_run_command() call.
-            The above four arguments are identical to the input arguments to the
-            run() method of a non-wrapped TVM runtime.
-          run_call_count: 1-based count of how many run calls (including this one)
-            has been invoked.
-          is_callable_runner: (bool) whether a runner returned by
-            module.make_callable is being run.
+        outputs: list
+          Output targets of the get_run_command() call.
+
+        input_dict: dict
+          The input dictionary to the get_run_command() call.
+
+        run_metadata: RunMetadata
+          RunMetadata input to the get_run_command() call.
+          The above four arguments are identical to the input arguments to the
+          run() method of a non-wrapped TVM runtime.
+
+        run_call_count: int
+          1-based count of how many run calls (including this one) has been invoked.
+
+        is_callable_runner: bool
+          whether a runner returned by module.make_callable is being run.
         """
         self.outputs = outputs
         self.input_dict = input_dict
@@ -116,19 +126,26 @@ class OnRunStartResponse(object):
 
         Parameters
         ----------
-          action: (`CLIRunStartAction`) the action actually taken by the wrapped
-            module for the run() call.
-          debug_urls: (`list` of `str`) debug_urls used in watching the tensors
-            during the run() call.
-          debug_ops: (`str` or `list` of `str`) Debug op(s) to be used by the
-            debugger.
-          node_name_regex_whitelist: Regular-expression whitelist for node
-            name.
-          op_type_regex_whitelist: Regular-expression whitelist for op type.
-          tensor_dtype_regex_whitelist: Regular-expression whitelist for tensor
-            dtype.
-          tolerate_dbg_op_failures: Whether debug op creation failures
-            are to be tolerated.
+        action: CLIRunStartAction
+          the action actually taken by the wrapped module for the run() call.
+
+        debug_urls: list of str
+          debug_urls used in watching the tensors during the run() call.
+
+        debug_ops: str or list of str
+          Debug op(s) to be used by the debugger.
+
+        node_name_regex_whitelist: Regular-expression
+          Regular-expression whitelist for node name.
+
+        op_type_regex_whitelist: Regular-expression
+          Regular-expression whitelist for op type.
+
+        tensor_dtype_regex_whitelist: Regular-expression
+          Regular-expression whitelist for tensor dtype.
+
+        tolerate_dbg_op_failures: bool
+          Whether debug op creation failures are to be tolerated.
         """
 
         _check_type(action, str)
@@ -158,11 +175,14 @@ class OnRunEndRequest(object):
 
         Parameters
         ----------
-          performed_action: (`CLIRunStartAction`) Actually-performed action by the
-            debug-wrapper module.
-          run_metadata: run_metadata output from the run() call (if any).
-          tvm_error: (errors.OpError subtypes) TVM OpError that occurred
-            during the run (if any).
+        performed_action: CLIRunStartAction
+          Actually-performed action by the debug-wrapper module.
+
+        run_metadata: run_metadata
+          run_metadata output from the run() call (if any).
+
+        tvm_error: errors.OpError subtypes
+          TVM OpError that occurred during the run (if any).
         """
 
         _check_type(performed_action, str)
@@ -192,9 +212,11 @@ class CLIRunCommand(object):
 
         Parameters
         ----------
-          run_start_resp: Run start is depend on the action triggered from the CLI.
+        run_start_resp: run_start_resp
+          Run start is depend on the action triggered from the CLI.
           RUN output also depend on the action saved in 'run_start_resp'.
-          metadata: Same as meta data argument
+        metadata: metadata
+          Same as meta data argument
         """
         self._run_metadata = metadata
         self._run_start_resp = run_start_resp
@@ -218,7 +240,12 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          runtime: An (unwrapped) TVM module instance.
+        runtime: DebuGraphRuntime
+          An (unwrapped) TVM module instance.
+        graph: json
+          Graph in json format
+        ctx: str
+          Tvm context
         """
         self._outputs = []
         self._input_dict = {}
@@ -253,7 +280,8 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          name : Name of the output by which used to output from runtime.
+        name : str
+          Name of the output by which used to output from runtime.
         """
         self._outputs.append(name)
 
@@ -262,8 +290,11 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          name : Name of the input by which used to input to runtime.
-          value : Numpy/Tvm.NdArray instance which used to input to runtime.
+        name : str
+          Name of the input by which used to input to runtime.
+
+        value : Numpy/Tvm.NdArray
+          Numpy/Tvm.NdArray instance which used to input to runtime.
         """
         self._input_dict.update({name: value})
 
@@ -272,7 +303,8 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          folder_name : String the name of folder
+        folder_name : str
+          String the name of folder
 
         """
         if folder_name:
@@ -285,13 +317,12 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          cli_command: CLI command is created by the CLI wrapper before invoking
+        cli_command: CLIRunCommand object
+          CLI command is created by the CLI wrapper before invoking
           graph runtime.
-          retvals: graph runtime return value.
 
-        Returns
-        -------
-          None
+        retvals: int
+          graph runtime return value.
         """
         retvals = retvals
         run_start_resp = cli_command.get_run_start_resp()
@@ -312,11 +343,13 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          run_metadata: Same as the `run_metadata` arg to regular `module.run()`.
+        run_metadata: metadata
+          Same as the `run_metadata` arg to regular `module.run()`.
 
 
         Returns
         -------
+        run_command: CLIRunCommand object
           Simply return the run_command on which runtime should perform
         """
         retvals = True
@@ -343,7 +376,8 @@ class BaseDebugWrapperModule(object):
 
         Returns
         -------
-          ('int') number of run count.
+        run_call_count: int
+          number of run count.
         """
         return self._run_call_count
 
@@ -360,8 +394,8 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          request: (`OnRuntimeInitRequest`) callback request carrying information
-            such as the module being wrapped.
+        request: OnRuntimeInitRequest
+          callback request carrying information such as the module being wrapped.
 
         Returns
         -------
@@ -378,10 +412,10 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          request: (`OnRunStartRequest`) callback request object carrying
-            information about the run call such as the outputs, input dict, run
-            options, run metadata, and how many `run()` calls to this wrapper
-            module have occurred.
+        request: OnRunStartRequest
+          callback request object carrying information about the run call such as the outputs,
+          input dict, run options, run metadata, and how many `run()` calls to this wrapper
+          module have occurred.
 
         Returns
         -------
@@ -400,9 +434,9 @@ class BaseDebugWrapperModule(object):
 
         Parameters
         ----------
-          request: (`OnRunEndRequest`) callback request object carrying information
-            such as the actual action performed by the module wrapper for the
-            run() call.
+        request: OnRunEndRequest
+          callback request object carrying information  such as the actual action performed
+          by the module wrapper for the run() call.
 
         Returns
         -------
