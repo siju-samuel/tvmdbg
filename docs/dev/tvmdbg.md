@@ -50,7 +50,8 @@ By clicking at the **Node name** user can see the node details, like its
 2. Layer information may be dispersed into multiple operators.
 
 **References**
-https://github.com/tensorflow/tensorflow
-https://github.com/tensorflow/tensorboard
-https://github.com/awslabs/mxboard
+
+1. https://github.com/tensorflow/tensorflow
+2. https://github.com/tensorflow/tensorboard
+3. https://github.com/awslabs/mxboard
 
