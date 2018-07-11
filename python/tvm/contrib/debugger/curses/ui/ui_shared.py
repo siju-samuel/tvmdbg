@@ -44,15 +44,15 @@ def bytes_to_readable_str(num_bytes, include_b=False):
 
     Parameters
     ----------
-    num_bytes: int or None
-      Number of bytes.
-    include_b: bool
-      Include the letter B at the end of the unit.
+    num_bytes : int or None
+        Number of bytes.
+    include_b : bool
+        Include the letter B at the end of the unit.
 
     Returns
     -------
-    result: str
-      A string representing the number of bytes in a human-readable way, including a unit at end.
+    result : str
+        A string representing the number of bytes in a human-readable way, including a unit at end.
     """
 
     if num_bytes is None:
@@ -76,16 +76,16 @@ def time_to_readable_str(value_us, force_time_unit=None):
 
     Parameters
     ----------
-    value_us: int
-      time value in microseconds.
+    value_us : int
+        time value in microseconds.
 
-    force_time_unit: int
-      force the output to use the specified time unit. Must be in TIME_UNITS.
+    force_time_unit : int
+        force the output to use the specified time unit. Must be in TIME_UNITS.
 
     Returns
     -------
-    time:str
-      Human-readable string representation of the time value.
+    time : str
+        Human-readable string representation of the time value.
     """
     if not value_us:
         return "0"
@@ -106,9 +106,9 @@ def parse_ranges_highlight(ranges_string):
 
     Parameters
     ----------
-    ranges_string: str
-      A string representing a numerical range of a list of numerical ranges. See the help info of
-      the -r flag of the view_tensor command for more details.
+    ranges_string : str
+        A string representing a numerical range of a list of numerical ranges. See the help info of
+        the -r flag of the view_tensor command for more details.
 
     """
 
@@ -119,8 +119,8 @@ def parse_ranges_highlight(ranges_string):
 
         Parameters
         ----------
-        ndarray: tensor
-          tensor values for filter
+        ndarray : tensor
+            tensor values for filter
 
         """
 
@@ -142,13 +142,13 @@ def get_np_printoptions_frm_scr(screen_info):
 
     Parameters
     ----------
-    screen_info: dict
-      Optional dict input containing screen information such as cols.
+    screen_info : dict
+        Optional dict input containing screen information such as cols.
 
     Returns
     -------
-    printoptions: dict
-       A dictionary of keyword.
+    printoptions : dict
+         A dictionary of keyword.
     """
 
     if screen_info and "cols" in screen_info:
@@ -168,37 +168,37 @@ def format_tensor(tensor,
 
     Parameters
     ----------
-    tensor: numpy ndarray
-      The tensor value.
+    tensor : numpy ndarray
+        The tensor value.
 
-    tensor_name: str
-      Name of the tensor, e.g., the tensor's debug watch key.
+    tensor_name : str
+        Name of the tensor, e.g., the tensor's debug watch key.
 
-    np_printoptions: dict
-      Numpy tensor formatting options.
+    np_printoptions : dict
+        Numpy tensor formatting options.
 
-    print_all: bool
-      Whether the tensor is to be displayed in its entirety,instead of printing ellipses, even
-      if its number of elements exceeds the default numpy display threshold.  (Note: Even if
-      this is set to true, the screen output can still be cut off by the UI frontend if it consist
-      of more lines than the frontend can handle.)
+    print_all : bool
+        Whether the tensor is to be displayed in its entirety,instead of printing ellipses, even
+        if its number of elements exceeds the default numpy display threshold.  (Note: Even if
+        this is set to true, the screen output can still be cut off by the UI frontend if it consist
+        of more lines than the frontend can handle.)
 
-    tensor_slicing: str or None
-      Slicing of the tensor, e.g., "[:, 1]". If None, no slicing will be performed on the tensor.
-      highlight_options: (tensor_data.HighlightOptions) options to highlight
-      elements of the tensor. See the doc of tensor_data.format_tensor() for more details.
+    tensor_slicing : str or None
+        Slicing of the tensor, e.g., "[:, 1]". If None, no slicing will be performed on the tensor.
+        highlight_options: (tensor_data.HighlightOptions) options to highlight
+        elements of the tensor. See the doc of tensor_data.format_tensor() for more details.
 
-    include_numeric_summary: bool
-      Whether a text summary of the numeric values (if applicable) will be included.
+    include_numeric_summary : bool
+        Whether a text summary of the numeric values (if applicable) will be included.
 
-    write_path: str
-      A path to save the tensor value (after any slicing) to (optional). `numpy.save()` is
-      used to save the value.
+    write_path : str
+        A path to save the tensor value (after any slicing) to (optional). `numpy.save()` is
+        used to save the value.
 
     Returns
     -------
-    line: object
-      An instance of `ui_common.RichTextLines` representing the (potentially sliced) tensor.
+    line : object
+        An instance of `ui_common.RichTextLines` representing the (potentially sliced) tensor.
     """
 
     if tensor_slicing:
@@ -239,13 +239,13 @@ def error(msg):
 
     Parameters
     ----------
-    msg: str
-      The error message.
+    msg : str
+        The error message.
 
     Returns
     -------
-    line: object
-      (ui_common.RichTextLines) A representation of the error message for screen output.
+    line : object
+        (ui_common.RichTextLines) A representation of the error message for screen output.
     """
 
     return ui_common.rich_text_lines_frm_line_list([
@@ -257,22 +257,22 @@ def _recommend_command(command, description, indent=2, create_link=False):
 
     Parameters
     ----------
-    command: str
-      The command to recommend.
+    command : str
+        The command to recommend.
 
-    description: str
-      A description of what the command does.
+    description : str
+        A description of what the command does.
 
-    indent: int
-      How many spaces to indent in the beginning.
+    indent : int
+        How many spaces to indent in the beginning.
 
-    create_link: bool
-      Whether a command link is to be applied to the command string.
+    create_link : bool
+        Whether a command link is to be applied to the command string.
 
     Returns
     -------
-    line: object
-      (RichTextLines) Formatted text (with font attributes) for recommending the command.
+    line : object
+        (RichTextLines) Formatted text (with font attributes) for recommending the command.
     """
 
     indent_str = " " * indent
@@ -306,25 +306,25 @@ def get_run_start_intro(graph_node_count,
 
     Parameters
     ----------
-    run_call_count: int
-      Run call counter.
+    run_call_count : int
+        Run call counter.
 
-    outputs: dict
-      Outputs of the `GraphRuntime.run()` call.
+    outputs : dict
+        Outputs of the `GraphRuntime.run()` call.
 
-    input_dict: dict
-      Inputs to the `GraphRuntime.run()` call.
+    input_dict : dict
+        Inputs to the `GraphRuntime.run()` call.
 
-    tensor_filters: dict
-      A dict from tensor-filter name to tensor-filter callable.
+    tensor_filters : dict
+        A dict from tensor-filter name to tensor-filter callable.
 
-    is_callable_runner: bool
-      whether a runner returned is callable
+    is_callable_runner : bool
+        whether a runner returned is callable
 
     Returns
     -------
-    out: Object
-      (RichTextLines) Formatted intro message about the `GraphRuntime.run()` call.
+    out : Object
+        (RichTextLines) Formatted intro message about the `GraphRuntime.run()` call.
     """
 
     output_lines = common.get_flattened_names(outputs)
@@ -399,22 +399,22 @@ def get_run_short_description(run_call_count,
 
     Parameters
     ----------
-    run_call_count: (int)
-      Run call counter.
+    run_call_count : int
+        Run call counter.
 
-    outputs: dict
-      Outputs of the `GraphRuntime.run()` call.
+    outputs : dict
+        Outputs of the `GraphRuntime.run()` call.
 
-    input_dict: dict
-      Inputs to the `GraphRuntime.run()` call.
+    input_dict : dict
+        Inputs to the `GraphRuntime.run()` call.
 
-    is_callable_runner: (bool)
-      whether a runner returned is callable
+    is_callable_runner : bool
+        whether a runner returned is callable
 
     Returns
     -------
-    description: str
-      A short description of the run() call, including information about the output(s) and input(s).
+    description : str
+        A short description of the run call, including information about the output(s) and input(s).
     """
     if is_callable_runner:
         return "runner from make_callable()"
@@ -450,13 +450,13 @@ def get_error_intro(tvm_error):
 
     Parameters
     ----------
-    tvm_error: errors.OpError
-      TVM run-time error object.
+    tvm_error : errors.OpError
+        TVM run-time error object.
 
     Returns
     -------
-    out: object RichTextLines
-      Formatted intro message about the run-time OpError, with sample commands for debugging.
+    out : object RichTextLines
+        Formatted intro message about the run-time OpError, with sample commands for debugging.
     """
 
     op_name = tvm_error.op.name

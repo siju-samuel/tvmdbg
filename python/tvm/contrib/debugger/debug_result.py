@@ -28,9 +28,18 @@ class DebugResult():
         self._time_list = []
 
     def get_nodes_list(self):
+        """Return the nodes list
+        """
         return self._nodes_list
 
     def set_time(self, time):
+        """set the timestamp to the timelist, the list is appended in the same order as node list
+
+        Parameters
+        ----------
+        time : float
+            The time for a particular operation, added to the list
+        """
         self._time_list.append(time)
 
     def dump_output_tensor(self):
@@ -46,6 +55,8 @@ class DebugResult():
         -------
         none
         """
+        #cleanup existing tensors before dumping
+        self._cleanup_tensors()
         eid = 0
         order = 0
         for node, time in zip(self._nodes_list, self._time_list):
@@ -76,3 +87,10 @@ class DebugResult():
         graph_dump_file_name = '_tvmdbg_graph_dump.json'
         with open((self._dump_path + graph_dump_file_name), 'w') as outfile:
             json.dump(graph, outfile, indent=2, sort_keys=False)
+
+    def _cleanup_tensors(self):
+        """Remove the files other than graph in the dump path
+        """
+        for filename in os.listdir(self._dump_path):
+            if os.path.isfile(filename) and not filename.endswith(".json"):
+                os.remove(filename)

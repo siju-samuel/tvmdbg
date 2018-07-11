@@ -20,17 +20,17 @@ def get_ui(ui_type,
 
     Parameters
     ----------
-    ui_type: str
-      requested UI type. Currently supported: (curses | readline)
+    ui_type : str
+        requested UI type. Currently supported: (curses | readline)
 
-    on_ui_exit: Callable
-      the callback to be called when the UI exits.
+    on_ui_exit : Callable
+        the callback to be called when the UI exits.
 
-    available_ui_types: None or list of str
-      Manually-set available ui_types.
+    available_ui_types : None or list of str
+        Manually-set available ui_types.
 
-    config: object of ui_config.CLIConfig()
-      An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
+    config : object of ui_config.CLIConfig()
+        An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
 
     """
     if available_ui_types is None:

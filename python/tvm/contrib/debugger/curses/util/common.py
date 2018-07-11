@@ -13,13 +13,13 @@ def get_graph_element_name(elem):
 
     Parameters
     ----------
-    elem: dict
-      The graph element in question.
+    elem : dict
+        The graph element in question.
 
     Returns
     -------
-    val: str
-      If the attribute 'name' is available, return the name. Otherwise, return str(output).
+    val : str
+        If the attribute 'name' is available, return the name. Otherwise, return str(output).
     """
     if hasattr(elem, "attr"):
         val = elem.attr("name")
@@ -33,14 +33,14 @@ def get_flattened_names(inputs_or_outputs):
 
     Parameters
     ----------
-    inputs_or_outputs: list, tuple or dict
-      Inputs or outputs of the `Session.run()` call. It maybea Tensor, an Operation or a Variable.
-      It may also be nested lists, tuples or dicts. See doc of `Session.run()` for more details.
+    inputs_or_outputs : list, tuple or dict
+        Inputs or outputs of the `Session.run()` call. It maybea Tensor, an Operation or a Variable.
+        It may also be nested lists, tuples or dicts. See doc of `Session.run()` for more details.
 
     Returns
     -------
-    lines: list of str
-      A flattened list of output names from `inputs_or_outputs`.
+    lines : list of str
+        A flattened list of output names from `inputs_or_outputs`.
     """
 
     lines = []
@@ -70,3 +70,6 @@ class CLIRunStartAction(object):
 
     # Run without debug tensor-watching.
     NON_DEBUG_RUN = "non_debug_run"
+
+    # Finished run, can exit.
+    EXIT = "exit"

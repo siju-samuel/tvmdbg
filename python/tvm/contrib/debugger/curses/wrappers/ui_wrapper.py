@@ -39,23 +39,23 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        runtime: Graph Runtime
-          The TVM `Graph Runtime` object being wrapped.
+        runtime : Graph Runtime
+            The TVM `Graph Runtime` object being wrapped.
 
-        graph_json: json
-          The graph json object.
+        graph_json : json
+            The graph json object.
 
-        ctx: str
-          The device context.
+        ctx : str
+            The device context.
 
-        dump_root: str
-          The folder in which the tensors are dumped.
+        dump_root : str
+            The folder in which the tensors are dumped.
 
-        log_usage: bool
-          Enable or disable logging.
+        log_usage : bool
+            Enable or disable logging.
 
-        ui_type: str
-          select the type of ui, whether curses or commandline.
+        ui_type : str
+            select the type of ui, whether curses or commandline.
         """
 
         self._init_command = None
@@ -137,12 +137,12 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        filter_name: str
-          name of the filter.
+        filter_name : str
+            name of the filter.
 
-        tensor_filter: callable
-          The filter callable. See the doc string of`DebugDumpDir.find()`
-          for more details about its signature.
+        tensor_filter : callable
+            The filter callable. See the doc string of`DebugDumpDir.find()`
+            for more details about its signature.
         """
 
         self._tensor_filters[filter_name] = tensor_filter
@@ -152,13 +152,13 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        request: OnRuntimeInitRequest
-          An instance of `OnRuntimeInitRequest`.
+        request : OnRuntimeInitRequest
+            An instance of `OnRuntimeInitRequest`.
 
         Returns
         -------
-        framework.OnRuntimeInitResponse: OnRuntimeInitResponse
-          An instance of `OnRuntimeInitResponse`.
+        framework.OnRuntimeInitResponse : OnRuntimeInitResponse
+            An instance of `OnRuntimeInitResponse`.
         """
 
         return framework.OnRuntimeInitResponse(
@@ -172,20 +172,21 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        request: OnRunStartRequest
-          An instance of `OnRunStartRequest`.
+        request : OnRunStartRequest
+           An instance of `OnRunStartRequest`.
 
         Returns
         -------
-        run_start_response: OnRunStartResponse
-          An instance of `OnRunStartResponse`.
+        run_start_response : OnRunStartResponse
+            An instance of `OnRunStartResponse`.
         """
         self._is_run_start = True
         self._update_run_calls_state(
             request.run_call_count, request.outputs, request.input_dict,
             is_callable_runner=request.is_callable_runner)
 
-        self._exit_if_requested_by_user()
+        if self._exit_if_requested_by_user():
+            return framework.OnRunStartResponse(common.CLIRunStartAction.EXIT, [])
 
         if self._run_call_count > 1 and not self._skip_debug:
             if self._run_through_times > 0:
@@ -199,6 +200,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                         framework.OnRunStartResponse(
                             common.CLIRunStartAction.DEBUG_RUN,
                             self._get_run_debug_urls()))
+        if self._skip_debug:
+            self._run_start_response = None
 
         if self._run_start_response is None:
             self._prep_cli_for_run_start()
@@ -207,16 +210,17 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             if self._run_through_times > 1:
                 self._run_through_times -= 1
 
-        self._exit_if_requested_by_user()
+        if self._exit_if_requested_by_user():
+            return framework.OnRunStartResponse(common.CLIRunStartAction.EXIT, [])
+
         return self._run_start_response
 
     def _exit_if_requested_by_user(self):
         if self._run_start_response == ui_common.EXPLICIT_USER_EXIT:
             # Explicit user "exit" command leads to sys.exit(1).
-            print(
-                "Note: user exited from debugger CLI: Calling sys.exit(1).",
-                file=sys.stderr)
-            sys.exit(1)
+            print("Note: user exited from debugger", file=sys.stderr)
+            return True
+        return False
 
     def _prep_cli_for_run_start(self):
         """Prepare (but not launch) the CLI for run-start."""
@@ -246,13 +250,13 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        request: OnRuntimeInitRequest
-          An instance of OnRuntimeInitRequest.
+        request : OnRuntimeInitRequest
+            An instance of OnRuntimeInitRequest.
 
         Returns
         -------
-        framework.OnRunEndResponse: OnRunEndResponse
-          An instance of OnRuntimeInitResponse.
+        framework.OnRunEndResponse : OnRunEndResponse
+            An instance of OnRuntimeInitResponse.
         """
 
         self._is_run_start = False
@@ -276,7 +280,6 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
             self._run_start_response = self._launch_cli()
 
             # Clean up the dump generated by this run.
-            self._remove_dump_root()
         else:
             # No debug information to show following a non-debug run() call.
             self._run_start_response = None
@@ -298,14 +301,14 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        debug_dump: dbg_dump.DebugDumpDir
-          The debug dump directory from this run.
+        debug_dump : dbg_dump.DebugDumpDir
+            The debug dump directory from this run.
 
-        tvm_error: None or OpError
-          OpError that happened during the run() call (if any).
+        tvm_error : None or OpError
+            OpError that happened during the run() call (if any).
 
-        passed_filter: None or str
-          Name of the tensor filter that just passed
+        passed_filter : None or str
+            Name of the tensor filter that just passed
             and caused the preparation of this run-end CLI (if any).
         """
 
@@ -325,8 +328,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
                 self._title_color = "red_on_white"
 
         self._run_cli = analyzer.create_analyzer_ui(
-            debug_dump, self._tensor_filters, ui_type=self._ui_type,
-            on_ui_exit=self._remove_dump_root)
+            debug_dump, self._tensor_filters, ui_type=self._ui_type, on_ui_exit=None)
 
         # Get names of all dumped tensors.
         dumped_tensor_names = []
@@ -355,8 +357,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Returns
         -------
-        response: OnRunStartResponse
-          The OnRunStartResponse specified by the user using the "run" command.
+        response : OnRunStartResponse
+            The OnRunStartResponse specified by the user using the "run" command.
         """
 
         self._register_this_run_info(self._run_cli)
@@ -473,8 +475,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Returns
         -------
-        debug_urls: list of str
-          Debug URLs for the current run() call.
+        debug_urls : list of str
+            Debug URLs for the current run() call.
             Currently, the list consists of only one URL that is a file:// URL.
         """
 
@@ -489,19 +491,19 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        run_call_count: int
-          Number of run() calls that have occurred.
+        run_call_count : int
+            Number of run() calls that have occurred.
 
-        outputs: A node/tensor or a list of node/tensor
-          A node/tensor or a list of node/tensor that are the outputs of
+        outputs : A node/tensor or a list of node/tensor
+            A node/tensor or a list of node/tensor that are the outputs of
             the run() call. This is the same as the outputs argument to the run()
             call.
 
-        input_dict: None of a dict.
-          This is the input_dict argument to the run() call.
+        input_dict : None of a dict.
+            This is the input_dict argument to the run() call.
 
-        is_callable_runner: bool
-          whether a runner returned by Module.make_callable is being run.
+        is_callable_runner : bool
+            whether a runner returned by Module.make_callable is being run.
         """
 
         self._run_call_count = run_call_count

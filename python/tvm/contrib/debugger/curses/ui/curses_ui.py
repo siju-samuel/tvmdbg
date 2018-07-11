@@ -40,16 +40,16 @@ def _get_cmd_from_line_attr_seg(mouse_x, attr_segs):
 
     Parameters
     ----------
-    mouse_x: int
-      x coordinate of the mouse event.
+    mouse_x : int
+        x coordinate of the mouse event.
 
-    attr_segs: list
-      The list of attribute segments of a line from a RichTextLines object.
+    attr_segs : list
+        The list of attribute segments of a line from a RichTextLines object.
 
     Returns
     -------
-    content: str or None
-      If a command exists: the command as a str; otherwise, None.
+    content : str or None
+        If a command exists: the command as a str; otherwise, None.
     """
 
     for seg in attr_segs:
@@ -89,25 +89,25 @@ class ScrollBar(object):
 
         Parameters
         ----------
-        min_x: int
+        min_x : int
           left index of the scroll bar on the screen (inclusive).
 
-        min_y: int
+        min_y : int
           top index of the scroll bar on the screen (inclusive).
 
-        max_x: int
+        max_x : int
           right index of the scroll bar on the screen (inclusive).
 
-        max_y: int
+        max_y : int
           bottom index of the scroll bar on the screen (inclusive).
 
-        scroll_position: int
-          0-based location of the screen output. For example, if the screen output is scrolled to
-          the top, the value of scroll_position should be 0. If it is scrolled to the bottom,
-          the value should be output_num_rows - 1.
+        scroll_position : int
+            0-based location of the screen output. For example, if the screen output is scrolled to
+            the top, the value of scroll_position should be 0. If it is scrolled to the bottom,
+            the value should be output_num_rows - 1.
 
-        output_num_rows: int
-          Total number of output rows.
+        output_num_rows : int
+            Total number of output rows.
         """
 
         self._min_x = min_x
@@ -135,17 +135,17 @@ class ScrollBar(object):
 
         Parameters
         ----------
-        screen_coord_sys: bool
-          whether the return value will be in the screen coordinate system.
+        screen_coord_sys : bool
+            whether the return value will be in the screen coordinate system.
 
         Returns
         -------
-        _block_y: int
-          0-based y coordinate of the scroll block, in the ScrollBar coordinate system by default.
-          For example, when scroll position is at the top, this return value will be 1 (not 0,
-          because of the presence of the UP button). When scroll position is at the bottom, this
-          return value will be self._scroll_bar_height - 2 (not self._scroll_bar_height - 1,
-          because of the presence of the DOWN button).
+        _block_y : int
+            0-based y coordinate of the scroll block, in the ScrollBar coordinate system by default.
+            For example, when scroll position is at the top, this return value will be 1 (not 0,
+            because of the presence of the UP button). When scroll position is at the bottom, this
+            return value will be self._scroll_bar_height - 2 (not self._scroll_bar_height - 1,
+            because of the presence of the DOWN button).
         """
 
         rel_block_y = int(
@@ -158,8 +158,8 @@ class ScrollBar(object):
 
         Returns
         -------
-        layout: object ui_common.RichTextLines
-          The text layout of the scroll bar.
+        layout : object ui_common.RichTextLines
+            The text layout of the scroll bar.
         """
         width = self._max_x - self._min_x + 1
         empty_line = " " * width
@@ -221,17 +221,17 @@ def _screen_new_output_pad(rows, cols):
 
     Parameters
     ----------
-    rows: int
-      Number of rows the pad will have: not limited to screen size.
+    rows : int
+        Number of rows the pad will have: not limited to screen size.
 
-    cols: int
-      Number of columns the pad will have: not limited to screen
+    cols : int
+        Number of columns the pad will have: not limited to screen
         size.
 
     Returns
     -------
-    textpad: object
-      A curses textpad object.
+    textpad : object
+        A curses textpad object.
     """
 
     return curses.newpad(rows, cols)
@@ -320,11 +320,11 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        on_ui_exit:Callable
-          Callback invoked when the UI exits.
+        on_ui_exit : Callable
+            Callback invoked when the UI exits.
 
-        config: object
-          An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
+        config : object
+            An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
         """
 
         ui_base.BaseUI.__init__(self, on_ui_exit=on_ui_exit, config=config)
@@ -651,16 +651,16 @@ class CursesUI(ui_base.BaseUI):
 
         Returns
         -------
-        command: str
-          The user-entered command.
+        command : str
+            The user-entered command.
 
-        terminator: str
-          Terminator type for the command. If command is a normal command entered with the
-          Enter key, the value will be the key itself. If this is a tab completion call (using the
-          Tab key), the value will reflect that as well.
+        terminator : str
+            Terminator type for the command. If command is a normal command entered with the
+            Enter key, the value will be the key itself. If this is a tab completion call (using the
+            Tab key), the value will reflect that as well.
 
-        pending_command_changed: bool
-          If the pending command has changed. Used during command history navigation.
+        pending_command_changed : bool
+            If the pending command has changed. Used during command history navigation.
         """
 
         # First, reset textbox state variables.
@@ -695,8 +695,8 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        command: str
-          the navigation command, {self._NAVIGATION_FORWARD_COMMAND, self._NAVIGATION_BACK_COMMAND}.
+        command : str
+            Navigation command, {self._NAVIGATION_FORWARD_COMMAND, self._NAVIGATION_BACK_COMMAND}.
         """
         if command == self._NAVIGATION_FORWARD_COMMAND:
             if self._nav_history.can_go_forward():
@@ -724,14 +724,14 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        command: str
-          Command to dispatch.
+        command : str
+            Command to dispatch.
 
         Returns
         -------
-        command: str or None
-          An exit token object. None value means that the UI loop should not exit.
-          A non-None value means the UI loop should exit.
+        command : str or None
+            An exit token object. None value means that the UI loop should not exit.
+            A non-None value means the UI loop should exit.
         """
 
         if self._output_pad:
@@ -834,8 +834,8 @@ class CursesUI(ui_base.BaseUI):
 
         Returns
         -------
-        txt: str
-          The current text string in the command textbox, excluding any return keys.
+        txt : str
+            The current text string in the command textbox, excluding any return keys.
         """
 
         txt = self._command_textbox.gather()
@@ -851,15 +851,15 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        key_code: int
-          Key code.
+        key_code : int
+            Key code.
 
         Returns
         -------
-        key_code: int
-          A translated key code. In most cases, this is identical to the
-          input x. However, if x is a Return key, the return value will be
-          CLI_TERMINATOR_KEY, so that the text box's edit() method can return.
+        key_code : int
+            A translated key code. In most cases, this is identical to the
+            input x. However, if x is a Return key, the return value will be
+            CLI_TERMINATOR_KEY, so that the text box's edit() method can return.
         """
         if not isinstance(key_code, int):
             raise TypeError("Key validator expected type int, received type %s" %
@@ -974,11 +974,11 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        title: str
-          The title to display.
+        title : str
+            The title to display.
 
-        title_color: str
-          Color of the title, e.g., "yellow".
+        title_color : str
+            Color of the title, e.g., "yellow".
         """
 
         tvm_dgb_box_top = "-----------------"
@@ -1004,11 +1004,11 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        command: str
-          The command, as a string or None.
+        command : str
+            The command, as a string or None.
 
-        erase_existing: bool
-          whether existing text (if any) is to be erased first.
+        erase_existing : bool
+            whether existing text (if any) is to be erased first.
         """
         if erase_existing:
             self._erase_existing_command()
@@ -1029,17 +1029,17 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        row: int
-          Row index.
+        row : int
+            Row index.
 
-        line: str
-          The line content.
+        line : str
+            The line content.
 
-        attr: str
-          curses font attribute.
+        attr : str
+            curses font attribute.
 
-        color: str
-          font foreground color name.
+        color : str
+            font foreground color name.
         """
 
         if not isinstance(row, int):
@@ -1064,14 +1064,14 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        output: object RichTextLines
-          text lines to display on the screen. These lines may have widths exceeding the screen
-          width. This method will take care of the wrapping.
+        output : object RichTextLines
+            text lines to display on the screen. These lines may have widths exceeding the screen
+            width. This method will take care of the wrapping.
 
         Returns
         -------
-        outpit: list of int
-          A list of line indices, in the wrapped output, where there are regex matches.
+        outpit : list of int
+            A list of line indices, in the wrapped output, where there are regex matches.
         """
 
         # Wrap the output lines according to screen width.
@@ -1116,15 +1116,15 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        output: object RichTextLines
-          A RichTextLines object that is the screen output text.
+        output : object RichTextLines
+            A RichTextLines object that is the screen output text.
 
-        is_refresh: bool
-          Is this a refreshing display with existing output.
+        is_refresh : bool
+            Is this a refreshing display with existing output.
 
-        highlight_regex: str
-          Optional string representing the regex used to search and highlight in the
-          current screen output.
+        highlight_regex : str
+            Optional string representing the regex used to search and highlight in the
+            current screen output.
         """
 
         if not output:
@@ -1184,22 +1184,22 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        output: object
-          A RichTextLines object.
+        output : object
+            A RichTextLines object.
 
-        min_num_rows: int
-          Minimum number of output rows.
+        min_num_rows : int
+            Minimum number of output rows.
 
         Returns
         -------
-        pad: object
-          The text pad object used to display the main text body.
+        pad : object
+            The text pad object used to display the main text body.
 
-        rows: int
-          number of rows of the text pad, which may exceed screen size.
+        rows : int
+            number of rows of the text pad, which may exceed screen size.
 
-        cols: int
-          number of columns of the text pad.
+        cols : int
+            number of columns of the text pad.
         """
 
         if not isinstance(output, ui_common.RichTextLines):
@@ -1250,9 +1250,9 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        output: object ui_common.RichTextLines
-          The RichTextLines output from the annotations field of which the menu will be
-          extracted and used (if the menu exists).
+        output : object ui_common.RichTextLines
+            The RichTextLines output from the annotations field of which the menu will be
+            extracted and used (if the menu exists).
         """
 
         if ui_common.MAIN_MENU_KEY in output.annotations:
@@ -1288,19 +1288,19 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        pad: object
-          The text pad to render the line in.
+        pad : object
+            The text pad to render the line in.
 
-        row: int
-          Row index, as an int.
+        row : int
+            Row index, as an int.
 
-        txt: str
-          The text to be displayed on the specified row, as a str.
+        txt : str
+            The text to be displayed on the specified row, as a str.
 
-        color_segments: list of tuple
-          A list of 3-tuples. Each tuple represents the beginning and the end of a color segment,
-          in the form of a right-open interval:[start, end). The last element of the tuple is a
-          color string, e.g., "red".
+        color_segments : list of tuple
+           A list of 3-tuples. Each tuple represents the beginning and the end of a color segment,
+           in the form of a right-open interval:[start, end). The last element of the tuple is a
+           color string, e.g., "red".
         """
 
         if not color_segments:
@@ -1378,13 +1378,13 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        direction: str
-          _SCROLL_REFRESH, _SCROLL_UP, _SCROLL_DOWN, _SCROLL_UP_A_LINE,
+        direction : str
+            _SCROLL_REFRESH, _SCROLL_UP, _SCROLL_DOWN, _SCROLL_UP_A_LINE,
             _SCROLL_DOWN_A_LINE, _SCROLL_HOME, _SCROLL_END, _SCROLL_TO_LINE_INDEX
 
-        line_index: int
-          Specifies the zero-based line index to scroll to. Applicable only if direction is
-          _SCROLL_TO_LINE_INDEX.
+        line_index : int
+            Specifies the zero-based line index to scroll to. Applicable only if direction is
+           _SCROLL_TO_LINE_INDEX.
         """
 
         if not self._output_pad:
@@ -1468,8 +1468,8 @@ class CursesUI(ui_base.BaseUI):
 
         Returns
         -------
-        info: str
-          A single text line summarizing the UI status, adapted to the current screen width.
+        info : str
+            A single text line summarizing the UI status, adapted to the current screen width.
         """
 
         info = ""
@@ -1516,15 +1516,15 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        command_str: str
-          The str in the command input textbox when Tab key is hit.
+        command_str : str
+            The str in the command input textbox when Tab key is hit.
 
         Returns
         -------
-        command_str: str
-          Completed string. Could be the same as command_str if no completion
-          candidate is available. If candidate(s) are available, return command_str
-          appended by the common prefix of the candidates.
+        command_str : str
+            Completed string. Could be the same as command_str if no completion
+            candidate is available. If candidate(s) are available, return command_str
+            appended by the common prefix of the candidates.
         """
 
         context, prefix, except_last_word = ui_base._analyze_tab_complete_input(
@@ -1551,8 +1551,8 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        candidates: list of str
-          display candidates.
+        candidates : list of str
+            display candidates.
         """
 
         if self._curr_unwrapped_output:
@@ -1594,14 +1594,14 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        message: str
-          the message to display.
+        message : str
+           the message to display.
 
-        color: str
-          optional color attribute for the message.
+        color : str
+            optional color attribute for the message.
 
-        line_index: int
-          line index.
+        line_index : int
+            line index.
         """
 
         pad, _, _ = self._display_lines(
@@ -1623,8 +1623,8 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        message: str
-          The error message, without the preceding "ERROR: " substring.
+        message : str
+            The error message, without the preceding "ERROR: " substring.
         """
 
         self._toast(
@@ -1635,8 +1635,8 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        message: str
-          The informational message.
+        message : str
+            The informational message.
         """
 
         self._toast(
@@ -1658,11 +1658,11 @@ class CursesUI(ui_base.BaseUI):
 
         Parameters
         ----------
-        args: list of str
-          Arguments to the command prefix 'mouse'.
+        args : list of str
+            Arguments to the command prefix 'mouse'.
 
-        screen_info: dict
-          Information about the screen, unused by this handler.
+        screen_info : dict
+            Information about the screen, unused by this handler.
         """
 
         del screen_info

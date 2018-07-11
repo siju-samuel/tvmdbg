@@ -15,19 +15,19 @@ def _parse_command(command):
 
     Parameters
     ----------
-    command: str
-      Command string to be parsed.
+    command : str
+        Command string to be parsed.
 
     Returns
     -------
-    prefix: str
-      The command prefix.
+    prefix : str
+        The command prefix.
 
-    args: list of str
-      The command arguments (i.e., not including the prefix).
+    args : list of str
+        The command arguments (i.e., not including the prefix).
 
-    output_file_path: str or None
-      The path to save the screen output to (if any).
+    output_file_path : str or None
+        The path to save the screen output to (if any).
     """
     command = command.strip()
     if not command:
@@ -49,24 +49,24 @@ def _analyze_tab_complete_input(text):
 
     Returns
     -------
-    context: str
-      The context str. For example,
-      If text == "view_tensor softmax", returns "view_tensor".
-      If text == "print", returns "".
-      If text == "", returns "".
+    context : str
+        The context str. For example,
+        If text == "view_tensor softmax", returns "view_tensor".
+        If text == "print", returns "".
+        If text == "", returns "".
 
-    prefix: str
-      The prefix to be tab-completed, from the last word
-      For example, if text == "view_tensor softmax", returns "softmax".
-      If text == "print", returns "print".
-      If text == "", returns "".
+    prefix : str
+        The prefix to be tab-completed, from the last word
+        For example, if text == "view_tensor softmax", returns "softmax".
+        If text == "print", returns "print".
+        If text == "", returns "".
 
-    except_last_word: str
-      The input text, except the last word.
-      For example, if text == "view_tensor softmax", returns "view_tensor".
-      If text == "view_tensor -a softmax", returns "view_tensor -a"
-      If text == "print", returns "".
-      If text == "", returns "".
+    except_last_word : str
+        The input text, except the last word.
+        For example, if text == "view_tensor softmax", returns "view_tensor".
+        If text == "view_tensor -a softmax", returns "view_tensor -a"
+        If text == "print", returns "".
+        If text == "", returns "".
     """
     text = text.lstrip()
     if not text:
@@ -103,11 +103,11 @@ class BaseUI(object):
 
         Parameters
         ----------
-        on_ui_exit: Callable
-          The callback to be called when the UI exits.
+        on_ui_exit : Callable
+            The callback to be called when the UI exits.
 
-        config: object
-        An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
+        config : object
+            An instance of `ui_config.CLIConfig()` carrying user-facing configurations.
         """
 
         self._on_ui_exit = on_ui_exit
@@ -138,9 +138,9 @@ class BaseUI(object):
 
         Parameters
         ----------
-        help_intro: (RichTextLines)
-          Rich text lines appended to the beginning of
-          the output of the command "help", as introductory information.
+        help_intro : (RichTextLines)
+            Rich text lines appended to the beginning of
+            the output of the command "help", as introductory information.
         """
 
         self._command_handler_registry.set_help_intro(help_intro=help_intro)
@@ -160,17 +160,17 @@ class BaseUI(object):
 
         Parameters
         ----------
-        prefix: str
-          command prefix.
+        prefix : str
+            command prefix.
 
-        handler: (callable)
-          command handler.
+        handler : callable
+            command handler.
 
-        help_info: str
-          help information.
+        help_info : str
+            help information.
 
-        prefix_aliases: (list of str)
-          aliases of the command prefix.
+        prefix_aliases : list of str
+            aliases of the command prefix.
         """
 
         self._command_handler_registry.register_command_handler(
@@ -193,17 +193,17 @@ class BaseUI(object):
 
         Parameters
         ----------
-        init_command: str
-          Optional command to run on CLI start up.
+        init_command : str
+            Optional command to run on CLI start up.
 
-        title: str
-          Optional title to display in the CLI.
+        title : str
+            Optional title to display in the CLI.
 
-        title_color: str
-          Optional color of the title, e.g., "yellow".
+        title_color : str
+            Optional color of the title, e.g., "yellow".
 
-        enable_mouse_on_start: bool
-          Whether the mouse mode is to be enabled on start-up.
+        enable_mouse_on_start : bool
+            Whether the mouse mode is to be enabled on start-up.
 
         """
 

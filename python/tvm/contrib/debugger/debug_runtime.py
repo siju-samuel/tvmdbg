@@ -27,23 +27,23 @@ def create(graph_json_str, libmod, ctx, frontend=FRONTEND_CURSES):
     Parameters
     ----------
     graph_json_str : str or graph class
-     The graph to be deployed in json format output by nnvm graph.
-     The graph can only contain one operator(tvm_op) that
-     points to the name of PackedFunc in the libmod.
+        The graph to be deployed in json format output by nnvm graph.
+        The graph can only contain one operator(tvm_op) that
+        points to the name of PackedFunc in the libmod.
 
     libmod : tvm.Module
-      The module of the corresponding function.
+        The module of the corresponding function.
 
     ctx : TVMContext
-      The context to deploy the module, can be local or remote.
+        The context to deploy the module, can be local or remote.
 
     frontend : str
-      To select which ui user needs, by default its curses ui.
+        To select which ui user needs, by default its curses ui.
 
     Returns
     -------
     graph_module : GraphModuleDebug
-      Debug Runtime graph module that can be used to execute the graph.
+        Debug Runtime graph module that can be used to execute the graph.
     """
     if not isinstance(graph_json_str, string_types):
         try:
@@ -72,18 +72,18 @@ class GraphModuleDebug(graph_runtime.GraphModule):
     Parameters
     ----------
     module : Module
-      The interal tvm module that holds the actual graph functions.
+        The interal tvm module that holds the actual graph functions.
 
     ctx : TVMContext
-      The context this module is under.
+        The context this module is under.
 
     graph_json_str : str or graph class
-      The graph to be deployed in json format output by nnvm graph.
-      The graph can only contain one operator(tvm_op) that
-      points to the name of PackedFunc in the libmod.
+        The graph to be deployed in json format output by nnvm graph.
+        The graph can only contain one operator(tvm_op) that
+        points to the name of PackedFunc in the libmod.
 
     frontend : str
-      To select which ui user needs, curses, tensorboard, etc
+        To select which ui user needs, curses, tensorboard, etc
     """
     def __init__(self, module, ctx, graph_json_str, frontend):
         self._set_debug_buffer = module["set_debug_buffer"]
@@ -100,18 +100,18 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         Parameters
         ----------
         graph_json : str or graph class
-          The graph to be deployed in json format output by nnvm graph.
-          The graph can only contain one operator(tvm_op) that
-          points to the name of PackedFunc in the libmod.
-          value : the input value.
-             The input key
+            The graph to be deployed in json format output by nnvm graph.
+            The graph can only contain one operator(tvm_op) that
+            points to the name of PackedFunc in the libmod.
+            value : the input value.
+               The input key
 
         ctx : TVMContext
-          The context this module is under.
+            The context this module is under.
 
         frontend: str
-          'curses'- involve curses based CLI frontend
-          'tensorboard'- make data format for tensorbard frontend.
+            'curses'- involve curses based CLI frontend
+            'tensorboard'- make data format for tensorbard frontend.
         """
         nodes_list, dltype_list, shapes_list = self._parse_graph(graph_json)
         self._update_graph_json(nodes_list, dltype_list, shapes_list)
@@ -136,22 +136,18 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         Parameters
         ----------
         graph : str or graph class
-          The graph to be deployed in json format output by nnvm graph.
-          The graph can only contain one operator(tvm_op) that
-          points to the name of PackedFunc in the libmod.
-          value : the input value.
-             The input key
+           The graph to be deployed in json format output by nnvm graph.
 
         Returns
         -------
         nodes_list : list
-          List of all the nodes presented in the graph
+            List of all the nodes presented in the graph
 
-        shapes_list: list
-          List of shape of each nodes presented in the graph
+        shapes_list : list
+            List of shape of each nodes presented in the graph
 
-        dltype_list: list
-          List of data type of each nodes presented in the graph
+        dltype_list : list
+            List of data type of each nodes presented in the graph
         """
         json_obj = json.loads(graph_json)
         nodes_list = json_obj['nodes']
@@ -165,14 +161,14 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Parameters
         ----------
-        nodes_list: List
-          List of nodes in the graph
+        nodes_list : List
+            List of nodes in the graph
 
-        dltype_list: List
-          List of datatypes of each node
+        dltype_list : List
+            List of datatypes of each node
 
-        shapes_list: List
-          List of shape of each node
+        shapes_list : List
+            List of shape of each node
 
         Returns
         -------
@@ -222,22 +218,22 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         Parameters
         ----------
         graph_json : json format
-          json formatted NNVM graph contain list of each node's name, shape and type.
+            json formatted NNVM graph contain list of each node's name, shape and type.
 
         nodes_list : list
-          List of all the nodes presented in the graph
+            List of all the nodes presented in the graph
 
         ctx : TVMContext
-          The context this module is under.
+            The context this module is under.
 
-        frontend: str
-          'curses'- involve curses based CLI frontend
-          'tensorboard'- make data format for tensorbard frontend.
+        frontend : str
+            'curses'- involve curses based CLI frontend
+            'tensorboard'- make data format for tensorbard frontend.
 
         Returns
         -------
         ui_wrapper : DebugGraphUIWrapper object
-          UI warpper manage tvmdbg frontend.
+            UI warpper manage tvmdbg frontend.
         """
         #make the dump folder
         dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
@@ -255,11 +251,11 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Parameters
         ----------
-        shapes_list: list
-          List of shape of each nodes presented in the graph.
+        shapes_list : list
+            List of shape of each nodes presented in the graph.
 
-        dltype_list: list
-          List of data type of each nodes presented in the graph.
+        dltype_list : list
+            List of data type of each nodes presented in the graph.
 
         Returns
         -------
@@ -278,8 +274,8 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Parameters
         ----------
-        index: int
-          Node index to be executed now
+        index : int
+            Node index to be executed now
 
         Returns
         -------
@@ -306,24 +302,26 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Parameters
         ----------
-          none
+        none
 
         Returns
         -------
-          none
+        none
         """
-        cli_command = self.ui_obj.get_run_command()
-        run_start_resp = cli_command.get_run_start_resp()
-        retvals = True
-        if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
-            self.set_debug_buffer()
-            retvals = self._debug_run_op_exec()
-            self.debug_datum.dump_output_tensor()
-            self.ui_obj.run_end(cli_command, retvals)
-
-        elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
-            retvals = super(GraphModuleDebug, self).run()
-            self.ui_obj.run_end(cli_command, retvals)
+        while True:
+            cli_command = self.ui_obj.get_run_command()
+            run_start_resp = cli_command.get_run_start_resp()
+            retvals = True
+            if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
+                self.set_debug_buffer()
+                retvals = self._debug_run_op_exec()
+                self.debug_datum.dump_output_tensor()
+                self.ui_obj.run_end(cli_command, retvals)
+            elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
+                retvals = super(GraphModuleDebug, self).run()
+                self.ui_obj.run_end(cli_command, retvals)
+            else:
+                break
         self.ui_obj.exit()
 
     def run(self, **input_dict):
@@ -331,8 +329,8 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Parameters
         ----------
-        input_dict: dict of str to NDArray
-          List of input values to be feed to
+        input_dict : dict of str to NDArray
+            List of input values to be feed to
         """
         if input_dict:
             self.set_input(**input_dict)
@@ -348,17 +346,17 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         ----------
 
         key : int or str
-         The input key
+           The input key
 
         value : the input value.
-         The input key
+           The input key
 
         params : dict of str to NDArray
-         Additonal arguments
+           Additonal arguments
 
         Returns
         -------
-          none
+        none
         """
         super(GraphModuleDebug, self).set_input(key, value, **params)
 
@@ -376,18 +374,18 @@ class DebugGraphUIWrapper(object):
 
     Parameters
     ----------
-    dump_root: str
-      The dump folder for graph and tensors.
+    dump_root : str
+        The dump folder for graph and tensors.
 
     graph_json : json format
-      json formatted NNVM graph contain list of each node's name, shape and type.
+        json formatted NNVM graph contain list of each node's name, shape and type.
 
     ctx : TVMContext
-      The context this module is under.
+       The context this module is under.
 
-    frontend: str
-      'curses'- involve curses based CLI frontend
-      'tensorboard'- make data format for tensorbard frontend.
+    frontend : str
+        'curses'- involve curses based CLI frontend
+        'tensorboard'- make data format for tensorbard frontend.
     """
     def __init__(self, dump_root, graph_json, ctx, frontend):
         """Init the DebugGraphUIWrapper"""
@@ -419,11 +417,11 @@ class DebugGraphUIWrapper(object):
         Parameters
         ----------
 
-        cli_obj: obj
-          The CLI object
+        cli_obj : obj
+            The CLI object
 
         heads_list : List
-         The list of outputs from the json node
+            The list of outputs from the json node
 
         """
         for output in heads_list:
@@ -435,8 +433,8 @@ class DebugGraphUIWrapper(object):
         Parameters
         ----------
 
-        file_path: str
-          File path to create
+        file_path : str
+            File path to create
 
         """
         directory = os.path.dirname(file_path)
@@ -449,12 +447,12 @@ class DebugGraphUIWrapper(object):
         Parameters
         ----------
         ctx : TVMContext
-          The context this module is under.
+            The context this module is under.
 
         Returns
         -------
         path : str
-          Directory path where the graph and node outputs will be stored.
+            Directory path where the graph and node outputs will be stored.
         """
         # save to file
         folder_name = "/_tvmdbg_device_,device_"

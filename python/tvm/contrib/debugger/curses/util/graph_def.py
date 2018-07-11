@@ -20,25 +20,21 @@ def _parse_graph(graph_json):
     Parameters
     ----------
     graph_json : str or graph class
-      The graph to be deployed in json format output by nnvm graph.
-      The graph can only contain one operator(tvm_op) that
-      points to the name of PackedFunc in the libmod.
-      value : the input value.
-         The input key
+        The graph to be deployed in json format output by nnvm graph.
 
     Returns
     -------
     nodes_list : list
-      List of all the nodes presented in the graph
+        List of all the nodes presented in the graph
 
     heads_list : list
-      List of all output nodes presented in the graph
+        List of all output nodes presented in the graph
 
     shapes_list: list
-      List of shape of each nodes presented in the graph
+        List of shape of each nodes presented in the graph
 
     dltype_list: list
-      List of data type of each nodes presented in the graph
+        List of data type of each nodes presented in the graph
     """
     json_obj = json.loads(graph_json)
     nodes_list = json_obj['nodes']
@@ -52,19 +48,19 @@ def _get_graph_json(nodes_list, dltype_list, shapes_list):
 
     Parameters
     ----------
-    nodes_list: List
-      List of nodes in the graph
+    nodes_list : List
+        List of nodes in the graph
 
-    dltype_list: List
-      List of datatypes of each node
+    dltype_list : List
+        List of datatypes of each node
 
-    shapes_list: List
-      List of shape of each node
+    shapes_list : List
+        List of shape of each node
 
     Returns
     -------
     p_graph : json format
-      json formatted NNVM graph contain list of each node'sW name, shape and type.
+        json formatted NNVM graph contain list of each node'sW name, shape and type.
     """
 
     p_graph = {}

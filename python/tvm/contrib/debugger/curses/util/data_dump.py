@@ -18,11 +18,11 @@ class InconvertibleTensorProto(object):
 
         Parameters
         ----------
-        tensor_proto: np.ndarray
-          the `TensorProto` object that cannot be represented as a `np.ndarray` object.
+        tensor_proto : np.ndarray
+            The `TensorProto` object that cannot be represented as a `np.ndarray` object.
 
-        initialized: bool
-          whether the Tensor is initialized.
+        initialized : bool
+            whether the Tensor is initialized.
         """
         self._tensor_proto = tensor_proto
         self._initialized = initialized
@@ -40,16 +40,15 @@ def load_tensor_from_event_file(event_file_path):
 
     Parameters
     ----------
-    event_file_path: str
-      path to the event file.
+    event_file_path : str
+        path to the event file.
 
     Returns
     -------
-    content: tensor
-      The tensor value loaded from the event file, as a `numpy.ndarray`. For
-      uninitialized Tensors, returns `None`. For Tensors of data types that
-      cannot be converted to `numpy.ndarray` (e.g., `tf.resource`), return
-      `None`.
+    content : tensor
+        The tensor value loaded from the event file, as a `numpy.ndarray`. For
+        uninitialized Tensors, returns `None`. For Tensors of data types that
+        cannot be converted to `numpy.ndarray` (e.g., `tf.resource`), return `None`.
     """
     content = np.load(event_file_path)
     return content
@@ -59,16 +58,16 @@ def _get_tensor_name(node_name, output_slot):
 
     Parameters
     ----------
-    node_name: str
-      Name of the node that outputs the tensor, as a string.
+    node_name : str
+        Name of the node that outputs the tensor, as a string.
 
-    output_slot: int
-      Output slot index of the tensor, as an integer.
+    output_slot : int
+        Output slot index of the tensor, as an integer.
 
     Returns
     -------
-    tensor_name: str
-      Name of the tensor, as a string.
+    tensor_name : str
+        Name of the tensor, as a string.
     """
     return "%s:%d" % (node_name, output_slot)
 
@@ -78,20 +77,19 @@ def _get_tensor_watch_key(node_name, output_slot, debug_op):
 
     Parameters
     ----------
-    node_name: str
-      Name of the node by which the watched tensor is produced, as a string.
+    node_name : str
+        Name of the node by which the watched tensor is produced, as a string.
 
-    output_slot: int
-      Output slot index of the tensor, as an integer.
+    output_slot : int
+        Output slot index of the tensor, as an integer.
 
-    debug_op: str
-      Name of the debug op that is used to watch the tensor, as a string.
+    debug_op : str
+        Name of the debug op that is used to watch the tensor, as a string.
 
     Returns
     -------
-    tensor_watch_key: str
-      A string representing the debug watch on the tensor (i.e., the "watch
-          key").
+    tensor_watch_key : str
+        A string representing the debug watch on the tensor (i.e., the "watch key").
     """
     return "%s:%s" % (_get_tensor_name(node_name, output_slot), debug_op)
 
@@ -100,13 +98,13 @@ def device_path_to_device_name(device_dir):
 
     Parameters
     ----------
-    device_dir: str
-      a directory name for the device.
+    device_dir : str
+        a directory name for the device.
 
     Returns
     -------
-    device_name: str
-      Parsed device name.
+    device_name : str
+        Parsed device name.
     """
     path_items = os.path.basename(device_dir)[
         len(METADATA_FILE_PREFIX) + len(DEVICE_TAG):].split(",")
@@ -131,20 +129,20 @@ class DebugTensorDatum(object):
 
         Parameters
         ----------
-        dump_root: str
-          Debug dump root directory. This path should not include
+        dump_root : str
+            Debug dump root directory. This path should not include
             the path component that represents the device name (see also below).
 
-        debug_dump_rel_path: str
-          Path to a debug dump file, relative to the
-         `dump_root`. The first item of this relative path is assumed to be
-          a path representing the name of the device that the Tensor belongs to.
-          See `device_path_to_device_name` for more details on the device path.
-          For example, suppose the debug dump root
-          directory is `/tmp/tvmdbg_1` and the dump file is at
-          `/tmp/tvmdbg_1/<device_path>/>ns_1/node_a_0_DebugIdentity_123456789`,
-          then the value of the debug_dump_rel_path should be
-          `<device_path>/ns_1/node_a_0_DebugIdenity_1234456789`.
+        debug_dump_rel_path : str
+            Path to a debug dump file, relative to the
+           `dump_root`. The first item of this relative path is assumed to be
+            a path representing the name of the device that the Tensor belongs to.
+            See `device_path_to_device_name` for more details on the device path.
+            For example, suppose the debug dump root
+            directory is `/tmp/tvmdbg_1` and the dump file is at
+            `/tmp/tvmdbg_1/<device_path>/>ns_1/node_a_0_DebugIdentity_123456789`,
+            then the value of the debug_dump_rel_path should be
+            `<device_path>/ns_1/node_a_0_DebugIdenity_1234456789`.
         """
         path_components = os.path.normpath(debug_dump_rel_path).split(os.sep)
         self._device_name = device_path_to_device_name(path_components[0])
@@ -187,8 +185,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        tensor: tensor
-          The tensor loaded from the dump (`Event`) file.
+        tensor : tensor
+            The tensor loaded from the dump (`Event`) file.
         """
         return load_tensor_from_event_file(self.file_path)
 
@@ -198,8 +196,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        timestamp: int
-          The timestamp in microseconds.
+        timestamp : int
+            The timestamp in microseconds.
         """
         return self._timestamp
 
@@ -213,8 +211,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        timestamp: str
-          The extended timestamp.
+        timestamp : str
+            The extended timestamp.
         """
         return self._extended_timestamp
 
@@ -224,8 +222,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        op: str
-          debug op name (e.g., `conv2d`).
+        op : str
+            debug op name (e.g., `conv2d`).
         """
         return self._debug_op
 
@@ -235,8 +233,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        device_name: str
-          Device name.
+        device_name : str
+            Device name.
         """
         return self._device_name
 
@@ -246,8 +244,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        node_name: str
-          name of the node watched by the debug op.
+        node_name : str
+            name of the node watched by the debug op.
         """
         return self._node_name
 
@@ -257,8 +255,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        output_slot: int
-          output slot index watched by the debug op.
+        output_slot : int
+            output slot index watched by the debug op.
         """
         return self._output_slot
 
@@ -268,8 +266,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        tensor_name: str
-          `Tensor` name, in the form of `node_name`:`output_slot`
+        tensor_name : str
+            `Tensor` name, in the form of `node_name`:`output_slot`
         """
         return _get_tensor_name(self.node_name, self.output_slot)
 
@@ -279,8 +277,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        watch_key: str
-          A watch key, in the form of `tensor_name`:`debug_op`.
+        watch_key : str
+            A watch key, in the form of `tensor_name`:`debug_op`.
         """
         return _get_tensor_watch_key(self.node_name, self.output_slot,
                                      self.debug_op)
@@ -298,8 +296,8 @@ class DebugTensorDatum(object):
 
         Returns
         -------
-        dump_size_bytes: int or None
-          If the dump file exists, size of the dump file, in bytes.
-          If the dump file does not exist, None.
+        dump_size_bytes : int or None
+            If the dump file exists, size of the dump file, in bytes.
+            If the dump file does not exist, None.
         """
         return self._dump_size_bytes

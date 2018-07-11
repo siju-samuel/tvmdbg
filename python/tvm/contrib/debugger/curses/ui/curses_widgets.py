@@ -21,14 +21,14 @@ class NavigationHistoryItem(object):
 
         Parameters
         ----------
-        command: str
-          the command line text.
+        command : str
+            the command line text.
 
-        screen_output: str
-        the screen output of the command.
+        screen_output : str
+            the screen output of the command.
 
-        scroll_position: int
-          scroll position in the screen output.
+        scroll_position : int
+            scroll position in the screen output.
         """
         self.command = command
         self.screen_output = screen_output
@@ -46,9 +46,9 @@ class CursesNavigationHistory(object):
 
         Parameters
         ----------
-        capacity: int
-          How many items this object can hold. Each item consists of a command stirng,
-          an output RichTextLines object and a scroll position.
+        capacity : int
+            How many items this object can hold. Each item consists of a command stirng,
+            an output RichTextLines object and a scroll position.
         """
         if capacity <= 0:
             raise ValueError("In valid capacity value: %d" % capacity)
@@ -62,14 +62,14 @@ class CursesNavigationHistory(object):
 
         Parameters
         ----------
-        command: str
-          command line text.
+        command : str
+            command line text.
 
-        screen_output: str
-          screen output produced for the command.
+        screen_output : str
+            screen output produced for the command.
 
-        scroll_position: int
-          scroll position in the screen output.
+        scroll_position : int
+            scroll position in the screen output.
         """
         if self._pointer + 1 < len(self._items):
             self._items = self._items[:self._pointer + 1]
@@ -84,8 +84,8 @@ class CursesNavigationHistory(object):
 
         Parameters
         ----------
-        new_scroll_position: int
-          new scroll-position value.
+        new_scroll_position : int
+            new scroll-position value.
         """
         if not self._items:
             raise ValueError("Empty navigation history")
@@ -96,8 +96,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        items: int
-          length of widget items list.
+        items : int
+            length of widget items list.
         """
         return len(self._items)
 
@@ -106,8 +106,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        pointer: pointer
-          The pointer value.
+        pointer : pointer
+            The pointer value.
         """
         return self._pointer
 
@@ -119,8 +119,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        pointer: pointer
-          The updated pointer value.
+        pointer : pointer
+            The updated pointer value.
         """
         if not self._items:
             raise ValueError("Empty navigation history")
@@ -137,8 +137,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        pointer: pointer
-          The updated pointer value.
+        pointer : pointer
+            The updated pointer value.
         """
         if not self._items:
             raise ValueError("Empty navigation history")
@@ -152,8 +152,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        can_go_back: bool
-          Whether going back one place is possible.
+        can_go_back : bool
+            Whether going back one place is possible.
         """
         return self._pointer >= 1
 
@@ -162,8 +162,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        can_go_forward: bool
-          Whether going back one place is possible.
+        can_go_forward : bool
+            Whether going back one place is possible.
         """
         return self._pointer + 1 < len(self._items)
 
@@ -172,8 +172,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        can_go_home: bool
-          Whether going back home place is possible.
+        can_go_home : bool
+            Whether going back home place is possible.
         """
         if self._pointer >= 0:
             if self._items[self._pointer].command == "HOME":
@@ -187,8 +187,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        can_go_help: bool
-          Whether going back help place is possible.
+        can_go_help : bool
+            Whether going back help place is possible.
         """
         if self._pointer >= 0:
             if self._items[self._pointer].command == "help":
@@ -202,8 +202,8 @@ class CursesNavigationHistory(object):
 
         Returns
         -------
-        command: str
-          Return the recent command shortcut.
+        command : str
+            Return the recent command shortcut.
         """
         return self._items[self._pointer].command
 
@@ -218,19 +218,19 @@ class CursesNavigationHistory(object):
 
         Parameters
         ----------
-        max_length: int
-          Maximum length of the navigation bar, in characters.
+        max_length : int
+            Maximum length of the navigation bar, in characters.
 
-        backward_command: str
-          command for going backward. Used to construct the shortcut menu item.
+        backward_command : str
+            command for going backward. Used to construct the shortcut menu item.
 
-        forward_command: str
-          Command for going forward. Used to construct the shortcut menu item.
+        forward_command : str
+            Command for going forward. Used to construct the shortcut menu item.
 
         Returns
         -------
-        output: Object ui_common.RichTextLines
-          The navigation bar text with attributes.
+        output : Object ui_common.RichTextLines
+            The navigation bar text with attributes.
 
         """
         output = RL("| ", NAVIGATION_MENU_COLOR_ATTR)

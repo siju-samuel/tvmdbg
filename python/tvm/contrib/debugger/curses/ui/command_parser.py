@@ -29,13 +29,13 @@ class Interval(object):
 
         Parameters
         ----------
-        value: object
-          value to examine within range.
+        value : object
+            value to examine within range.
 
         Returns
         -------
-        value: bool
-          True when value is fall between a start and end value else False.
+        value : bool
+            True when value is fall between a start and end value else False.
         """
         if value < self.start or value == self.start and not self.start_included:
             return False
@@ -48,13 +48,13 @@ class Interval(object):
 
         Parameters
         ----------
-        other: object
+        other : object
           Interval object to examine.
 
         Returns
         -------
-        value: bool
-          True when same as other else False.
+        value : bool
+            True when same as other else False.
         """
         return (self.start == other.start and
                 self.start_included == other.start_included and
@@ -73,13 +73,13 @@ def parse_command(command):
 
     Parameters
     ----------
-    command: str
-      Input command.
+    command : str
+        Input command.
 
     Returns
     -------
-    arguments: list of str
-      List of arguments.
+    arguments : list of str
+        List of arguments.
     """
 
     command = command.strip()
@@ -119,16 +119,16 @@ def extract_output_file_path(args):
 
     Parameters
     ----------
-    args: list of str
-      command arguments.
+    args : list of str
+        command arguments.
 
     Returns
     -------
-    args: list of str
-      Command arguments with the output file path part stripped.
+    args : list of str
+        Command arguments with the output file path part stripped.
 
     output_file_path: str or None
-      Output file path (if any).
+        Output file path (if any).
     """
 
     if args and args[-1].endswith(">"):
@@ -169,17 +169,17 @@ def parse_tensor_name_with_slicing(in_str):
 
     Parameters
     ----------
-    in_str: str
-      Input name of the tensor, potentially followed by a slicing
+    in_str : str
+        Input name of the tensor, potentially followed by a slicing
         string. E.g.: Without slicing string: "hidden/weights/Variable:0", with
         slicing string: "hidden/weights/Variable:0[1, :]"
 
     Returns
     -------
-    tensor_name: str
-      name of the tensor
-    tensor_slicing: str
-      slicing string, if any. If no slicing string is present, return "".
+    tensor_name : str
+        name of the tensor
+    tensor_slicing : str
+        slicing string, if any. If no slicing string is present, return "".
     """
 
     if in_str.count("[") == 1 and in_str.endswith("]"):
@@ -200,13 +200,13 @@ def validate_slicing_string(slicing_string):
 
     Parameters
     ----------
-    slicing_string: str
-      Input slicing string to be validated.
+    slicing_string : str
+        Input slicing string to be validated.
 
     Returns
     -------
-    value: bool
-      True if and only if the slicing string is valid.
+    value : bool
+        True if and only if the slicing string is valid.
     """
 
     return bool(re.search(r"^\[(\d|,|\s|:)+\]$", slicing_string))
@@ -219,13 +219,13 @@ def _parse_slices(slicing_string):
 
     Parameters
     ----------
-    slicing_string: str
-      Input slicing string to be parsed.
+    slicing_string : str
+        Input slicing string to be parsed.
 
     Returns
     -------
-    tuple: tuple
-      (slice1, slice2, ...)
+    tuple : tuple
+        (slice1, slice2, ...)
 
     """
     parsed = []
@@ -251,14 +251,14 @@ def parse_indices(indices_string):
 
     Parameters
     ----------
-    indices_string: str
-      A string representing indices. Can optionally be
+    indices_string : str
+        A string representing indices. Can optionally be
         surrounded by a pair of brackets.
 
     Returns
     -------
-    indices_string: list of int
-      Parsed indices.
+    indices_string : list of int
+        Parsed indices.
     """
 
     # Strip whitespace.
@@ -276,15 +276,15 @@ def parse_ranges(range_string):
 
     Parameters
     ----------
-    range_string: str
-      A string representing a numerical range or a list of
-      them. For example:
-      "[-1.0,1.0]", "[-inf, 0]", "[[-inf, -1.0], [1.0, inf]]"
+    range_string : str
+        A string representing a numerical range or a list of
+        them. For example:
+        "[-1.0,1.0]", "[-inf, 0]", "[[-inf, -1.0], [1.0, inf]]"
 
     Returns
     -------
-    ranges: (list of list of float)
-      A list of numerical ranges parsed from the input string.
+    ranges : (list of list of float)
+        A list of numerical ranges parsed from the input string.
     """
 
     range_string = range_string.strip()
@@ -317,16 +317,16 @@ def parse_memory_interval(interval_str):
 
     Parameters
     ----------
-    interval_str: str
-      A human-readable str representing an interval
-      (e.g., "[10kB, 20kB]", "<100M", ">100G"). Only the units "kB", "MB", "GB"
-      are supported. The "B character at the end of the input `str` may be
-      omitted.
+    interval_str : str
+        A human-readable str representing an interval
+        (e.g., "[10kB, 20kB]", "<100M", ">100G"). Only the units "kB", "MB", "GB"
+        are supported. The "B character at the end of the input `str` may be
+        omitted.
 
     Returns
     -------
-    Interval: object
-      where start and end are in bytes.
+    Interval : object
+        where start and end are in bytes.
     """
     str_interval = _parse_interval(interval_str)
     interval_start = 0
@@ -348,15 +348,15 @@ def parse_time_interval(interval_str):
 
     Parameters
     ----------
-    interval_str: str
-      A human-readable str representing an interval
-      (e.g., "[10us, 20us]", "<100s", ">100ms"). Supported time suffixes are
-      us, ms, s.
+    interval_str : str
+        A human-readable str representing an interval
+        (e.g., "[10us, 20us]", "<100s", ">100ms"). Supported time suffixes are
+        us, ms, s.
 
     Returns
     -------
-    interval: Interval
-      object where start and end are in microseconds.
+    interval : Interval
+        object where start and end are in microseconds.
     """
     str_interval = _parse_interval(interval_str)
     interval_start = 0
@@ -378,17 +378,17 @@ def _parse_interval(interval_str):
 
     Parameters
     ----------
-    interval_str: str
-      A human-readable str representing an interval
-      (e.g., "[1M, 2M]", "<100k", ">100ms"). The items following the ">", "<",
-      ">=" and "<=" signs have to start with a number (e.g., 3.0, -2, .98).
-      The same requirement applies to the items in the parentheses or brackets.
+    interval_str : str
+        A human-readable str representing an interval
+        (e.g., "[1M, 2M]", "<100k", ">100ms"). The items following the ">", "<",
+        ">=" and "<=" signs have to start with a number (e.g., 3.0, -2, .98).
+        The same requirement applies to the items in the parentheses or brackets.
 
     Returns
     -------
-    interval: Interval
-      Interval object where start or end can be None
-      if the range is specified as "<N" or ">N" respectively.
+    interval : Interval
+        Interval object where start or end can be None
+        if the range is specified as "<N" or ">N" respectively.
     """
     interval_str = interval_str.strip()
     if interval_str.startswith("<="):
@@ -448,14 +448,14 @@ def parse_readable_size_str(size_str):
 
     Parameters
     ----------
-    size_str: str
-      A human-readable str representing a number of bytes
-      (e.g., "0", "1023", "1.1kB", "24 MB", "23GB", "100 G".
+    size_str : str
+        A human-readable str representing a number of bytes
+        (e.g., "0", "1023", "1.1kB", "24 MB", "23GB", "100 G".
 
     Returns
     -------
-    size_str: int
-      The parsed number of bytes.
+    size_str : int
+        The parsed number of bytes.
     """
 
     size_str = size_str.strip()
@@ -480,15 +480,15 @@ def parse_readable_time_str(time_str):
 
     Parameters
     ----------
-    time_str: str
-      string consisting of an integer time value optionally
+    time_str : str
+        string consisting of an integer time value optionally
         followed by 'us', 'ms', or 's' suffix. If suffix is not specified,
         value is assumed to be in microseconds. (e.g. 100us, 8ms, 5s, 100).
 
     Returns
     -------
-    value: float
-      Microseconds value.
+    value : float
+        Microseconds value.
     """
 
     def _parse_positive_float(value_str):
@@ -513,16 +513,17 @@ def evaluate_tensor_slice(tensor, tensor_slicing):
 
     Parameters
     ----------
-    tensor: numpy ndarray)
-      The tensor value.
-    tensor_slicing: str or None
-      Slicing of the tensor, e.g., "[:, 1]". If
-      None, no slicing will be performed on the tensor.
+    tensor : numpy ndarray)
+        The tensor value.
+
+    tensor_slicing : str or None
+        Slicing of the tensor, e.g., "[:, 1]". If
+        None, no slicing will be performed on the tensor.
 
     Returns
     -------
-    tensor: numpy ndarray
-      The sliced tensor.
+    tensor : numpy ndarray
+       The sliced tensor.
     """
 
     _ = tensor
@@ -540,13 +541,13 @@ def get_view_tensor_argparser(description):
 
     Parameters
     ----------
-    description: str
-      Description of the ArgumentParser.
+    description : str
+        Description of the ArgumentParser.
 
     Returns
     -------
-    argparse: argparse.ArgumentParser
-      An instance of argparse.ArgumentParser.
+    argparse : argparse.ArgumentParser
+        An instance of argparse.ArgumentParser.
     """
 
     arg_parser = argparse.ArgumentParser(

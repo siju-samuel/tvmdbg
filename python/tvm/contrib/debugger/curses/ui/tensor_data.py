@@ -32,16 +32,16 @@ class HighlightOptions(object):
 
         Parameters
         ----------
-        criterion: (callable)
-          A callable of the following signature: def to_highlight(X):
-          This callable will be used as the argument of np.argwhere() to
-          determine which elements of the tensor are to be highlighted.
+        criterion : (callable)
+            A callable of the following signature: def to_highlight(X):
+            This callable will be used as the argument of np.argwhere() to
+            determine which elements of the tensor are to be highlighted.
 
-        description: str
-          Description of the highlight criterion embodied by criterion.
+        description : str
+            Description of the highlight criterion embodied by criterion.
 
-        font_attr: str
-          Font attribute to be applied to the highlighted elements.
+        font_attr : str
+            Font attribute to be applied to the highlighted elements.
 
         """
 
@@ -61,36 +61,35 @@ def format_tensor(tensor,
 
     Parameters
     ----------
-    tensor: tensor
-      The tensor to be displayed, as a numpy ndarray or other
+    tensor : tensor
+        The tensor to be displayed, as a numpy ndarray or other
         appropriate format (e.g., None representing uninitialized tensors).
 
-    tensor_label: str
-      A label for the tensor, as a string. If set to None, will
-      suppress the tensor name line in the return value.
+    tensor_label : str
+        A label for the tensor, as a string. If set to None, will
+        suppress the tensor name line in the return value.
 
-    include_metadata: metadata
-      Whether metadata such as dtype and shape are to be included in the formatted text.
+    include_metadata : metadata
+        Whether metadata such as dtype and shape are to be included in the formatted text.
 
-    auxiliary_message: str
-      An auxiliary message to display under the tensor label,  dtype and shape information lines.
+    auxiliary_message : str
+        An auxiliary message to display under the tensor label,  dtype and shape information lines.
 
-    include_numeric_summary: bool
-      Whether a text summary of the numeric values (if applicable) will be included.
+    include_numeric_summary : bool
+        Whether a text summary of the numeric values (if applicable) will be included.
 
-    np_printoptions: str
-      A dictionary of keyword arguments that are passed to a call of np.set_printoptions() to
-      set the text format for display numpy ndarrays.
+    np_printoptions : str
+        A dictionary of keyword arguments that are passed to a call of np.set_printoptions() to
+        set the text format for display numpy ndarrays.
 
-    highlight_options: HighlightOptions
-      options for highlighting elements of the tensor.
+    highlight_options : HighlightOptions
+        options for highlighting elements of the tensor.
 
     Returns
     -------
-    lines: object
-      A RichTextLines object. Its annotation field has line-by-line markups to
-      indicate which indices in the array the first element of each line
-      corresponds to.
+    lines : object
+        A RichTextLines object. Its annotation field has line-by-line markups to
+        indicate which indices in the array the first element of each line corresponds to.
     """
     lines = []
     font_attr_segs = {}
@@ -201,22 +200,22 @@ def _annotate_ndarray_lines(array_lines,
 
     Parameters
     ----------
-    array_lines: list of str
-      Text lines representing the tensor, as a list of str.
+    array_lines : list of str
+        Text lines representing the tensor, as a list of str.
 
-    tensor: str
-      The tensor being formatted as string.
+    tensor : str
+        The tensor being formatted as string.
 
-    np_printoptions: str
-      A dictionary of keyword arguments that are passed to a call of np.set_printoptions().
+    np_printoptions : str
+        A dictionary of keyword arguments that are passed to a call of np.set_printoptions().
 
-    offset: int
-      Line number offset applied to the line indices in the returned annotation.
+    offset : int
+        Line number offset applied to the line indices in the returned annotation.
 
     Returns
     -------
-    annotations: dict
-      An annotation as a dict.
+    annotations : dict
+        An annotation as a dict.
     """
 
     if np_printoptions and "edgeitems" in np_printoptions:
@@ -277,30 +276,30 @@ def locate_tensor_element(formatted, indices):
 
     Parameters
     ----------
-    formatted: RichTextLines object
-      A RichTextLines object containing formatted text lines representing the tensor.
+    formatted : RichTextLines object
+        A RichTextLines object containing formatted text lines representing the tensor.
 
-    indices: list
-      Indices of the sought element, as a list of int or a list of list of int. The former case
-      is for a single set of indices to look up, whereas the latter case is for looking up a batch
-      of indices sets at once. In the latter case, the indices must be in ascending order, or a
-      ValueError will be raised.
+    indices : list
+        Indices of the sought element, as a list of int or a list of list of int. The former case
+        is for a single set of indices to look up, whereas the latter case is for looking up a batch
+        of indices sets at once. In the latter case, the indices must be in ascending order, or a
+        ValueError will be raised.
 
     Returns
     -------
-    are_omitted:bool
-      A boolean indicating whether the element falls into an omitted line.
+    are_omitted : bool
+        A boolean indicating whether the element falls into an omitted line.
 
-    row_indices: int
-      Row index.
+    row_indices : int
+        Row index.
 
-    start_columns: int
-      Column start index, i.e., the first column in which the representationof the specified tensor
-      starts, if it can be determined. If it cannot be determined (e.g., due to ellipsis), None.
+    start_columns : int
+        Column start index, i.e., first column in which the representationof the specified tensor
+        starts, if it can be determined. If it cannot be determined (e.g., due to ellipsis), None.
 
-    end_columns: int
-      Column end index, i.e., the column right after the last column that
-      represents the specified tensor. Iff it cannot be determined, None.
+    end_columns : int
+        Column end index, i.e., the column right after the last column that
+        represents the specified tensor. Iff it cannot be determined, None.
     """
 
     if isinstance(indices[0], list):
@@ -414,14 +413,15 @@ def _locate_elements_in_line(line, indices_list, ref_indices):
 
     Parameters
     ----------
-    line: str
-      the line in which the element is to be sought.
+    line : str
+        the line in which the element is to be sought.
 
-    indices_list: list of list of int
-      list of indices of the element to search for. Assumes that the indices in the batch are unique
-      and sorted in ascending order.
-    ref_indices: list of int
-      reference indices, i.e., the indices of the first element represented in the line.
+    indices_list : list of list of int
+        list of indices of the element to search for. Assumes that indices in the batch are unique
+        and sorted in ascending order.
+
+    ref_indices : list of int
+        reference indices, i.e., the indices of the first element represented in the line.
 
     Returns
     -------
@@ -480,15 +480,15 @@ def numeric_summary(tensor):
 
     Parameters
     ----------
-    tensor: numpy.ndarray
-      the tensor value object to be summarized.
+    tensor : numpy.ndarray
+        the tensor value object to be summarized.
 
     Returns
     -------
-    lines: object
-      The summary text as a `RichTextLines` object. If the type of `tensor` is not
-      numeric or Boolean, a single-line `RichTextLines` object containing a
-      warning message will reflect that.
+    lines : object
+        The summary text as a `RichTextLines` object. If the type of `tensor` is not
+        numeric or Boolean, a single-line `RichTextLines` object containing a
+        warning message will reflect that.
     """
 
     def _counts_summary(counts, skip_zeros=True, total_count=None):

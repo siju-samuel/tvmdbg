@@ -56,29 +56,29 @@ def _add_main_menu(output,
 
     Parameters
     ----------
-    output: ui_common.RichTextLines
-      the output object to modify.
+    output : ui_common.RichTextLines
+        the output object to modify.
 
-    node_name: str or None
-      name of the node involved (if any). If None, the menu items node_details,
-      graphnode_inputs and graphnode_outputs will be automatically disabled, overriding the values
-      of arguments enable_node_details, enable_graphnode_inputs and enable_graphnode_outputs.
+    node_name : str or None
+        name of the node involved (if any). If None, the menu items node_details,
+        graphnode_inputs and graphnode_outputs will be automatically disabled, overriding the values
+        of arguments enable_node_details, enable_graphnode_inputs and enable_graphnode_outputs.
 
-    enable_list_graphnodes: bool
-      whether the list_tensor menu item will be enabled.
+    enable_list_graphnodes : bool
+        whether the list_tensor menu item will be enabled.
 
 
-    enable_node_details: bool
-      whether the node_details item will be enabled.
+    enable_node_details : bool
+        whether the node_details item will be enabled.
 
-    enable_view_tensor: bool
-      whether the view_tensor item will be enabled.
+    enable_view_tensor : bool
+        whether the view_tensor item will be enabled.
 
-    enable_graphnode_inputs: bool
-      whether the item graphnode_inputs will be enabled.
+    enable_graphnode_inputs : bool
+        whether the item graphnode_inputs will be enabled.
 
-    enable_graphnode_outputs: bool
-      whether the item graphnode_outputs will be enabled.
+    enable_graphnode_outputs : bool
+        whether the item graphnode_outputs will be enabled.
     """
 
     menu = ui_common.Menu()
@@ -136,11 +136,11 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        debug_dump: Object of DebugDumpDir
-          A DebugDumpDir object.
+        debug_dump : Object of DebugDumpDir
+            A DebugDumpDir object.
 
-        config: object of `ui_config.CLIConfig`
-          A `ui_config.CLIConfig` object that carries user-facing configurations.
+        config : object of `ui_config.CLIConfig`
+            A `ui_config.CLIConfig` object that carries user-facing configurations.
         """
         self._debug_dump = debug_dump
 
@@ -156,8 +156,8 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        config: Object
-          A `ui_config.CLIConfig` object.
+        config : Object
+            A `ui_config.CLIConfig` object.
         """
         # Argument parsers for command handlers.
         self._arg_parsers = {}
@@ -310,11 +310,11 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        filter_name: str
-          name of the filter. Cannot be empty.
+        filter_name : str
+            name of the filter. Cannot be empty.
 
-        filter_callable: (callable)
-          a filter function of the signature described as above.
+        filter_callable : callable
+            a filter function of the signature described as above.
         """
 
         if not isinstance(filter_name, str):
@@ -338,13 +338,13 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        filter_name: str
-          Name of the filter set during add_tensor_filter() call.
+        filter_name : str
+            Name of the filter set during add_tensor_filter() call.
 
         Returns
         -------
-        tensor_filters: callable
-          The callable associated with the filter name.
+        tensor_filters : callable
+            The callable associated with the filter name.
 
         """
 
@@ -358,13 +358,13 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        handler_name: str
-          argument name.
+        handler_name : str
+            argument name.
 
         Returns
         -------
-        arg_parsers: str
-          Formats the full help text and returns it as a string.
+        arg_parsers : str
+            Formats the full help text and returns it as a string.
         """
         return self._arg_parsers[handler_name].format_help()
 
@@ -375,15 +375,14 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        args: list of str
-          Command-line arguments, excluding the command prefix, as a list of str.
-          screen_info: Optional dict input containing screen information such as
-            cols.
+        args : list of str
+            Command-line arguments, excluding the command prefix, as a list of str.
+            screen_info: Optional dict input containing screen information such as cols.
 
         Returns
         -------
-        output: Object
-          Output text lines as a RichTextLines object.
+        output : Object
+            Output text lines as a RichTextLines object.
         """
 
         _ = screen_info
@@ -496,28 +495,28 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        data: list of DebugTensorDaum
-          the data based on which the maximum column widths will be determined.
+        data : list of DebugTensorDaum
+            the data based on which the maximum column widths will be determined.
 
         Returns
         -------
-        max_timestamp_width:int
-          maximum width of the timestamp column. 0 if data is empty.
+        max_timestamp_width : int
+            maximum width of the timestamp column. 0 if data is empty.
 
-        max_dump_size_width:int
-          maximum width of the dump size column. 0 if data is empty.
+        max_dump_size_width : int
+            maximum width of the dump size column. 0 if data is empty.
 
-        max_op_type_width:int
-          maximum width of the op type column. 0 if data is empty.
+        max_op_type_width : int
+            maximum width of the op type column. 0 if data is empty.
 
-        max_no_ip_width:int
-          maximum width of the number of input column. 0 if data is empty.
+        max_no_ip_width : int
+            maximum width of the number of input column. 0 if data is empty.
 
-        max_no_op_width:int
-          maximum width of the number of output column. 0 if data is empty.
+        max_no_op_width : int
+            maximum width of the number of output column. 0 if data is empty.
 
-        max_no_tensorname_width:int
-          maximum width of the tensorname width column. 0 if data is empty.
+        max_no_tensorname_width : int
+            maximum width of the tensorname width column. 0 if data is empty.
 
         """
 
@@ -576,19 +575,19 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        data: list of DebugTensorDatum
-          the data to be sorted.
+        data : list of DebugTensorDatum
+            the data to be sorted.
 
-        sort_by: str
-          The field to sort data by.
+        sort_by : str
+            The field to sort data by.
 
-        reverse: bool
-          Whether to use reversed (descending) order.
+        reverse : bool
+            Whether to use reversed (descending) order.
 
         Returns
         -------
-        data_dump: list of DebugTensorDatum
-          list of DebugTensorDatum in sorted order.
+        data_dump : list of DebugTensorDatum
+            list of DebugTensorDatum in sorted order.
 
         """
 
@@ -631,22 +630,22 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        parsed: object
-          Parsed arguments (by argparse) of the list_graphnodes command.
+        parsed : object
+            Parsed arguments (by argparse) of the list_graphnodes command.
 
-        max_timestamp_width: int
-          maximum width of the timestamp column.
+        max_timestamp_width : int
+            maximum width of the timestamp column.
 
-        max_dump_size_width: int
-          maximum width of the dump size column.
+        max_dump_size_width : int
+            maximum width of the dump size column.
 
-        max_op_type_width: int
-          maximum width of the op type column.
+        max_op_type_width : int
+            maximum width of the op type column.
 
         Returns
         -------
-        column_heads: Object
-          A RichTextLines object.
+        column_heads : Object
+            A RichTextLines object.
         """
 
         base_command = "list_graphnodes"
@@ -724,16 +723,16 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        args: list of str
-          Command-line arguments, excluding the command prefix, as a list of str.
+        args : list of str
+            Command-line arguments, excluding the command prefix, as a list of str.
 
-        screen_info: dict
-          Optional dict input containing screen information such as cols.
+        screen_info : dict
+            Optional dict input containing screen information such as cols.
 
         Returns
         -------
-        node_details: object
-          Output text lines as a RichTextLines object.
+        node_details : object
+            Output text lines as a RichTextLines object.
         """
 
         _ = screen_info
@@ -793,13 +792,13 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        node_name: str
-          name of the node.
+        node_name : str
+            name of the node.
 
         Returns
         -------
-        node_traceback: object
-          A RichTextLines object containing the stack trace of the node's construction.
+        node_traceback : object
+            A RichTextLines object containing the stack trace of the node's construction.
         """
 
         lines = [RL(""), RL(""), RL("Traceback of node construction:", "bold")]
@@ -833,16 +832,16 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        args: list of str
-          Command-line arguments, excluding the command prefix, as a list of str.
+        args : list of str
+            Command-line arguments, excluding the command prefix, as a list of str.
 
-        screen_info: dict
-          Optional dict input containing screen information such as cols.
+        screen_info : dict
+            Optional dict input containing screen information such as cols.
 
         Returns
         -------
-        inputs: object
-          Output text lines as a RichTextLines object.
+        inputs : object
+            Output text lines as a RichTextLines object.
         """
 
         _ = screen_info
@@ -867,16 +866,16 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        args: list of str
-          Command-line arguments, excluding the command prefix, as a list of str.
+        args : list of str
+            Command-line arguments, excluding the command prefix, as a list of str.
 
-        screen_info: dict
-          Optional dict input containing screen information such as cols.
+        screen_info : dict
+            Optional dict input containing screen information such as cols.
 
         Returns
         -------
-        tensor: object
-          Output text lines as a RichTextLines object.
+        tensor : object
+            Output text lines as a RichTextLines object.
         """
 
         parsed = self._arg_parsers["view_tensor"].parse_args(args)
@@ -1011,16 +1010,16 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        args: list of str
-          Command-line arguments, excluding the command prefix, as a list of str.
+        args : list of str
+            Command-line arguments, excluding the command prefix, as a list of str.
 
-        screen_info: dict
-          Optional dict input containing screen information such as cols.
+        screen_info : dict
+            Optional dict input containing screen information such as cols.
 
         Returns
         -------
-        output: object
-          Output text lines as a RichTextLines object.
+        output : object
+            Output text lines as a RichTextLines object.
         """
 
         _ = screen_info
@@ -1051,25 +1050,25 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        recursive: bool
-          Whether the listing is to be done recursively, as a boolean.
+        recursive : bool
+            Whether the listing is to be done recursively, as a boolean.
 
-        node_name: str
-          The name of the node in question, as a str.
+        node_name : str
+            The name of the node in question, as a str.
 
-        depth: int
-          Maximum recursion depth, applies only if recursive == True, as an int.
+        depth : int
+            Maximum recursion depth, applies only if recursive == True, as an int.
 
-        op_type: bool
-          Whether the op types of the nodes are to be included, as a boolean.
+        op_type : bool
+            Whether the op types of the nodes are to be included, as a boolean.
 
-        do_outputs: bool
-          Whether recipients, instead of input nodes are to be listed, as a boolean.
+        do_outputs : bool
+            Whether recipients, instead of input nodes are to be listed, as a boolean.
 
         Returns
         -------
-        lines: object
-          Input or recipient tree formatted as a RichTextLines object.
+        lines : object
+            Input or recipient tree formatted as a RichTextLines object.
         """
 
         if do_outputs:
@@ -1141,34 +1140,35 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        lines: list of str
-          Text lines to append to, as a list of str.
+        lines : list of str
+            Text lines to append to, as a list of str.
 
-        attr_segs: dict
-          Attribute segments dictionary to append to.
-        node_name: str
-          Name of the node, as a str. This arg is updated during the recursion.
+        attr_segs : dict
+            Attribute segments dictionary to append to.
 
-        tracker: callable
-          A callable that takes one str as the node name input and returns a list of str as the
-          inputs/outputs. This makes it this function general enough to be used with both
-          node-input and node-output tracking.
+        node_name : str
+            Name of the node, as a str. This arg is updated during the recursion.
 
-        max_depth: int
-          Maximum recursion depth, as an int.
+        tracker : callable
+            A callable that takes one str as the node name input and returns a list of str as the
+            inputs/outputs. This makes it this function general enough to be used with both
+            node-input and node-output tracking.
 
-        depth: int
-          Current recursion depth. This arg is updated during the recursion.
+        max_depth : int
+            Maximum recursion depth, as an int.
 
-        unfinished: list of int
-          A stack of unfinished recursion depths, as a list of int. include_control: Whether control
-          dependencies are to be included as inputs (and marked as such).
+        depth : int
+            Current recursion depth. This arg is updated during the recursion.
 
-        show_op_type: bool
-          Whether op type of the input nodes are to be displayed alongside the nodes' names.
+        unfinished : list of int
+            A stack of unfinished recursion depths, as a list of int. include_control: Whether
+            control dependencies are to be included as inputs (and marked as such).
 
-        command_template: str
-          Template for command shortcut of the node names.
+        show_op_type : bool
+            Whether op type of the input nodes are to be displayed alongside the nodes' names.
+
+        command_template : str
+            Template for command shortcut of the node names.
         """
 
         # Make a shallow copy of the list because it may be extended later.
@@ -1245,19 +1245,19 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        neighbor_type: str
+        neighbor_type : str
             ("input" | "recipient")
 
-        non_ctrls: list of str
-          Non-control neighbor node names, as a list of str.
+        non_ctrls : list of str
+            Non-control neighbor node names, as a list of str.
 
-        ctrls: list of str
-          Control neighbor node names, as a list of str.
+        ctrls : list of str
+            Control neighbor node names, as a list of str.
 
         Returns
         -------
-        lines: object
-          A RichTextLines object.
+        lines : object
+            A RichTextLines object.
         """
 
         lines = []
@@ -1300,13 +1300,13 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        node_name: str
-          Name of the node of which the attributes are to be listed.
+        node_name : str
+            Name of the node of which the attributes are to be listed.
 
         Returns
         -------
-        lines: object
-          A RichTextLines object.
+        lines : object
+            A RichTextLines object.
         """
 
         lines = []
@@ -1327,13 +1327,13 @@ class DebugAnalyzer(object):
 
         Parameters
         ----------
-        node_name: str
-          Name of the node of which the attributes are to be listed.
+        node_name : str
+            Name of the node of which the attributes are to be listed.
 
         Returns
         -------
-        lines: object
-          A RichTextLines object.
+        lines : object
+            A RichTextLines object.
         """
 
         lines = []
@@ -1376,25 +1376,25 @@ def create_analyzer_ui(debug_dump,
 
     Parameters
     ----------
-    debug_dump: object dbg_dump.DebugDumpDir
-      The debug dump to use.
+    debug_dump : object dbg_dump.DebugDumpDir
+        The debug dump to use.
 
-    tensor_filters: dict
-      A dict mapping tensor filter name str to tensor filter (Callable).
+    tensor_filters : dict
+        A dict mapping tensor filter name str to tensor filter (Callable).
 
-    ui_type: str
-      requested UI type, e.g., "curses", "readline".
+    ui_type : str
+        requested UI type, e.g., "curses", "readline".
 
-    on_ui_exit: Callable
-      the callback to be called when the UI exits.
+    on_ui_exit : Callable
+        the callback to be called when the UI exits.
 
-    config: object
-      A `ui_config.CLIConfig` object.
+    config : object
+        A `ui_config.CLIConfig` object.
 
     Returns
     -------
-    cli: Object of ui_base.BaseUI
-      A BaseUI subtype object with a set of standard analyzer cmds and tab-completions registered.
+    cli : Object of ui_base.BaseUI
+        A BaseUI subtype object with a set of standard analyzer cmds and tab-completions registered.
     """
     if config is None:
         config = ui_config.CLIConfig()
