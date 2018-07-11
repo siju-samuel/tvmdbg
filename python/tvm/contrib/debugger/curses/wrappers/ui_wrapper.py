@@ -107,7 +107,10 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._ui_type = ui_type
         self._graph_json = None
         if graph_json:
-            self._graph_json, self._graph_node_count = graph_def.prepare_graph(graph_json)
+            self._graph_json, self._graph_node_count, outputs = graph_def.prepare_graph(graph_json)
+            for output in outputs:
+                self.set_ouputs(output)
+
 
     def _initialize_argparsers(self):
         self._argparsers = {}

@@ -1,4 +1,3 @@
-# coding: utf-8
 # pylint: disable=too-many-lines
 """Curses-Based Command-Line Interface of TVM Debugger (tvmdbg)."""
 from __future__ import absolute_import

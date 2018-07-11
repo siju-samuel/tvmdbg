@@ -89,9 +89,12 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         self._set_debug_buffer = module["set_debug_buffer"]
         self._debug_run = module["debug_run"]
         graph_runtime.GraphModule.__init__(self, module, ctx)
-        self.prepare_data_and_ui(graph_json_str, ctx, frontend)
+        self._prepare_data_and_ui(graph_json_str, ctx, frontend)
 
-    def prepare_data_and_ui(self, graph_json, ctx, frontend):
+    def _format_context(self, ctx):
+        return str(ctx).upper().replace("(", ":").replace(")", "")
+
+    def _prepare_data_and_ui(self, graph_json, ctx, frontend):
         """Create the framework for debug data dumpling and initialize the frontend
 
         Parameters
@@ -110,21 +113,22 @@ class GraphModuleDebug(graph_runtime.GraphModule):
           'curses'- involve curses based CLI frontend
           'tensorboard'- make data format for tensorbard frontend.
         """
-        nodes_list, dltype_list, shapes_list, heads_list = self._parse_graph(graph_json)
-        p_graph = self._get_graph_json(nodes_list,
-                                       dltype_list, shapes_list)
-        ctx = str(ctx).upper().replace("(", ":").replace(")", "")
-        self._dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
+        nodes_list, dltype_list, shapes_list = self._parse_graph(graph_json)
+        self._update_graph_json(nodes_list, dltype_list, shapes_list)
 
-        self.ui_obj = self._create_debug_ui(graph_json, nodes_list, heads_list, ctx, frontend)
-        dump_path = self.ui_obj.get_dump_path(ctx)
+        #format the context
+        ctx = self._format_context(ctx)
+
+        self.ui_obj = self._create_debug_ui(graph_json, ctx, frontend)
+
         # prepare the debug out buffer list
         self.dbg_buff_list = self._make_debug_buffer_list(shapes_list, dltype_list)
-        self.debug_datum = debug_result.DebugResult(nodes_list, self.dbg_buff_list,
-                                                    dump_path, ctx)
+
+        # init the debug dumping environment
+        self.debug_datum = debug_result.DebugResult(nodes_list, self.dbg_buff_list, self._dump_path)
+
         # dump the json information
         self.debug_datum.dump_graph_json(graph_json)
-        self.ui_obj.set_output_nodes(heads_list)
 
     def _parse_graph(self, graph_json):
         """Parse and extract the NNVM graph.
@@ -143,9 +147,6 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         nodes_list : list
           List of all the nodes presented in the graph
 
-        heads_list : list
-          List of all output nodes presented in the graph
-
         shapes_list: list
           List of shape of each nodes presented in the graph
 
@@ -156,11 +157,11 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         nodes_list = json_obj['nodes']
         dltype_list = json_obj['attrs']['dltype']
         shapes_list = json_obj['attrs']['shape']
-        heads_list = json_obj['heads']
-        return nodes_list, dltype_list, shapes_list, heads_list
+        return nodes_list, dltype_list, shapes_list
 
-    def _get_graph_json(self, nodes_list, dltype_list, shapes_list):
-        """Create a list of nodes with name, shape and data type.
+    def _update_graph_json(self, nodes_list, dltype_list, shapes_list):
+        """update the nodes_list with name, shape and data type,
+        for temporarily storing the output.
 
         Parameters
         ----------
@@ -175,12 +176,9 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         Returns
         -------
-        p_graph : json format
-          json formatted NNVM graph contain list of each node'sW name, shape and type.
+        None
         """
 
-        p_graph = {}
-        p_graph['nodes'] = []
         nodes_len = len(nodes_list)
         for i in range(nodes_len):
             node = nodes_list[i]
@@ -197,8 +195,6 @@ class GraphModuleDebug(graph_runtime.GraphModule):
             node['name'] = node['name'].replace("/", "_")
             node['attrs'].update({"T": dltype})
             node['shape'] = shapes_list[1][i]
-            p_graph['nodes'].append(node)
-        return p_graph
 
     def _get_debug_buffer_count(self):
         return len(self.dbg_buff_list)
@@ -220,7 +216,7 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         for eid in range(self._get_debug_buffer_count()):
             self._set_debug_buffer(self._get_debug_buffer(eid))
 
-    def _create_debug_ui(self, graph_json, nodes_list, heads_list, ctx, frontend):
+    def _create_debug_ui(self, graph_json, ctx, frontend):
         """Create UI wrapper framework to handle multiple UI frontends for tvmdbg
 
         Parameters
@@ -230,9 +226,6 @@ class GraphModuleDebug(graph_runtime.GraphModule):
 
         nodes_list : list
           List of all the nodes presented in the graph
-
-        heads_list : list
-          List of all output nodes presented in the graph
 
         ctx : TVMContext
           The context this module is under.
@@ -246,9 +239,14 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         ui_wrapper : DebugGraphUIWrapper object
           UI warpper manage tvmdbg frontend.
         """
-        ctx = str(ctx).upper().replace("(", ":").replace(")", "")
-        ui_wrapper = DebugGraphUIWrapper(graph_json, nodes_list,
-                                         heads_list, ctx, frontend)
+        #make the dump folder
+        dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
+
+        ui_wrapper = DebugGraphUIWrapper(dump_root, graph_json, ctx, frontend)
+
+        #updates the dumping directories
+        self._dump_root = dump_root
+        self._dump_path = ui_wrapper.get_dump_path(ctx)
         return ui_wrapper
 
     def _make_debug_buffer_list(self, shapes_list, dltype_list):
@@ -378,14 +376,11 @@ class DebugGraphUIWrapper(object):
 
     Parameters
     ----------
-    p_graph : json format
+    dump_root: str
+      The dump folder for graph and tensors.
+
+    graph_json : json format
       json formatted NNVM graph contain list of each node's name, shape and type.
-
-    nodes_list : list
-      List of all the nodes presented in the graph
-
-    heads_list : list
-      List of all output nodes presented in the graph
 
     ctx : TVMContext
       The context this module is under.
@@ -394,11 +389,13 @@ class DebugGraphUIWrapper(object):
       'curses'- involve curses based CLI frontend
       'tensorboard'- make data format for tensorbard frontend.
     """
-    def __init__(self, p_graph, nodes_list, heads_list, ctx, frontend):
+    def __init__(self, dump_root, graph_json, ctx, frontend):
         """Init the DebugGraphUIWrapper"""
-        self._nodes_list = nodes_list
         if frontend == FRONTEND_CURSES:
-            self.curses_obj = tvmdbg.LocalCLIDebugWrapperModule(self, p_graph, ctx=ctx)
+            self.curses_obj = tvmdbg.LocalCLIDebugWrapperModule(self,
+                                                                graph_json,
+                                                                ctx=ctx,
+                                                                dump_root=dump_root)
 
     def get_run_command(self):
         """Invoke run from curses ui"""

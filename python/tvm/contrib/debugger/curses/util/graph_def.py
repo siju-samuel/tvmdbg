@@ -90,9 +90,11 @@ def _get_graph_json(nodes_list, dltype_list, shapes_list):
 
 def prepare_graph(graph):
     nodes_list, dltype_list, shapes_list, heads_list = _parse_graph(graph)
-    p_graph = _get_graph_json(nodes_list,
-                                   dltype_list, shapes_list)
-    return p_graph, len(nodes_list)
+    p_graph = _get_graph_json(nodes_list, dltype_list, shapes_list)
+    outputs = []
+    for output in heads_list:
+        outputs.append(nodes_list[output[0]]['name'])
+    return p_graph, len(nodes_list), outputs
 
 class Node(object):
     """The class which is used to store a node inforamtion.

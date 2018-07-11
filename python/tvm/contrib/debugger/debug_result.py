@@ -20,16 +20,12 @@ class DebugResult():
 
     dump_path : str
         Output data path is read/provided from frontend
-
-    ctx : TVMContext
-        The context this module is under.
     """
-    def __init__(self, nodes_list, node_stats, dump_path, ctx):
+    def __init__(self, nodes_list, node_stats, dump_path):
         self._nodes_list = nodes_list
         self._dump_path = dump_path
         self._out_stats = node_stats
         self._time_list = []
-        self.ctx = ctx
 
     def get_nodes_list(self):
         return self._nodes_list
@@ -64,12 +60,12 @@ class DebugResult():
                 np.save(dump_file, ndbuffer.asnumpy())
                 os.rename(dump_file, dump_file.rpartition('.')[0])
 
-    def dump_graph_json(self, p_graph):
+    def dump_graph_json(self, graph):
         """Dump json formatted graph.
 
         Parameters
         ----------
-        p_graph : json format
+        graph : json format
             json formatted NNVM graph contain list of each node's
             name, shape and type.
 
@@ -79,5 +75,4 @@ class DebugResult():
         """
         graph_dump_file_name = '_tvmdbg_graph_dump.json'
         with open((self._dump_path + graph_dump_file_name), 'w') as outfile:
-            json.dump(p_graph, outfile, indent=2, sort_keys=False)
-
+            json.dump(graph, outfile, indent=2, sort_keys=False)

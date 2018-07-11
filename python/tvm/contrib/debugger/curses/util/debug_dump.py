@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Classes and functions to handle debug-dump data of TVM Debugger."""
 from __future__ import absolute_import
 from __future__ import division
@@ -5,7 +6,6 @@ from __future__ import print_function
 
 import collections
 import glob
-import json
 import os
 import re
 import six
@@ -26,7 +26,7 @@ def _glob(glob_pattern):
 
 def _load_graph_def_from_event_file(ctx, event_file_path):
     with open(event_file_path) as json_data:
-        json_nodes, _ = graph_def.prepare_graph(json_data)
+        json_nodes, _, _ = graph_def.prepare_graph(json_data)
         json_data.close()
     return graph_def.GraphDef(ctx, json_nodes)
 
@@ -923,8 +923,8 @@ class DebugDumpDir(object):
           name of the debug op.
 
         device_name: str
-          name of the device. If there is only one device or if the specified debug_watch_key exists on
-          only one device, this argument is optional.
+          name of the device. If there is only one device or if the specified debug_watch_key exists
+          on only one device, this argument is optional.
 
         Returns
         -------
