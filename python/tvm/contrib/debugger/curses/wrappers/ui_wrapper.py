@@ -15,6 +15,7 @@ from tvm.contrib.debugger.curses.ui import ui_factory
 from tvm.contrib.debugger.curses.ui.analyzer import analyzer
 from tvm.contrib.debugger.curses.util import common
 from tvm.contrib.debugger.curses.util import debug_dump as dbg_dump
+from tvm.contrib.debugger.curses.util import graph_def as graph_def
 from tvm.contrib.debugger.curses.wrappers import ui_framework as framework
 
 _DUMP_ROOT_PREFIX = "tvmdbg_"
@@ -29,7 +30,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
     def __init__(self,
                  runtime,
-                 graph_json,
+                 graph_json=None,
                  ctx=None,
                  dump_root=None,
                  log_usage=True,
@@ -104,8 +105,9 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._run_start_response = None
         self._is_run_start = True
         self._ui_type = ui_type
-        self._graph_node_count = len(graph_json['nodes'])
-        self._graph_json = graph_json
+        self._graph_json = None
+        if graph_json:
+            self._graph_json, self._graph_node_count = graph_def.prepare_graph(graph_json)
 
     def _initialize_argparsers(self):
         self._argparsers = {}

@@ -7,6 +7,3 @@
 [submodule "dlpack"]
 	path = dlpack
 	url = https://github.com/dmlc/dlpack
-[submodule "python/tvm/contrib/debugger/tvm-curses-ui"]
-	path = python/tvm/contrib/debugger/tvm-curses-ui
-	url = https://github.com/siju-samuel/tvm-curses-ui.git

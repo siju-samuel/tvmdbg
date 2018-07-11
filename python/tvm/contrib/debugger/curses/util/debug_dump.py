@@ -26,7 +26,7 @@ def _glob(glob_pattern):
 
 def _load_graph_def_from_event_file(ctx, event_file_path):
     with open(event_file_path) as json_data:
-        json_nodes = json.load(json_data)
+        json_nodes, _ = graph_def.prepare_graph(json_data)
         json_data.close()
     return graph_def.GraphDef(ctx, json_nodes)
 

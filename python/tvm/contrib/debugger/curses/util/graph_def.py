@@ -1,6 +1,6 @@
 """Graph defenition class which is used to exchange the nodes information between tvm and CLI."""
 from __future__ import absolute_import as _abs
-
+import json
 
 class GraphDef(object):
     """The class which is used to exhange the nodes inforamtion between TVM and CLI.
@@ -14,6 +14,85 @@ class GraphDef(object):
     def node(self):
         return self._node
 
+def _parse_graph(graph_json):
+    """Parse and extract the NNVM graph.
+
+    Parameters
+    ----------
+    graph_json : str or graph class
+      The graph to be deployed in json format output by nnvm graph.
+      The graph can only contain one operator(tvm_op) that
+      points to the name of PackedFunc in the libmod.
+      value : the input value.
+         The input key
+
+    Returns
+    -------
+    nodes_list : list
+      List of all the nodes presented in the graph
+
+    heads_list : list
+      List of all output nodes presented in the graph
+
+    shapes_list: list
+      List of shape of each nodes presented in the graph
+
+    dltype_list: list
+      List of data type of each nodes presented in the graph
+    """
+    json_obj = json.loads(graph_json)
+    nodes_list = json_obj['nodes']
+    dltype_list = json_obj['attrs']['dltype']
+    shapes_list = json_obj['attrs']['shape']
+    heads_list = json_obj['heads']
+    return nodes_list, dltype_list, shapes_list, heads_list
+
+def _get_graph_json(nodes_list, dltype_list, shapes_list):
+    """Create a list of nodes with name, shape and data type.
+
+    Parameters
+    ----------
+    nodes_list: List
+      List of nodes in the graph
+
+    dltype_list: List
+      List of datatypes of each node
+
+    shapes_list: List
+      List of shape of each node
+
+    Returns
+    -------
+    p_graph : json format
+      json formatted NNVM graph contain list of each node'sW name, shape and type.
+    """
+
+    p_graph = {}
+    p_graph['nodes'] = []
+    nodes_len = len(nodes_list)
+    for i in range(nodes_len):
+        node = nodes_list[i]
+        input_list = []
+        for input_node in node['inputs']:
+            input_list.append(nodes_list[input_node[0]]['name'])
+        node['inputs'] = input_list
+        dltype = str("type: " + dltype_list[1][i])
+        if 'attrs' not in node:
+            node['attrs'] = {}
+            node['op'] = "param"
+        else:
+            node['op'] = node['attrs']['func_name']
+        node['name'] = node['name'].replace("/", "_")
+        node['attrs'].update({"T": dltype})
+        node['shape'] = shapes_list[1][i]
+        p_graph['nodes'].append(node)
+    return p_graph
+
+def prepare_graph(graph):
+    nodes_list, dltype_list, shapes_list, heads_list = _parse_graph(graph)
+    p_graph = _get_graph_json(nodes_list,
+                                   dltype_list, shapes_list)
+    return p_graph, len(nodes_list)
 
 class Node(object):
     """The class which is used to store a node inforamtion.
