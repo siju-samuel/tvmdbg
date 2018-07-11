@@ -2,23 +2,26 @@
 
 import os
 import json
-import numpy as np
+import tempfile
+
 from tvm import ndarray as nd
 from tvm._ffi.base import string_types
 from tvm.contrib import graph_runtime
 from tvm._ffi.function import get_global_func
 from tvm.contrib.debugger.curses.wrappers import ui_wrapper as tvmdbg
 from tvm.contrib.debugger.curses.util import common
+from . import debug_result
 
 #Todo: User will have an option to select the frontend when debug is enabling.
 #String used for frontend seletion.
-#Currently only FRONTEND_CLI is supported.
-#FRONTEND_CLI : Select the CLI cursus ui framework for UX
+#Currently only FRONTEND_CURSES is supported.
+#FRONTEND_CURSES : Select the CLI cursus ui framework for UX
 #FRONTEND_TESNORBOARD : Select tensorbox as the UX
-FRONTEND_CLI = 'cli'
+FRONTEND_CURSES = 'cli'
 FRONTEND_TESNORBOARD = 'tensorboard'
+_DUMP_ROOT_PREFIX = "tvmdbg_"
 
-def create(graph_json_str, libmod, ctx):
+def create(graph_json_str, libmod, ctx, frontend=FRONTEND_CURSES):
     """Create a runtime executor module given a graph and module.
 
     Parameters
@@ -33,6 +36,9 @@ def create(graph_json_str, libmod, ctx):
 
     ctx : TVMContext
         The context to deploy the module, can be local or remote.
+
+    frontend : str
+        To select which ui user needs, by default its curses ui.
 
     Returns
     -------
@@ -52,7 +58,7 @@ def create(graph_json_str, libmod, ctx):
         raise ValueError("Please set '(USE_GRAPH_RUNTIME_DEBUG ON)' in " \
                          "config.cmake and rebuild TVM to enable debug mode")
     func_obj = fcreate(graph_json_str, libmod, device_type, device_id)
-    return GraphModuleDebug(func_obj, ctx, graph_json_str)
+    return GraphModuleDebug(func_obj, ctx, graph_json_str, frontend)
 
 
 class GraphModuleDebug(graph_runtime.GraphModule):
@@ -75,12 +81,14 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         The graph to be deployed in json format output by nnvm graph.
         The graph can only contain one operator(tvm_op) that
         points to the name of PackedFunc in the libmod.
+
+    frontend : str
+        To select which ui user needs, curses, tensorboard, etc
     """
-    def __init__(self, module, ctx, graph_json_str):
+    def __init__(self, module, ctx, graph_json_str, frontend):
         self._set_debug_buffer = module["set_debug_buffer"]
         self._debug_run = module["debug_run"]
         graph_runtime.GraphModule.__init__(self, module, ctx)
-        frontend = FRONTEND_CLI
         self.prepare_data_and_ui(graph_json_str, ctx, frontend)
 
     def prepare_data_and_ui(self, graph, ctx, frontend):
@@ -106,14 +114,16 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         p_graph = self._get_graph_json(nodes_list,
                                        dltype_list, shapes_list)
         ctx = str(ctx).upper().replace("(", ":").replace(")", "")
+        self._dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
+
         self.ui_obj = self._create_debug_ui(p_graph, nodes_list, heads_list, ctx, frontend)
         dump_path = self.ui_obj.get_dump_path(ctx)
         # prepare the debug out buffer list
         self.dbg_buff_list = self._make_debug_buffer_list(shapes_list, dltype_list)
-        self.debug_datum = GraphModuleDebugDumpDatum(nodes_list, self.dbg_buff_list,
-                                                     dump_path, ctx)
+        self.debug_datum = debug_result.DebugResult(nodes_list, self.dbg_buff_list,
+                                                    dump_path, ctx)
         # dump the json information
-        self.debug_datum.dump_graph_json(p_graph)
+        #self.debug_datum.dump_graph_json(p_graph)
         self.ui_obj.set_output_nodes(heads_list)
 
     def _parse_graph(self, graph):
@@ -313,7 +323,7 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         if run_start_resp.action == common.CLIRunStartAction.DEBUG_RUN:
             self.set_debug_buffer()
             retvals = self._debug_run_op_exec()
-            self.debug_datum.dump_output()
+            self.debug_datum.dump_output_tensor()
             self.ui_obj.run_end(cli_command, retvals)
 
         elif run_start_resp.action == common.CLIRunStartAction.NON_DEBUG_RUN:
@@ -360,84 +370,6 @@ class GraphModuleDebug(graph_runtime.GraphModule):
         if key:
             self.ui_obj.set_input(key, value)
 
-class GraphModuleDebugDumpDatum():
-    """Graph debug data module.
-
-    Data dump module manage all the debug data formatting.
-    Output data and input graphs are formatted and the dump to files.
-    Frontend read these data and graph for visualization.
-
-    Parameters
-    ----------
-    nodes_list : list
-        List of all the nodes presented in the graph
-
-    node_stats : list
-        Memory buffer contain each node's output data.
-
-    dump_path : str
-        Output data path is read/provided from frontend
-
-    ctx : TVMContext
-        The context this module is under.
-    """
-    def __init__(self, nodes_list, node_stats, dump_path, ctx):
-        self._nodes_list = nodes_list
-        self._dump_path = dump_path
-        self._out_stats = node_stats
-        self._time_list = []
-        self.ctx = ctx
-
-    def get_nodes_list(self):
-        return self._nodes_list
-
-    def set_time(self, time):
-        self._time_list.append(time)
-
-    def dump_output(self):
-        """Dump the outputs to a temporary folder
-
-        Dump path is read from frontend.
-
-        Parameters
-        ----------
-        none
-
-        Returns
-        -------
-        none
-        """
-        eid = 0
-        order = 0
-        for node, time in zip(self._nodes_list, self._time_list):
-            num_outputs = 1 if node['op'] == 'param' \
-                            else int(node['attrs']['num_outputs'])
-            for j in range(num_outputs):
-                ndbuffer = self._out_stats[eid]
-                eid += 1
-                order += time
-                key = node['name'] + "_" + str(j) + "__" + str(order) + ".npy"
-                dump_file = str(self._dump_path + key.replace("/", "_"))
-                np.save(dump_file, ndbuffer.asnumpy())
-                os.rename(dump_file, dump_file.rpartition('.')[0])
-
-    def dump_graph_json(self, p_graph):
-        """Dump json formatted graph.
-
-        Parameters
-        ----------
-        p_graph : json format
-            json formatted NNVM graph contain list of each node's
-            name, shape and type.
-
-        Returns
-        -------
-        none
-        """
-        graph_dump_file_name = '_tvmdbg_graph_dump.json'
-        with open((self._dump_path + graph_dump_file_name), 'w') as outfile:
-            json.dump(p_graph, outfile, indent=2, sort_keys=False)
-
 
 class DebugGraphUIWrapper(object):
     """UI Wrapper module for debug runtime
@@ -469,9 +401,8 @@ class DebugGraphUIWrapper(object):
     def __init__(self, p_graph, nodes_list, heads_list, ctx, frontend):
         """Init the DebugGraphUIWrapper"""
         self._nodes_list = nodes_list
-        if frontend == FRONTEND_CLI:
+        if frontend == FRONTEND_CURSES:
             self.curses_obj = tvmdbg.LocalCLIDebugWrapperModule(self, p_graph, ctx=ctx)
-        self.set_output_nodes(heads_list)
 
     def get_run_command(self):
         """Invoke run from curses ui"""

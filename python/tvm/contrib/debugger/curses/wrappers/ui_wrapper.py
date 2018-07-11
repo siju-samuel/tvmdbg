@@ -29,7 +29,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
     def __init__(self,
                  runtime,
-                 graph,
+                 graph_json,
                  ctx=None,
                  dump_root=None,
                  log_usage=True,
@@ -38,8 +38,23 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
         Parameters
         ----------
-        graph_runtime: Graph Runtime
+        runtime: Graph Runtime
           The TVM `Graph Runtime` object being wrapped.
+
+        graph_json: json
+          The graph json object.
+
+        ctx: str
+          The device context.
+
+        dump_root: str
+          The folder in which the tensors are dumped.
+
+        log_usage: bool
+          Enable or disable logging.
+
+        ui_type: str
+          select the type of ui, whether curses or commandline.
         """
 
         self._init_command = None
@@ -52,7 +67,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         if log_usage:
             pass  # No logging for open-source.
 
-        framework.BaseDebugWrapperModule.__init__(self, runtime, graph, ctx)
+        framework.BaseDebugWrapperModule.__init__(self, runtime, graph_json, ctx)
 
         if not dump_root:
             self._dump_root = tempfile.mktemp(prefix=_DUMP_ROOT_PREFIX)
@@ -89,7 +104,8 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
         self._run_start_response = None
         self._is_run_start = True
         self._ui_type = ui_type
-        self._graph_node_count = len(graph['nodes'])
+        self._graph_node_count = len(graph_json['nodes'])
+        self._graph_json = graph_json
 
     def _initialize_argparsers(self):
         self._argparsers = {}
@@ -246,6 +262,7 @@ class LocalCLIDebugWrapperModule(framework.BaseDebugWrapperModule):
 
             debug_dump = dbg_dump.DebugDumpDir(self._ctx,
                                                self._dump_root,
+                                               self._graph_json,
                                                partition_graphs=partition_graphs)
             passed_filter = None
             self._prep_debug_cli_for_run_end(

@@ -987,11 +987,9 @@ class CursesUI(ui_base.BaseUI):
         space_need_half = int(((self._max_x) - len(tvm_dgb_txt))/2)
         tvm_dgb_box_top = (" " * space_need_half) + tvm_dgb_box_top + (" " * (space_need_half))
         tvm_dgb_txt = (" " * space_need_half) + tvm_dgb_txt + (" " * space_need_half)
-        #tvm_dgb_box_bottom = (" " * txt_begin) + tvm_dgb_box_bottom + (" " * txt_begin)
         if len(tvm_dgb_txt) < (self._max_x):
             tvm_dgb_box_top += " "
             tvm_dgb_txt += " "
-        #    #tvm_dgb_box_bottom += " "
         tvm_dgb_box_top = tvm_dgb_box_top[:len(tvm_dgb_box_top)-1]
         tvm_dgb_txt = tvm_dgb_txt[:len(tvm_dgb_txt)-1]
 
@@ -1001,9 +999,6 @@ class CursesUI(ui_base.BaseUI):
         self._screen_draw_text_line(
             self._title_row + 1, tvm_dgb_txt, attr=curses.A_NORMAL | curses.A_BOLD,
             color=self._title_color)
-        #self._screen_draw_text_line(
-        #    self._title_row + 2, tvm_dgb_box_bottom, attr=curses.A_NORMAL | curses.A_BOLD,
-        #    color=self._title_color)
 
     def _auto_key_in(self, command, erase_existing=False):
         """Automatically key in a command to the command Textbox.

@@ -88,7 +88,7 @@ class DebugDumpDir(object):
     in a tvmdbg dump root directory.
     """
 
-    def __init__(self, ctx, dump_root, partition_graphs=None, validate=True):
+    def __init__(self, ctx, dump_root, graph_json, partition_graphs=None, validate=True):
         """`DebugDumpDir` constructor.
 
         Parameters
@@ -98,6 +98,9 @@ class DebugDumpDir(object):
 
         dump_root: str
           path to the dump root directory.
+
+        graph_json: json
+          Full graph in json format.
 
         partition_graphs: json
           A repeated field of GraphDefs representing the
@@ -120,9 +123,9 @@ class DebugDumpDir(object):
         self._ctx = ctx
         self._load_outputs_info()
         self._load_inputs_info()
-        self._load_all_device_dumps(partition_graphs, validate)
+        self._load_all_device_dumps(graph_json, partition_graphs, validate)
 
-    def _load_all_device_dumps(self, partition_graphs, validate):
+    def _load_all_device_dumps(self, graph_json, partition_graphs, validate):
         """Load the dump data for all devices."""
         device_dirs = _glob(os.path.join(
             self._dump_root, METADATA_FILE_PREFIX + DEVICE_TAG + "*"))
@@ -140,7 +143,7 @@ class DebugDumpDir(object):
             device_name = data_dump.device_path_to_device_name(device_dir)
             self._device_names.append(device_name)
             self._load_device_dumps(device_name, device_dir)
-        self._load_partition_graphs(partition_graphs, validate)
+        self._load_partition_graphs(graph_json, partition_graphs, validate)
         self._calculate_t0()
 
         for device_name in self._device_names:
@@ -297,7 +300,7 @@ class DebugDumpDir(object):
         return sum(len(self._dump_tensor_data[device_name])
                    for device_name in self._dump_tensor_data)
 
-    def _load_partition_graphs(self, partition_graphs, validate):
+    def _load_partition_graphs(self, graph_json, partition_graphs, validate):
         """Load and process partition graphs.
 
         Load the graphs; parse the input and control input structure; obtain the
@@ -307,6 +310,9 @@ class DebugDumpDir(object):
 
         Parameters
         ----------
+        graph_json: json
+          The graph json object.
+
         partition_graphs: GraphDefs
           A repeated field of GraphDefs representing the graphs executed by the TVM runtime.
 
@@ -316,6 +322,14 @@ class DebugDumpDir(object):
         if partition_graphs:
             partition_graphs_dev_names = [
                 (partition_graph, None) for partition_graph in partition_graphs]
+        elif graph_json:
+            partition_graph = graph_def.GraphDef(self._ctx, graph_json)
+            partition_graphs_dev_names = []
+            for device_name in self._device_names:
+                if partition_graph:
+                    partition_graphs_dev_names.append((partition_graph, device_name))
+                else:
+                    print("Failed to load partition graphs from json.")
         else:
             partition_graphs_dev_names = []
             for device_name in self._device_names:
